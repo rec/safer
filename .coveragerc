@@ -1,0 +1,11 @@
+# Configuration file for coverage.py
+
+[run]
+
+branch = True
+source = import_all.py
+
+[report]
+
+fail_under = 58
+skip_covered = True
