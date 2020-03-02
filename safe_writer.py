@@ -2,7 +2,7 @@ import contextlib
 from pathlib import Path
 
 SUFFIX = '.tmp'
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 
 @contextlib.contextmanager
