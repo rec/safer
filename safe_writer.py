@@ -1,4 +1,5 @@
 import contextlib
+import functools
 import shutil
 from pathlib import Path
 
@@ -16,9 +17,16 @@ def safe_writer(
     overwrite_tmp=False,
     allow_copy=True,
     remove_tmp_on_exception=True,
+    yield_print=False,
+    print=print,
 ):
-    path = Path(filename)
-    tmp = filename.with_suffix(filename.suffix + tmp_suffix)
+    if isinstance(filename, Path):
+        path, filename = filename, str(filename)
+    else:
+        path = Path(filename)
+    assert isinstance(filename, str)
+
+    tmp = path.with_suffix(path.suffix + tmp_suffix)
 
     if not overwrite and path.exists():
         raise ValueError('Cannot overwrite %s' % path)
@@ -42,14 +50,17 @@ def safe_writer(
         raise ValueError('Mode %s is read-only' % mode)
 
     elif action is COPY:
-        if filename.exists():
+        if path.exists():
             if not allow_copy:
                 raise ValueError('allow_copy must be True for mode %s' % mode)
-            shutil.copy2(filename, tmp)
+            shutil.copy2(filename, str(tmp))
+
+    if 'b' in mode and yield_print:
+        raise ValueError('Cannot print to files open in binary mode %s' % mode)
 
     try:
         with tmp.open(mode) as fp:
-            yield fp
+            yield functools.partial(print, file=fp) if yield_print else fp
 
     except Exception:
         if remove_tmp_on_exception:
@@ -61,6 +72,8 @@ def safe_writer(
 
     tmp.rename(filename)
 
+
+safe_printer = functools.partial(safe_writer, yield_print=True)
 
 READ, WRITE, COPY = range(3)
 MODES = {
