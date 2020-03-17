@@ -13,17 +13,24 @@ def safe_writer(
     tmp_suffix=SUFFIX,
     create_parents=True,
     overwrite=True,
+    overwrite_tmp=False,
     allow_copy=True,
+    remove_tmp_on_exception=True,
 ):
     path = Path(filename)
-    if not overwrite and path.exists():
-        raise ValueError('Cannot overwrite ' + str(path))
-
     tmp = filename.with_suffix(filename.suffix + tmp_suffix)
-    if tmp.exists():
-        raise ValueError('Tmp %s exists!' % str(tmp))
 
-    if create_parents:
+    if not overwrite and path.exists():
+        raise ValueError('Cannot overwrite %s' % path)
+
+    if not overwrite_tmp and tmp.exists():
+        raise ValueError('tempfile %s exists!' % tmp)
+
+    if not tmp.parent.exists():
+        if not create_parents:
+            raise ValueError(
+                '%s does not exist and create_parents is False' % tmp.parent
+            )
         tmp.parent.mkdir(parents=create_parents, exist_ok=True)
 
     action = MODES.get(mode)
@@ -40,8 +47,17 @@ def safe_writer(
                 raise ValueError('allow_copy must be True for mode %s' % mode)
             shutil.copy2(filename, tmp)
 
-    with tmp.open(mode) as fp:
-        yield fp
+    try:
+        with tmp.open(mode) as fp:
+            yield fp
+
+    except Exception:
+        if remove_tmp_on_exception:
+            try:
+                tmp.remove()
+            except Exception:
+                pass
+        raise
 
     tmp.rename(filename)
 
