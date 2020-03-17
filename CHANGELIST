@@ -1,4 +1,9 @@
-## v0.9.2 - 2020-03-02
+## v0.9.3 - 2020-03-17
+
+* New `safe_printer` context
+* More tests
+
+## v0.9.2 - 2020-03-17
 
 * Handle all file opening modes
 * More and better error handling*

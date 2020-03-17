@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 SUFFIX = '.tmp'
-__version__ = '0.9.2'
+__version__ = '0.9.3'
 
 
 @contextlib.contextmanager
