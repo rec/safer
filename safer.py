@@ -8,7 +8,7 @@ __version__ = '0.9.3'
 
 
 @contextlib.contextmanager
-def safe_writer(
+def writer(
     filename,
     mode='w',
     tmp_suffix=SUFFIX,
@@ -73,7 +73,7 @@ def safe_writer(
     tmp.rename(filename)
 
 
-safe_printer = functools.partial(safe_writer, yield_print=True)
+printer = functools.partial(writer, yield_print=True)
 
 READ, WRITE, COPY = range(3)
 MODES = {
