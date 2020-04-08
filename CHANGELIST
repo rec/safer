@@ -1,3 +1,8 @@
+## v0.9.4 - 2020-04-08
+
+* Rename to safer
+* Rename safe_printer and safe_writer to printer, writer
+
 ## v0.9.3 - 2020-03-17
 
 * New `safe_printer` context
