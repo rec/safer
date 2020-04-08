@@ -1,10 +1,10 @@
 from pathlib import Path
-from safe_writer import safe_printer, safe_writer
+from safer import safe_printer, safe_writer
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 
-class TestSafeWriter(TestCase):
+class TestSafer(TestCase):
     def test_simple(self):
         with TemporaryDirectory() as td:
             filename = Path(td) / 'test.txt'

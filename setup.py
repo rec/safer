@@ -1,5 +1,5 @@
 from setuptools import setup
-import safe_writer
+import safer
 
 _classifiers = [
     'Development Status :: 4 - Beta',
@@ -15,17 +15,17 @@ _classifiers = [
 
 if __name__ == '__main__':
     setup(
-        name='safe_writer',
-        version=safe_writer.__version__,
+        name='safer',
+        version=safer.__version__,
         author='Tom Ritchford',
         author_email='tom@swirly.com',
-        url='https://github.com/rec/safe_writer',
+        url='https://github.com/rec/safer',
         tests_require=['pytest'],
-        py_modules=['safe_writer'],
+        py_modules=['safer'],
         description='Try to import all modules below a given root',
         long_description=open('README.rst').read(),
         license='MIT',
         classifiers=_classifiers,
         keywords=['testing', 'modules'],
-        scripts=['safe_writer.py'],
+        scripts=['safer.py'],
     )
