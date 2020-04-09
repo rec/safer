@@ -1,7 +1,9 @@
+from __future__ import print_function
+
 import contextlib
 import functools
+import os
 import shutil
-from pathlib import Path
 
 SUFFIX = '.tmp'
 __version__ = '0.9.4'
@@ -9,52 +11,49 @@ __version__ = '0.9.4'
 
 @contextlib.contextmanager
 def open(
-    filename,
+    file,
     mode='r',
     tmp_suffix=SUFFIX,
     create_parents=False,
     preserve_failed_writes=False,
     is_printer=False,
 ):
+    file = str(file)
     copy = '+' in mode or 'a' in mode
-    write = copy or 'r' not in mode
+    read_only = not copy and 'r' in mode
     if is_printer:
         if 'b' in mode:
             raise ValueError('Cannot print in binary mode ' + mode)
-        if not write:
+        if read_only:
             raise ValueError('Cannot print in read-only mode ' + mode)
 
-    if isinstance(filename, Path):
-        path, filename = filename, str(filename)
-    else:
-        path = Path(filename)
-
-    if not path.parent.exists():
+    parent = os.path.dirname(file)
+    if not os.path.exists(parent):
         if not create_parents:
-            raise ValueError(path.parent + ' does not exist')
-        path.parent.mkdir(parents=True, exist_ok=True)
+            raise ValueError(parent + ' does not exist')
+        os.makedirs(parent, exist_ok=True)
 
-    if write:
-        out = path.with_suffix(path.suffix + tmp_suffix)
-        if copy and path.exists():
-            shutil.copy2(str(path), str(out))
+    if read_only:
+        out = file
     else:
-        out = path
+        out = file + tmp_suffix
+        if copy and os.path.exists(file):
+            shutil.copy2(file, out)
 
     try:
-        with out.open(mode) as fp:
+        with __builtins__['open'](out, mode) as fp:
             yield functools.partial(print, file=fp) if is_printer else fp
 
     except Exception:
-        if write and not preserve_failed_writes:
+        if not (read_only or preserve_failed_writes):
             try:
-                out.remove()
+                os.remove(out)
             except Exception:
                 pass
         raise
 
-    if write:
-        out.rename(path)
+    if out != file:
+        os.rename(out, file)
 
 
 printer = functools.partial(open, mode='w', is_printer=True)
