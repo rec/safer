@@ -1,5 +1,4 @@
 from __future__ import print_function
-
 import contextlib
 import functools
 import os
@@ -21,17 +20,12 @@ def open(
     file = str(file)
     copy = '+' in mode or 'a' in mode
     read_only = not copy and 'r' in mode
+
     if is_printer:
         if 'b' in mode:
             raise ValueError('Cannot print in binary mode ' + mode)
         if read_only:
             raise ValueError('Cannot print in read-only mode ' + mode)
-
-    parent = os.path.dirname(file)
-    if not os.path.exists(parent):
-        if not create_parents:
-            raise ValueError(parent + ' does not exist')
-        os.makedirs(parent, exist_ok=True)
 
     if read_only:
         out = file
@@ -39,6 +33,12 @@ def open(
         out = file + tmp_suffix
         if copy and os.path.exists(file):
             shutil.copy2(file, out)
+
+    parent = os.path.dirname(file)
+    if not (os.path.exists(parent) or read_only):
+        if not create_parents:
+            raise ValueError(parent + ' does not exist')
+        os.makedirs(parent, exist_ok=True)
 
     try:
         with __builtins__['open'](out, mode) as fp:
