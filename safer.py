@@ -12,25 +12,20 @@ __version__ = '0.9.4'
 def open(
     file,
     mode='r',
-    tmp_suffix=SUFFIX,
     create_parents=False,
-    preserve_failed_writes=False,
-    is_printer=False,
+    delete_failures=True,
+    suffix=SUFFIX,
 ):
-    file = str(file)
     copy = '+' in mode or 'a' in mode
     read_only = not copy and 'r' in mode
 
-    if is_printer:
-        if 'b' in mode:
-            raise ValueError('Cannot print in binary mode ' + mode)
-        if read_only:
-            raise ValueError('Cannot print in read-only mode ' + mode)
-
+    file = str(file)
     if read_only:
         out = file
     else:
-        out = file + tmp_suffix
+        out = file + suffix
+        if os.path.exists(out):
+            raise IOError('Tempfile %s already exists' % out)
         if copy and os.path.exists(file):
             shutil.copy2(file, out)
 
@@ -42,10 +37,10 @@ def open(
 
     try:
         with __builtins__['open'](out, mode) as fp:
-            yield functools.partial(print, file=fp) if is_printer else fp
+            yield fp
 
     except Exception:
-        if not (read_only or preserve_failed_writes):
+        if delete_failures and not read_only:
             try:
                 os.remove(out)
             except Exception:
@@ -56,4 +51,7 @@ def open(
         os.rename(out, file)
 
 
-printer = functools.partial(open, mode='w', is_printer=True)
+@contextlib.contextmanager
+def printer(file, create_parents=False, delete_failures=True, suffix=SUFFIX):
+    with open(file, 'w', create_parents, delete_failures, suffix) as fp:
+        yield functools.partial(print, file=fp)
