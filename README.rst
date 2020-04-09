@@ -9,14 +9,13 @@ Example:
 
    import safer
 
-   with safer.writer(filename) as fp:
+   with safer.open(filename, 'w') as fp:
        for line in source():
           fp.write('this and that')
 
    with safer.printer(filename) as print:
        print('this', 'and', 'that')
-       print('two', 'lines', sep='\n')
-       # ...
+       print('two', 'lines', sep='\n', end='\n---\n')
 
 Writes occur on a temporary file, which is only copied over the original file
 when the block completes successfully, so ``safer`` will temporarily use
