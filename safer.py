@@ -88,11 +88,14 @@ def open(
         if copy and os.path.exists(file):
             shutil.copy2(file, out)
 
-    parent = os.path.dirname(file)
+    parent = os.path.dirname(os.path.abspath(file))
     if not (os.path.exists(parent) or read_only):
         if not create_parents:
             raise ValueError(parent + ' does not exist')
-        os.makedirs(parent, exist_ok=True)
+        try:
+            os.makedirs(parent)
+        except OSError:
+            pass
 
     try:
         with __builtins__['open'](out, mode) as fp:
@@ -137,11 +140,11 @@ def printer(
       suffix:
         File suffix to use for temporary files
     """
-    if {'a', 'w', '+'}.isdisjoint(mode):
-        raise ValueError('Cannot print in read-only mode ' + mode)
-
     if 'b' in mode:
         raise ValueError('Cannot print in binary mode ' + mode)
+
+    if {'a', 'w', '+'}.isdisjoint(mode):
+        raise ValueError('Cannot print in read-only mode ' + mode)
 
     with open(file, mode, create_parents, delete_failures, suffix) as fp:
         yield functools.partial(print, file=fp)
