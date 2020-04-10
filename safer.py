@@ -1,13 +1,15 @@
-""""
+"""
 Safely write or print to a file, leaving it unchanged if there's an exception.
 
 Works on Python versions 2.7 through 3.8 and likely beyond.
 
-Writes happen on a temporary file, which is only copied over the original file
-after the context completes successfully.  This temporarily uses as much disk
-space as the old file and the new file put together.
+Writes are performed on a temporary file, which is only copied over the
+original file after the context completes successfully.  Note that this
+temporarily uses as much disk space as the old file and the new file put
+together.
 
 ``safer.open`` example:
+------------------------
 
 .. code-block:: python
 
@@ -22,6 +24,7 @@ space as the old file and the new file put together.
            # Contents of `filename` will be unchanged
 
 ``safer.printer`` example:
+---------------------------
 
 .. code-block:: python
 
@@ -53,7 +56,7 @@ def open(
     delete_failures=True,
     suffix=SUFFIX,
 ):
-    """A context that yields a stream like built-in open(), but undoes any
+    """A context that yields a stream like built-in open() would, and undoes any
     changes to the file if there's an exception.
 
     Arguments:
@@ -115,8 +118,8 @@ def printer(
         delete_failures=True,
         suffix=SUFFIX
 ):
-    """A context that yields a print function that prints to a file,
-    but undoes any changes to the file if there's an exception.
+    """A context that yields a print function that prints to the file,
+    but which undoes any changes to the file if there's an exception.
 
     Arguments:
       file:
@@ -134,5 +137,11 @@ def printer(
       suffix:
         File suffix to use for temporary files
     """
+    if {'a', 'w', '+'}.isdisjoint(mode):
+        raise ValueError('Cannot print in read-only mode ' + mode)
+
+    if 'b' in mode:
+        raise ValueError('Cannot print in binary mode ' + mode)
+
     with open(file, mode, create_parents, delete_failures, suffix) as fp:
         yield functools.partial(print, file=fp)
