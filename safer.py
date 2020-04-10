@@ -45,7 +45,7 @@ import os
 import shutil
 
 SUFFIX = '.tmp'
-__version__ = '0.9.4'
+__version__ = '0.9.5'
 
 
 @contextlib.contextmanager

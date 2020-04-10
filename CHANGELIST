@@ -1,3 +1,10 @@
+## v0.9.5 - 2020-04-09
+
+* Support Python 2.7 and 3.4
+* Two bugfixes
+* More documentation
+* Better error checking
+
 ## v0.9.4 - 2020-04-08
 
 * Rename to safer
