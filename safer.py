@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
 """
+✏️safer ✏️
+------------
+
 Safely write or print to a file, leaving it unchanged if there's an exception.
 
 Works on Python versions 2.7 through 3.8 and likely beyond.
@@ -8,8 +12,11 @@ original file after the context completes successfully.  Note that this
 temporarily uses as much disk space as the old file and the new file put
 together.
 
-``safer.open`` example:
-------------------------
+EXAMPLES
+-----------
+
+``safer.open``
+================
 
 .. code-block:: python
 
@@ -17,24 +24,25 @@ together.
 
    with safer.open(filename, 'w') as fp:
        for line in source():
-          fp.write('this and that')
+          fp.write('this and that\\n')
+          fp.write('two-lines!')
 
        if CHANGED_MY_MIND:
            raise ValueError
            # Contents of `filename` will be unchanged
 
-``safer.printer`` example:
----------------------------
+``safer.printer``
+==================
 
 .. code-block:: python
 
    with safer.printer(filename) as print:
        print('this', 'and', 'that')
-       print('two', 'lines', sep='\n', end='\n---\n')
+       print('two', 'lines', sep='-', end='!')
 
        if CHANGED_MY_MIND:
            raise ValueError
-           # Contents of `filename` will be unchanged
+           # Contents of ``filename`` will be unchanged
 
 """
 
@@ -46,6 +54,7 @@ import shutil
 
 SUFFIX = '.tmp'
 __version__ = '0.9.5'
+__all__ = 'open', 'printer'
 
 
 @contextlib.contextmanager
@@ -56,7 +65,8 @@ def open(
     delete_failures=True,
     suffix=SUFFIX,
 ):
-    """A context that yields a stream like built-in open() would, and undoes any
+    """
+    A context that yields a stream like built-in open() would, and undoes any
     changes to the file if there's an exception.
 
     Arguments:
@@ -70,7 +80,7 @@ def open(
         If True, all parent directories are automatically created
 
       delete_failures:
-        Are partial files deleted if there's an Exception?
+        Are partial files deleted if the context terminates with an exception?
 
       suffix:
         File suffix to use for temporary files
@@ -121,7 +131,8 @@ def printer(
         delete_failures=True,
         suffix=SUFFIX
 ):
-    """A context that yields a print function that prints to the file,
+    """
+    A context that yields a print function that prints to the file,
     but which undoes any changes to the file if there's an exception.
 
     Arguments:
@@ -135,7 +146,7 @@ def printer(
         If True, all parent directories are automatically created
 
       delete_failures:
-        Are partial files deleted if there's an Exception?
+        Are partial files deleted if the context terminates with an exception?
 
       suffix:
         File suffix to use for temporary files
