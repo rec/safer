@@ -1,7 +1,8 @@
-✏️safer ✏️
-------------
+✏️safer: safe file writer ✏️
+-------------------------------
 
-Safely write or print to a file, leaving it unchanged if there's an exception.
+Safely write or print to a file, so that the original file is only
+overwritten if the operation completes successfuly.
 
 Works on Python versions 2.7 through 3.8 and likely beyond.
 
@@ -13,41 +14,35 @@ together.
 EXAMPLES
 -----------
 
-``safer.open``
+``safer.writer``
 ================
 
 .. code-block:: python
 
-   import safer
+   # dangerous
+   with open(config_filename, 'w') as fp:
+       json.dump(cfg, fp)  # If this fails, the config file gets broken
 
-   with safer.open(filename, 'w') as fp:
-       for line in source():
-          fp.write('this and that\n')
-          fp.write('two-lines!')
+   # safer
+   with safer.writer(config_filename) as fp:
+       json.dump(cfg, fp)  # If this fails, the config file is untouched
 
-       if CHANGED_MY_MIND:
-           raise ValueError
-           # Contents of `filename` will be unchanged
 
 ``safer.printer``
 ==================
 
 .. code-block:: python
 
-   with safer.printer(filename) as print:
-       print('this', 'and', 'that')
-       print('two', 'lines', sep='-', end='!')
-
-       if CHANGED_MY_MIND:
-           raise ValueError
-           # Contents of ``filename`` will be unchanged
+   with safer.printer(configs_filename) as print:
+       for cfg in configs:
+           print(json.dumps(cfg))
 
 API call documentation
 -----------------------
 
-``safer.open(file, mode='r', create_parents=False, delete_failures=True, suffix='.tmp')``
+``safer.writer(file, mode='w', create_parents=False, delete_failures=True, suffix='.tmp', **kwargs)``
 
-    A context that yields a stream like built-in open() would, and undoes any
+    A context that yields a writable stream, like from open(), but undoes any
     changes to the file if there's an exception.
 
     Arguments:
@@ -55,7 +50,7 @@ API call documentation
         Path to the file to be opened
 
       mode:
-        Mode string passed to built-in ``open``
+        Mode string passed to ``open()``
 
       create_parents:
         If True, all parent directories are automatically created
@@ -66,17 +61,20 @@ API call documentation
       suffix:
         File suffix to use for temporary files
 
-``safer.printer(file, mode='w', create_parents=False, delete_failures=True, suffix='.tmp')``
+      kwargs:
+         Keywords passed to built-in ``open``
 
-    A context that yields a print function that prints to the file,
-    but which undoes any changes to the file if there's an exception.
+``safer.printer(file, mode='w', create_parents=False, delete_failures=True, suffix='.tmp', **kwargs)``
+
+    A context that yields a function that prints to the opened file, but undoes any
+    changes to the file if there's an exception.
 
     Arguments:
       file:
         Path to the file to be opened
 
       mode:
-        Mode string passed to built-in ``open``
+        Mode string passed to ``open()``
 
       create_parents:
         If True, all parent directories are automatically created
@@ -86,3 +84,6 @@ API call documentation
 
       suffix:
         File suffix to use for temporary files
+
+      kwargs:
+         Keywords passed to built-in ``open``

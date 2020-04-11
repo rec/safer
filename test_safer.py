@@ -8,14 +8,14 @@ class TestSafer(TestCase):
     def test_simple(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            with safer.open(filename, 'w') as fp:
+            with safer.writer(filename) as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
     def test_no_copy(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            with safer.open(filename, 'a') as fp:
+            with safer.writer(filename, 'a') as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
@@ -23,7 +23,7 @@ class TestSafer(TestCase):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'c')
-            with safer.open(filename, 'a') as fp:
+            with safer.writer(filename, 'a') as fp:
                 fp.write('hello')
             assert read_text(filename) == 'chello'
 
@@ -33,7 +33,7 @@ class TestSafer(TestCase):
             write_text(filename, 'hello')
 
             with self.assertRaises(ValueError):
-                with safer.open(filename, 'w') as fp:
+                with safer.writer(filename) as fp:
                     fp.write('GONE')
                     raise ValueError
 
@@ -42,12 +42,11 @@ class TestSafer(TestCase):
     def test_create_parents(self):
         with TemporaryDirectory() as td:
             filename = td + '/foo/test.txt'
-            with self.assertRaises(ValueError) as m:
-                with safer.open(filename, 'w'):
+            with self.assertRaises(IOError):
+                with safer.writer(filename):
                     pass
-            assert 'does not exist' in m.exception.args[0]
 
-            with safer.open(filename, 'w', create_parents=True) as fp:
+            with safer.writer(filename, create_parents=True) as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
@@ -57,13 +56,13 @@ class TestSafer(TestCase):
             write_text(filename, 'hello')
 
             with self.assertRaises(ValueError):
-                with safer.open(filename, 'w', delete_failures=False) as fp:
+                with safer.writer(filename, delete_failures=False) as fp:
                     fp.write('GONE')
                     raise ValueError
             assert read_text(filename) == 'hello'
 
             with self.assertRaises(IOError) as m:
-                with safer.open(filename, 'w') as fp:
+                with safer.writer(filename) as fp:
                     fp.write('OK!')
             assert 'Tempfile' in m.exception.args[0]
             assert 'exists' in m.exception.args[0]
@@ -73,14 +72,7 @@ class TestSafer(TestCase):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'c')
-            with safer.open(filename, 'r') as fp:
-                assert fp.read() == 'c'
-
-    def test_read2(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'c')
-            with safer.open(filename, 'r+') as fp:
+            with safer.writer(filename, 'r+') as fp:
                 assert fp.read() == 'c'
 
     def test_error_with_copy(self):
@@ -89,7 +81,7 @@ class TestSafer(TestCase):
             write_text(filename, 'c')
 
             with self.assertRaises(ValueError):
-                with safer.open(filename, 'a') as fp:
+                with safer.writer(filename, 'a') as fp:
                     fp.write('GONE')
                     raise ValueError
 
@@ -105,17 +97,17 @@ class TestSafer(TestCase):
     def test_printer_errors(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            with safer.printer(filename, 'w'):
+            with safer.printer(filename):
                 pass
             with self.assertRaises(ValueError) as m:
                 with safer.printer(filename, 'r'):
                     pass
-            assert 'read-only' in m.exception.args[0]
+            assert 'read-only' in m.exception.args[0].lower()
 
             with self.assertRaises(ValueError) as m:
                 with safer.printer(filename, 'rb'):
                     pass
-            assert 'binary' in m.exception.args[0]
+            assert 'read-only' in m.exception.args[0].lower()
 
 
 def read_text(filename):
