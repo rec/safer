@@ -1,43 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-✏️safer: safe file writer ✏️
+✏️safer: a safer file writer ✏️
 -------------------------------
 
-Safely write or print to a file, so that the original file is only
-overwritten if the operation completes successfuly.
+Safely write or print to a file in a context where the original file is
+only overwritten if the context completes without throwing an exception.
 
-Works on Python versions 2.7 through 3.8 and likely beyond.
+Tested on Python versions 2.7, and 3.4 through 3.8.
 
-Writes are performed on a temporary file, which is only copied over the
-original file after the context completes successfully.  Note that this
-temporarily uses as much disk space as the old file and the new file put
-together.
+Install ``safer`` from the command line using
+`pip <https://pypi.org/project/pip/>`_:
 
-EXAMPLES
------------
+.. code-block:: bash
 
-``safer.writer``
-================
+    pip3 install safer
 
-.. code-block:: python
-
-   # dangerous
-   with open(config_filename, 'w') as fp:
-       json.dump(cfg, fp)  # If this fails, the config file gets broken
-
-   # safer
-   with safer.writer(config_filename) as fp:
-       json.dump(cfg, fp)  # If this fails, the config file is untouched
-
-
-``safer.printer``
-==================
-
-.. code-block:: python
-
-   with safer.printer(configs_filename) as print:
-       for cfg in configs:
-           print(json.dumps(cfg))
+NOTE: ``safer`` uses a temporary file which is copied over the original
+file after the context completes successfully, so it temporarily uses as
+much disk space as the old file and the new file put together.
 """
 
 from __future__ import print_function
@@ -61,7 +41,7 @@ def writer(
     **kwargs
 ):
     """
-    A context that yields {}, but undoes any
+    A context that yields {result}, but undoes any
     changes to the file if there's an exception.
 
     Arguments:
@@ -83,17 +63,17 @@ def writer(
       kwargs:
          Keywords passed to built-in ``open``
     """
+    copy = '+' in mode or 'a' in mode
+    if not copy and 'r' in mode:
+        raise IOError('File not open for writing')
+
     file = str(file)
     out = file + suffix
-
     if os.path.exists(out):
         raise IOError('Tempfile %s already exists' % out)
 
-    if '+' in mode or 'a' in mode:
-        if os.path.exists(file):
-            shutil.copy2(file, out)
-    elif 'r' in mode:
-        raise ValueError('Read-only mode ' + mode)
+    if copy and os.path.exists(file):
+        shutil.copy2(file, out)
 
     parent = os.path.dirname(os.path.abspath(file))
     if not os.path.exists(parent) and create_parents:
@@ -122,6 +102,30 @@ def printer(*args, **kwargs):
 
 
 printer.__doc__ = printer.__doc__.format(
-    'a function that prints to the opened file'
+    result='a function that prints to the opened file'
 )
-writer.__doc__ = writer.__doc__.format('a writable stream, like from open()')
+writer.__doc__ = writer.__doc__.format(
+    result='the writable stream returned from open()'
+)
+
+writer._examples = """\
+# dangerous
+with open(config_filename, 'w') as fp:
+    json.dump(cfg, fp)    # If this fails, the config file is corrupted
+
+# safer
+with safer.writer(config_filename) as fp:
+    json.dump(cfg, fp)    # If this fails, the config file is untouched
+"""
+
+printer._examples = """\
+# dangerous
+with open(configs_filename, 'w') as fp:
+    for cfg in configs:
+        print(json.dumps(cfg), file=fp)  # Corrupts the file on failure
+
+# safer
+with safer.printer(configs_filename) as print:
+    for cfg in configs:
+        print(json.dumps(cfg))          # Cannot corrupt the file
+"""

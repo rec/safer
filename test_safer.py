@@ -99,15 +99,15 @@ class TestSafer(TestCase):
             filename = td + '/test.txt'
             with safer.printer(filename):
                 pass
-            with self.assertRaises(ValueError) as m:
+            with self.assertRaises(IOError) as m:
                 with safer.printer(filename, 'r'):
                     pass
-            assert 'read-only' in m.exception.args[0].lower()
+            assert 'not open' in m.exception.args[0].lower()
 
-            with self.assertRaises(ValueError) as m:
+            with self.assertRaises(IOError) as m:
                 with safer.printer(filename, 'rb'):
                     pass
-            assert 'read-only' in m.exception.args[0].lower()
+            assert 'not open' in m.exception.args[0].lower()
 
 
 def read_text(filename):
