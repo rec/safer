@@ -21,7 +21,7 @@ EXAMPLES
 ---------
 
 ``safer.writer``
-================
+======================
 
 .. code-block:: python
 
@@ -34,7 +34,7 @@ EXAMPLES
        json.dump(cfg, fp)    # If this fails, the config file is untouched
 
 ``safer.printer``
-================
+======================
 
 .. code-block:: python
 

@@ -39,7 +39,7 @@ def main():
 
 
 EXAMPLE_FMT = """``safer.{name}``
-================
+======================
 
 .. code-block:: python
 """
