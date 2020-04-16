@@ -1,6 +1,8 @@
 from __future__ import print_function
 from unittest import TestCase
+import doc_safer
 import os
+import platform
 import safer
 
 
@@ -108,6 +110,17 @@ class TestSafer(TestCase):
                 with safer.printer(filename, 'rb'):
                     pass
             assert 'not open' in m.exception.args[0].lower()
+
+    def test_make_doc(self):
+        if platform.python_version() < '3.6':
+            return
+        with TemporaryDirectory() as td:
+            filename = td + '/README.rst'
+            with safer.printer(filename) as print:
+                doc_safer.make_doc(print)
+            actual = read_text(filename)
+            in_repo = read_text(doc_safer.README_FILE)
+            assert actual == in_repo
 
 
 def read_text(filename):
