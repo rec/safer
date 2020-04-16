@@ -27,7 +27,7 @@ import os
 import shutil
 
 SUFFIX = '.tmp'
-__version__ = '0.9.8'
+__version__ = '0.9.9'
 __all__ = 'writer', 'printer'
 
 

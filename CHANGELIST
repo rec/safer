@@ -1,3 +1,8 @@
+## v0.9.9 - 2020-04-16
+
+* More documentation
+* Add a test for doc_safer.py
+
 ## v0.9.8 - 2020-04-10
 
 * Rename safer.open() to .writer()
