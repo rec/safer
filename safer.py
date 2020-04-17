@@ -3,30 +3,35 @@
 ✏️safer: a safer file writer ✏️
 -------------------------------
 
-Safely write or print to a file in a context where the original file is
-only overwritten if the context completes without throwing an exception.
+No more partial writes and corruption - ``safer`` writes an entire file
+successfully, or leaves it untouched.
 
-Tested on Python versions 2.7, and 3.4 through 3.8.
+``safer.writer()`` and ``safer.printer()`` open a file for writing or
+printing as a context manager, but actually write to the file only once
+the context exits successfully: if an Exception is raised, then the
+original file is left untouched.
+
+Tests run on Python 2.7, and 3.4 through 3.8.
 
 Install ``safer`` from the command line using
 `pip <https://pypi.org/project/pip/>`_:
 
 .. code-block:: bash
 
-    pip3 install safer
+    pip install safer
 
-NOTE: ``safer`` uses a temporary file which is copied over the original
-file after the context completes successfully, so it temporarily uses as
-much disk space as the old file and the new file put together.
-"""
+Note that ``safer`` uses a temporary file which is moved over the target
+file after the context manager exits successfully: at its peak it
+requires as much disk space as the old and new files put together.
+ """
 
 from __future__ import print_function
 import contextlib
 import functools
+import itertools
 import os
 import shutil
 
-SUFFIX = '.tmp'
 __version__ = '0.9.10'
 __all__ = 'writer', 'printer'
 
@@ -37,7 +42,6 @@ def writer(
     mode='w',
     create_parents=False,
     delete_failures=True,
-    suffix=SUFFIX,
     **kwargs
 ):
     """
@@ -52,13 +56,10 @@ def writer(
         Mode string passed to ``open()``
 
       create_parents:
-        If True, all parent directories are automatically created
+        If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
-        Are partial files deleted if the context terminates with an exception?
-
-      suffix:
-        File suffix to use for temporary files
+        If true, the temporary file is deleted if there is an exception
 
       kwargs:
          Keywords passed to built-in ``open``
@@ -68,9 +69,8 @@ def writer(
         raise IOError('File not open for writing')
 
     file = str(file)
-    out = file + suffix
-    if os.path.exists(out):
-        raise IOError('Tempfile %s already exists' % out)
+    outs = ('%s.tmp.%d' % (file, i) for i in itertools.count())
+    out = next(o for o in outs if not os.path.exists(o))
 
     if copy and os.path.exists(file):
         shutil.copy2(file, out)
@@ -110,22 +110,26 @@ writer.__doc__ = writer.__doc__.format(
 
 writer._examples = """\
 # dangerous
-with open(config_filename, 'w') as fp:
-    json.dump(cfg, fp)    # If this fails, the config file is corrupted
+with open(file, 'w') as fp:
+    json.dump(data, fp)    # If this fails, the file is corrupted
 
 # safer
-with safer.writer(config_filename) as fp:
-    json.dump(cfg, fp)    # If this fails, the config file is untouched
+with safer.writer(file) as fp:
+    json.dump(data, fp)    # If this fails, the file is untouched
 """
 
 printer._examples = """\
 # dangerous
-with open(configs_filename, 'w') as fp:
-    for cfg in configs:
-        print(json.dumps(cfg), file=fp)  # Corrupts the file on failure
+with open(file, 'w') as fp:
+    for item in items:
+        print(item, file=fp)
+
+# Prints a partial file if ``items`` raises an exception while iterating
+# or ``item.__str__()`` raises an exception
 
 # safer
-with safer.printer(configs_filename) as print:
-    for cfg in configs:
-        print(json.dumps(cfg))          # Cannot corrupt the file
+with safer.printer(file) as print:
+    for item in items:
+        print(item)
+# Either the whole file is written, or nothing.
 """

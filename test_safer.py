@@ -1,5 +1,5 @@
 from __future__ import print_function
-from unittest import TestCase
+from unittest import TestCase, skipIf
 import doc_safer
 import os
 import platform
@@ -56,38 +56,49 @@ class TestSafer(TestCase):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'hello')
+            t0 = filename + '.tmp.0'
+            t1 = filename + '.tmp.1'
+
+            with self.assertRaises(ValueError):
+                with safer.writer(filename) as fp:
+                    fp.write('GONE')
+                    raise ValueError
+            assert not os.path.exists(t0)
+            assert read_text(filename) == 'hello'
 
             with self.assertRaises(ValueError):
                 with safer.writer(filename, delete_failures=False) as fp:
                     fp.write('GONE')
                     raise ValueError
+            assert os.path.exists(t0)
             assert read_text(filename) == 'hello'
 
-            with self.assertRaises(IOError) as m:
-                with safer.writer(filename) as fp:
-                    fp.write('OK!')
-            assert 'Tempfile' in m.exception.args[0]
-            assert 'exists' in m.exception.args[0]
-            assert read_text(filename) == 'hello'
+            with safer.writer(filename) as fp:
+                fp.write('OK!')
+                assert os.path.exists(t1)
+
+            assert os.path.exists(t0)
+            assert not os.path.exists(t1)
+            assert read_text(filename) == 'OK!'
 
     def test_read(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            write_text(filename, 'c')
+            write_text(filename, 'hello')
             with safer.writer(filename, 'r+') as fp:
-                assert fp.read() == 'c'
+                assert fp.read() == 'hello'
 
     def test_error_with_copy(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            write_text(filename, 'c')
+            write_text(filename, 'hello')
 
             with self.assertRaises(ValueError):
                 with safer.writer(filename, 'a') as fp:
                     fp.write('GONE')
                     raise ValueError
 
-            assert read_text(filename) == 'c'
+            assert read_text(filename) == 'hello'
 
     def test_printer(self):
         with TemporaryDirectory() as td:
@@ -111,9 +122,8 @@ class TestSafer(TestCase):
                     pass
             assert 'not open' in m.exception.args[0].lower()
 
+    @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
     def test_make_doc(self):
-        if platform.python_version() < '3.6':
-            return
         with TemporaryDirectory() as td:
             filename = td + '/README.rst'
             with safer.printer(filename) as print:
