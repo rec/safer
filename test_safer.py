@@ -148,14 +148,19 @@ try:
 
 except ImportError:
     # Python 2.7 doesn't have TemporaryDirectory, so make a simple replacement.
-    # Will not work if tests are run in parallel threads or cores!
 
-    from contextlib import contextmanager
+    import contextlib
+    import itertools
     import shutil
+    import tempfile
+    import threading
 
-    @contextmanager
+    @contextlib.contextmanager
     def TemporaryDirectory():
-        name = '/tmp/.safer.python27.testdir'
+        td = tempfile.gettempdir()
+        root = '%s/safer-%d' % (td, threading.current_thread().ident)
+        names = ('%s.%d' % (root, i) for i in itertools.count())
+        name = next(n for n in names if not os.path.exists(n))
         os.mkdir(name)
         try:
             yield name
