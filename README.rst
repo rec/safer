@@ -60,7 +60,7 @@ EXAMPLES
 API call documentation
 -----------------------
 
-``safer.writer(file, mode='w', create_parents=False, delete_failures=True, **kwargs)``
+``safer.writer(file, mode='w', create_parent=False, delete_failures=True, **kwargs)``
 
     A context that yields the writable stream returned from open(), but undoes any
     changes to the file if there's an exception.
@@ -72,7 +72,7 @@ API call documentation
       mode:
         Mode string passed to ``open()``
 
-      create_parents:
+      create_parent:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
@@ -81,7 +81,7 @@ API call documentation
       kwargs:
          Keywords passed to built-in ``open``
 
-``safer.printer(file, mode='w', create_parents=False, delete_failures=True, **kwargs)``
+``safer.printer(file, mode='w', create_parent=False, delete_failures=True, **kwargs)``
 
     A context that yields a function that prints to the opened file, but undoes any
     changes to the file if there's an exception.
@@ -93,7 +93,7 @@ API call documentation
       mode:
         Mode string passed to ``open()``
 
-      create_parents:
+      create_parent:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:

@@ -41,14 +41,14 @@ class TestSafer(TestCase):
 
             assert read_text(filename) == 'hello'
 
-    def test_create_parents(self):
+    def test_create_parent(self):
         with TemporaryDirectory() as td:
             filename = td + '/foo/test.txt'
             with self.assertRaises(IOError):
                 with safer.writer(filename):
                     pass
 
-            with safer.writer(filename, create_parents=True) as fp:
+            with safer.writer(filename, create_parent=True) as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 

@@ -40,7 +40,7 @@ __all__ = 'writer', 'printer'
 def writer(
     file,
     mode='w',
-    create_parents=False,
+    create_parent=False,
     delete_failures=True,
     **kwargs
 ):
@@ -55,7 +55,7 @@ def writer(
       mode:
         Mode string passed to ``open()``
 
-      create_parents:
+      create_parent:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
@@ -76,7 +76,7 @@ def writer(
         shutil.copy2(file, out)
 
     parent = os.path.dirname(os.path.abspath(file))
-    if not os.path.exists(parent) and create_parents:
+    if not os.path.exists(parent) and create_parent:
         os.makedirs(parent)
 
     try:
