@@ -27,7 +27,7 @@ import itertools
 import os
 import shutil
 
-__version__ = '0.9.11'
+__version__ = '1.0.0'
 __all__ = 'writer', 'printer'
 
 
