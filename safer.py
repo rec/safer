@@ -26,6 +26,10 @@ import functools
 import os
 import shutil
 import tempfile
+try:
+    from pathlib import Path
+except ImportError:
+    Path = None
 
 __version__ = '1.0.0'
 __all__ = 'writer', 'printer'
@@ -71,7 +75,11 @@ def writer(
     if not copy and 'r' in mode:
         raise IOError('File not open for writing')
 
-    file = str(file)
+    if Path and isinstance(file, Path):
+        file = str(file)
+    elif not isinstance(file, str):
+        raise IOError('`file` argument must be a string')
+
     parent = os.path.dirname(os.path.abspath(file))
     if not os.path.exists(parent) and create_parent:
         os.makedirs(parent)

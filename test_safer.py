@@ -164,6 +164,13 @@ class TestSafer(TestCase):
             assert read_text(filename) == 'bye there'
             assert os.stat(filename).st_mode == new_mode
 
+    def test_int_filename(self):
+        with self.assertRaises(IOError) as m:
+            with safer.writer(1) as fp:
+                fp.write('hello')
+
+        assert m.exception.args[0] == '`file` argument must be a string'
+
 
 def read_text(filename):
     with open(filename) as fp:
