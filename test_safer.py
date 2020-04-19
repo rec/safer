@@ -44,7 +44,7 @@ class TestSafer(TestCase):
     def test_create_parent(self):
         with TemporaryDirectory() as td:
             filename = td + '/foo/test.txt'
-            with self.assertRaises(IOError):
+            with self.assertRaises(OSError):
                 with safer.writer(filename):
                     pass
 
@@ -56,30 +56,38 @@ class TestSafer(TestCase):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'hello')
-            t0 = filename + '.tmp.0'
-            t1 = filename + '.tmp.1'
+            before = set(os.listdir(td))
 
             with self.assertRaises(ValueError):
                 with safer.writer(filename) as fp:
                     fp.write('GONE')
                     raise ValueError
-            assert not os.path.exists(t0)
             assert read_text(filename) == 'hello'
+
+            after = set(os.listdir(td))
+            assert before == after
 
             with self.assertRaises(ValueError):
                 with safer.writer(filename, delete_failures=False) as fp:
                     fp.write('GONE')
                     raise ValueError
-            assert os.path.exists(t0)
+
             assert read_text(filename) == 'hello'
+            after = set(os.listdir(td))
+            assert len(before) + 1 == len(after)
+            assert len(after.difference(before)) == 1
 
             with safer.writer(filename) as fp:
                 fp.write('OK!')
-                assert os.path.exists(t1)
+                after = set(os.listdir(td))
+                assert len(before) + 2 == len(after)
+                assert len(after.difference(before)) == 2
 
-            assert os.path.exists(t0)
-            assert not os.path.exists(t1)
             assert read_text(filename) == 'OK!'
+
+            after = set(os.listdir(td))
+            assert len(before) + 1 == len(after)
+            assert len(after.difference(before)) == 1
 
     def test_read(self):
         with TemporaryDirectory() as td:
@@ -135,6 +143,8 @@ class TestSafer(TestCase):
     def test_file_perms(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
+
+            write_text(td + '/test2.txt', 'hello')
 
             with safer.writer(filename) as fp:
                 fp.write('hello')

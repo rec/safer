@@ -23,9 +23,9 @@ Tested on Python 2.7, and 3.4 through 3.8.
 from __future__ import print_function
 import contextlib
 import functools
-import itertools
 import os
 import shutil
+import tempfile
 
 __version__ = '1.0.0'
 __all__ = 'writer', 'printer'
@@ -72,15 +72,15 @@ def writer(
         raise IOError('File not open for writing')
 
     file = str(file)
-    outs = ('%s.tmp.%d' % (file, i) for i in itertools.count())
-    out = next(o for o in outs if not os.path.exists(o))
-
-    if copy and os.path.exists(file):
-        shutil.copy2(file, out)
-
     parent = os.path.dirname(os.path.abspath(file))
     if not os.path.exists(parent) and create_parent:
         os.makedirs(parent)
+
+    fd, out = tempfile.mkstemp(dir=parent)
+    os.close(fd)
+
+    if copy and os.path.exists(file):
+        shutil.copy2(file, out)
 
     try:
         with open(out, mode, **kwargs) as fp:
@@ -94,8 +94,11 @@ def writer(
                 pass
         raise
 
-    if not copy and os.path.exists(file):
-        shutil.copymode(file, out)
+    if not copy:
+        if os.path.exists(file):
+            shutil.copymode(file, out)
+        else:
+            os.chmod(out, 0o100644)
 
     os.rename(out, file)
 
