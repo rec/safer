@@ -132,6 +132,28 @@ class TestSafer(TestCase):
             in_repo = read_text(doc_safer.README_FILE)
             assert actual == in_repo
 
+    def test_file_perms(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+
+            with safer.writer(filename) as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+            mode = os.stat(filename).st_mode
+            assert mode in (0o100664, 0o100644)
+            new_mode = mode & 0o100770
+
+            os.chmod(filename, new_mode)
+            with safer.writer(filename) as fp:
+                fp.write('bye')
+            assert read_text(filename) == 'bye'
+            assert os.stat(filename).st_mode == new_mode
+
+            with safer.writer(filename, 'a') as fp:
+                fp.write(' there')
+            assert read_text(filename) == 'bye there'
+            assert os.stat(filename).st_mode == new_mode
+
 
 def read_text(filename):
     with open(filename) as fp:

@@ -94,6 +94,9 @@ def writer(
                 pass
         raise
 
+    if not copy and os.path.exists(file):
+        shutil.copymode(file, out)
+
     os.rename(out, file)
 
 
