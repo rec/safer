@@ -1,3 +1,9 @@
+## v0.9.11 - 2020-04-19
+
+* Copy file modes (fix #1)
+* Use tempfile.mkstemp() for tempfiles (fix #3)
+* Better error on opening file descriptor (fix #4)
+
 ## v1.0.0 - 2020-04-17
 
 * Out of things to improve
