@@ -1,14 +1,67 @@
 # -*- coding: utf-8 -*-
 """
-✏️safer: a safer file writer ✏️
+✏️safer: a safer file opener ✏️
 -------------------------------
 
-No more partial writes or corruption! ``safer`` writes a whole file or
-nothing.
+No more partial writes or corruption!
 
-``safer.writer()`` and ``safer.printer()`` are context managers that open a
-file for writing or printing: if an Exception is raised, then the original file
-is left unaltered.
+``safer.open()``
+=================
+
+``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
+built-in ``open()`` except that it leaves the file unchanged on failure.
+
+EXAMPLE
+
+.. code-block:: python
+
+    # dangerous
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is empty or partly written
+
+    # safer
+    with safer.open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception was raised, the file is unchanged.
+
+
+``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
+would, except that it writes to a temporary file in the same directory as
+``filename``.
+
+if ``fp`` is used as a context manager and if an exception is raised, then the
+property ``fp.failed`` is set to ``True``. And when ``fp.close()`` is called,
+the temporary file is moved over ``filename`` *unless* ``fp.failed`` is true.
+
+------------------------------------
+
+``safer.printer()``
+==================
+
+``safer.printer()`` is similar to ``safer.open()`` except it yields a function
+that prints to the open file - it's very convenient for printing text.
+
+Like ``safer.open()``, if an exception is raised during the context manager,
+the changes are discarded and the original file is unchanged
+
+EXAMPLE
+
+.. code-block:: python
+
+    # dangerous
+    with open(file, 'w') as fp:
+        for item in items:
+            print(item, file=fp)
+        # Prints lines until the first exception
+
+    # safer
+    with safer.printer(file) as print:
+        for item in items:
+            print(item)
+        # Either the whole file is written, or nothing
+
+-----------------
 
 Install ``safer`` from the command line with
 `pip <https://pypi.org/project/pip/>`_:
@@ -114,7 +167,23 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
 
     def check_empty_args():
         if kwargs:
-            raise ValueError('Extra arguments to open %s' % kwargs)
+            args = ', '.join('='.join(i) for i in kwargs.items())
+            raise ValueError('Extra arguments to open: ' + args)
+
+    def failure():
+        try:
+            if delete_failures and os.path.exists(temp_file):
+                os.remove(temp_file)
+        except Exception:
+            pass
+
+    def success():
+        if not copy:
+            if os.path.exists(name):
+                shutil.copymode(name, temp_file)
+            else:
+                os.chmod(temp_file, 0o100644)
+        os.rename(temp_file, name)
 
     def wrap(parent):
         def __exit__(self, exc_type, *args):
@@ -122,21 +191,16 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
             return parent.__exit__(self, exc_type, *args)
 
         def close(self):
-            parent.close(self)
+            try:
+                parent.close(self)
+            except Exception:
+                failure()
+                raise
 
             if self.failed:
-                if delete_failures and os.path.exists(temp_file):
-                    try:
-                        os.remove(temp_file)
-                    except Exception:
-                        pass
+                failure()
             else:
-                if not copy:
-                    if os.path.exists(name):
-                        shutil.copymode(name, temp_file)
-                    else:
-                        os.chmod(temp_file, 0o100644)
-                os.rename(temp_file, name)
+                success()
 
         members = {'__exit__': __exit__, 'close': close, 'failed': False}
         return type('Safe' + parent.__name__, (parent,), members)
@@ -156,11 +220,10 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
         raise ValueError('buffer_size=1 only allowed for text makers')
 
     makers[-1] = wrap(makers[-1])
-    raw = makers.pop(0)
 
     closefd = kwargs.pop('closefd', True)
     opener = kwargs.pop('opener', None)
-    stream = raw(temp_file, mode, closefd, opener)
+    stream = makers.pop(0)(temp_file, mode, closefd, opener)
 
     if buffering > 1:
         stream = makers.pop(0)(stream, buffering)

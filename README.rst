@@ -1,12 +1,65 @@
-✏️safer: a safer file writer ✏️
+✏️safer: a safer file opener ✏️
 -------------------------------
 
-No more partial writes or corruption! ``safer`` writes a whole file or
-nothing.
+No more partial writes or corruption!
 
-``safer.writer()`` and ``safer.printer()`` are context managers that open a
-file for writing or printing: if an Exception is raised, then the original file
-is left unaltered.
+``safer.open()``
+=================
+
+``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
+built-in ``open()`` except that it leaves the file unchanged on failure.
+
+EXAMPLE
+
+.. code-block:: python
+
+    # dangerous
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is empty or partly written
+
+    # safer
+    with safer.open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception was raised, the file is unchanged.
+
+
+``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
+would, except that it writes to a temporary file in the same directory as
+``filename``.
+
+if ``fp`` is used as a context manager and if an exception is raised, then the
+property ``fp.failed`` is set to ``True``. And when ``fp.close()`` is called,
+the temporary file is moved over ``filename`` *unless* ``fp.failed`` is true.
+
+------------------------------------
+
+``safer.printer()``
+==================
+
+``safer.printer()`` is similar to ``safer.open()`` except it yields a function
+that prints to the open file - it's very convenient for printing text.
+
+Like ``safer.open()``, if an exception is raised during the context manager,
+the changes are discarded and the original file is unchanged
+
+EXAMPLE
+
+.. code-block:: python
+
+    # dangerous
+    with open(file, 'w') as fp:
+        for item in items:
+            print(item, file=fp)
+        # Prints lines until the first exception
+
+    # safer
+    with safer.printer(file) as print:
+        for item in items:
+            print(item)
+        # Either the whole file is written, or nothing
+
+-----------------
 
 Install ``safer`` from the command line with
 `pip <https://pypi.org/project/pip/>`_:
@@ -16,32 +69,6 @@ Install ``safer`` from the command line with
     pip install safer
 
 Tested on Python 2.7, and 3.4 through 3.8.
-
-EXAMPLES
----------
-
-.. code-block:: python
-
-    # dangerous
-    with open(file, 'w') as fp:
-        json.dump(data, fp)    # If this fails, the file is corrupted
-
-    # safer
-    with safer.open(file, 'w') as fp:
-        json.dump(data, fp)    # If this fails, the file is unaltered
-
-    # dangerous
-    with open(file, 'w') as fp:
-        for item in items:
-            print(item, file=fp)
-        # Prints a partial file if ``items`` raises an exception in iterating
-        # or any ``item.__str__()`` raises an exception
-
-    # safer new code
-    with safer.printer(file) as print:
-        for item in items:
-            print(item)
-        # Either the whole file is written, or nothing
 
 NOTES
 --------

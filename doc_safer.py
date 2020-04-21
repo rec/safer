@@ -29,32 +29,6 @@ def main():
 BODY = """
 {doc}
 
-EXAMPLES
----------
-
-.. code-block:: python
-
-    # dangerous
-    with open(file, 'w') as fp:
-        json.dump(data, fp)    # If this fails, the file is corrupted
-
-    # safer
-    with safer.open(file, 'w') as fp:
-        json.dump(data, fp)    # If this fails, the file is unaltered
-
-    # dangerous
-    with open(file, 'w') as fp:
-        for item in items:
-            print(item, file=fp)
-        # Prints a partial file if ``items`` raises an exception in iterating
-        # or any ``item.__str__()`` raises an exception
-
-    # safer new code
-    with safer.printer(file) as print:
-        for item in items:
-            print(item)
-        # Either the whole file is written, or nothing
-
 NOTES
 --------
 
