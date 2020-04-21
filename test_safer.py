@@ -7,7 +7,14 @@ import safer
 
 
 class TestSafer(TestCase):
-    def test_simple(self):
+    def test_open(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'w') as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+
+    def test_simple_writer(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             with safer.writer(filename) as fp:
@@ -17,7 +24,7 @@ class TestSafer(TestCase):
     def test_no_copy(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
-            with safer.writer(filename, 'a') as fp:
+            with safer.open(filename, 'a') as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
@@ -25,7 +32,7 @@ class TestSafer(TestCase):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'c')
-            with safer.writer(filename, 'a') as fp:
+            with safer.open(filename, 'a') as fp:
                 fp.write('hello')
             assert read_text(filename) == 'chello'
 
@@ -35,7 +42,7 @@ class TestSafer(TestCase):
             write_text(filename, 'hello')
 
             with self.assertRaises(ValueError):
-                with safer.writer(filename) as fp:
+                with safer.open(filename, 'w') as fp:
                     fp.write('GONE')
                     raise ValueError
 
@@ -44,11 +51,11 @@ class TestSafer(TestCase):
     def test_make_parents(self):
         with TemporaryDirectory() as td:
             filename = td + '/foo/test.txt'
-            with self.assertRaises(OSError):
-                with safer.writer(filename):
+            with self.assertRaises(IOError):
+                with safer.open(filename, 'w'):
                     pass
 
-            with safer.writer(filename, make_parents=True) as fp:
+            with safer.open(filename, 'w', make_parents=True) as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
@@ -59,7 +66,7 @@ class TestSafer(TestCase):
             before = set(os.listdir(td))
 
             with self.assertRaises(ValueError):
-                with safer.writer(filename) as fp:
+                with safer.open(filename, 'w') as fp:
                     fp.write('GONE')
                     raise ValueError
             assert read_text(filename) == 'hello'
@@ -68,7 +75,7 @@ class TestSafer(TestCase):
             assert before == after
 
             with self.assertRaises(ValueError):
-                with safer.writer(filename, delete_failures=False) as fp:
+                with safer.open(filename, 'w', delete_failures=False) as fp:
                     fp.write('GONE')
                     raise ValueError
 
@@ -77,7 +84,7 @@ class TestSafer(TestCase):
             assert len(before) + 1 == len(after)
             assert len(after.difference(before)) == 1
 
-            with safer.writer(filename) as fp:
+            with safer.open(filename, 'w') as fp:
                 fp.write('OK!')
                 after = set(os.listdir(td))
                 assert len(before) + 2 == len(after)
@@ -89,11 +96,33 @@ class TestSafer(TestCase):
             assert len(before) + 1 == len(after)
             assert len(after.difference(before)) == 1
 
+    def test_explicit_close(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            write_text(filename, 'hello')
+            assert read_text(filename) == 'hello'
+            before = set(os.listdir(td))
+
+            fp = safer.open(filename, 'w')
+            fp.write('OK!')
+            assert read_text(filename) == 'hello'
+
+            after = set(os.listdir(td))
+            assert len(before) + 1 == len(after)
+            assert len(after.difference(before)) == 1
+
+            fp.close()
+
+            self.assertEqual(read_text(filename), 'OK!')
+            assert read_text(filename) == 'OK!'
+            after = set(os.listdir(td))
+            assert before == after
+
     def test_read(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
             write_text(filename, 'hello')
-            with safer.writer(filename, 'r+') as fp:
+            with safer.open(filename, 'r+') as fp:
                 assert fp.read() == 'hello'
 
     def test_error_with_copy(self):
@@ -102,7 +131,7 @@ class TestSafer(TestCase):
             write_text(filename, 'hello')
 
             with self.assertRaises(ValueError):
-                with safer.writer(filename, 'a') as fp:
+                with safer.open(filename, 'a') as fp:
                     fp.write('GONE')
                     raise ValueError
 
@@ -146,7 +175,7 @@ class TestSafer(TestCase):
 
             write_text(td + '/test2.txt', 'hello')
 
-            with safer.writer(filename) as fp:
+            with safer.open(filename, 'w') as fp:
                 fp.write('hello')
             assert read_text(filename) == 'hello'
             mode = os.stat(filename).st_mode
@@ -154,22 +183,22 @@ class TestSafer(TestCase):
             new_mode = mode & 0o100770
 
             os.chmod(filename, new_mode)
-            with safer.writer(filename) as fp:
+            with safer.open(filename, 'w') as fp:
                 fp.write('bye')
             assert read_text(filename) == 'bye'
             assert os.stat(filename).st_mode == new_mode
 
-            with safer.writer(filename, 'a') as fp:
+            with safer.open(filename, 'a') as fp:
                 fp.write(' there')
             assert read_text(filename) == 'bye there'
             assert os.stat(filename).st_mode == new_mode
 
     def test_int_filename(self):
         with self.assertRaises(IOError) as m:
-            with safer.writer(1) as fp:
+            with safer.open(1, 'w') as fp:
                 fp.write('hello')
 
-        assert m.exception.args[0] == '`file` argument must be a string'
+        assert m.exception.args[0] == '`name` argument must be a string'
 
 
 def read_text(filename):

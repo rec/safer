@@ -15,7 +15,7 @@ def make_doc(print):
         func = getattr(safer, name)
         sig = inspect.signature(func)
         examples[name] = getattr(func, '_examples', '')
-        doc = func.__doc__.rstrip()
+        doc = (func.__doc__ or '').rstrip()
         sigs.append('``safer.{name}{sig}``\n{doc}'.format(**locals()))
 
     print('EXAMPLES')
