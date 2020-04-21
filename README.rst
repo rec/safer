@@ -54,7 +54,7 @@ EXAMPLES
 API call documentation
 -----------------------
 
-``safer.writer(file, mode='w', create_parent=False, delete_failures=True, **kwargs)``
+``safer.writer(file, mode='w', make_parents=False, delete_failures=True, **kwargs)``
 
     A context manager that yields a writable stream returned from open(), but leaves the file unchanged
     if an exception is raised.
@@ -74,7 +74,7 @@ API call documentation
       mode:
         Mode string passed to ``open()``
 
-      create_parent:
+      make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
@@ -83,7 +83,7 @@ API call documentation
       kwargs:
          Keywords passed to ``open()``
 
-``safer.printer(file, mode='w', create_parent=False, delete_failures=True, **kwargs)``
+``safer.printer(file, mode='w', make_parents=False, delete_failures=True, **kwargs)``
 
     A context manager that yields a function that prints to the opened file, but leaves the file unchanged
     if an exception is raised.
@@ -103,7 +103,7 @@ API call documentation
       mode:
         Mode string passed to ``open()``
 
-      create_parent:
+      make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:

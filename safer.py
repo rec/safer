@@ -26,6 +26,7 @@ import functools
 import os
 import shutil
 import tempfile
+
 try:
     from pathlib import Path
 except ImportError:
@@ -36,13 +37,7 @@ __all__ = 'writer', 'printer'
 
 
 @contextlib.contextmanager
-def writer(
-    file,
-    mode='w',
-    create_parent=False,
-    delete_failures=True,
-    **kwargs
-):
+def writer(file, mode='w', make_parents=False, delete_failures=True, **kwargs):
     """
     A context manager that yields {result}, but leaves the file unchanged
     if an exception is raised.
@@ -62,7 +57,7 @@ def writer(
       mode:
         Mode string passed to ``open()``
 
-      create_parent:
+      make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
@@ -81,7 +76,7 @@ def writer(
         raise IOError('`file` argument must be a string')
 
     parent = os.path.dirname(os.path.abspath(file))
-    if not os.path.exists(parent) and create_parent:
+    if not os.path.exists(parent) and make_parents:
         os.makedirs(parent)
 
     fd, out = tempfile.mkstemp(dir=parent)
