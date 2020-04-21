@@ -8,7 +8,7 @@ nothing.
 file for writing or printing: if an Exception is raised, then the original file
 is left unaltered.
 
-Install ``safer`` from the command line using
+Install ``safer`` from the command line with
 `pip <https://pypi.org/project/pip/>`_:
 
 .. code-block:: bash
@@ -20,94 +20,77 @@ Tested on Python 2.7, and 3.4 through 3.8.
 EXAMPLES
 ---------
 
-``safer.writer``
-======================
-
 .. code-block:: python
 
-   # dangerous
-   with open(file, 'w') as fp:
-       json.dump(data, fp)    # If this fails, the file is corrupted
-   
-   # safer
-   with safer.writer(file) as fp:
-       json.dump(data, fp)    # If this fails, the file is unaltered
+    # dangerous
+    with open(file, 'w') as fp:
+        json.dump(data, fp)    # If this fails, the file is corrupted
 
-``safer.printer``
-======================
+    # safer
+    with safer.open(file, 'w') as fp:
+        json.dump(data, fp)    # If this fails, the file is unaltered
 
-.. code-block:: python
+    # dangerous
+    with open(file, 'w') as fp:
+        for item in items:
+            print(item, file=fp)
+        # Prints a partial file if ``items`` raises an exception in iterating
+        # or any ``item.__str__()`` raises an exception
 
-   # dangerous
-   with open(file, 'w') as fp:
-       for item in items:
-           print(item, file=fp)
-       # Prints a partial file if ``items`` raises an exception while iterating
-       # or any ``item.__str__()`` raises an exception
-   
-   # safer
-   with safer.printer(file) as print:
-       for item in items:
-           print(item)
-       # Either the whole file is written, or nothing
+    # safer new code
+    with safer.printer(file) as print:
+        for item in items:
+            print(item)
+        # Either the whole file is written, or nothing
 
-API call documentation
------------------------
+NOTES
+--------
 
-``safer.writer(name, mode='w', buffering=-1, make_parents=False, delete_failures=True, **kwargs)``
+``safer`` adds a property named ``.failed`` with initial value ``False`` to
+writable streams.
 
-    A context manager that yields a writable stream returned from open(), but leaves the file unchanged
-    if an exception is raised.
+If the writable stream is used as a context manager and an exception is raised,
+``.failed`` is set to ``True``.
 
-    It uses an extra temporary file which is renamed over the file only after
-    the context manager exits successfully: this requires as much disk space
-    as the old and new files put together.
+In the stream's ``.close()`` method, if ``.failed`` is false then the temporary
+file is moved over the original file, successfully completing the write.
 
-    If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
-    the original file will be copied to the temporary file before writing
-    starts.
+If both ``.failed`` and ``delete_failures`` are true then the temporary file is
+deleted.
 
-    Arguments:
-      name:
-        Path to the file to be opened
+If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
+the original file will be copied to the temporary file before writing
+starts.
 
-      mode:
-        Mode string passed to ``open()``
+Note that ``safer`` uses an extra temporary file which is renamed over the file
+only after the stream closes without failing, which uses as much disk space as
+the old and new files put together.
 
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
+FUNCTIONS
+---------
 
-      delete_failures:
-        If true, the temporary file is deleted if there is an exception
+ARGUMENTS
 
-      kwargs:
-         Keywords passed to ``open()``
+  make_parents:
+    If true, create the parent directory of the file if it doesn't exist
 
-``safer.printer(name, mode='w', buffering=-1, make_parents=False, delete_failures=True, **kwargs)``
+  delete_failures:
+    If true, the temporary file is deleted if there is an exception
 
-    A context manager that yields a function that prints to the opened file, but leaves the file unchanged
-    if an exception is raised.
+The remaining arguments are the same as for built-in ``open()``.
 
-    It uses an extra temporary file which is renamed over the file only after
-    the context manager exits successfully: this requires as much disk space
-    as the old and new files put together.
+``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+    
+    A drop-in replacement for ``open()`` which returns a stream which only
+    overwrites the original file when close() is called, and only if there was no
+    failure
 
-    If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
-    the original file will be copied to the temporary file before writing
-    starts.
+``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+    
+    A context manager that yields a function that prints to the opened file,
+    only overwriting the original file at the exit of the context,
+    and only if there was no exception thrown
 
-    Arguments:
-      name:
-        Path to the file to be opened
-
-      mode:
-        Mode string passed to ``open()``
-
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
-
-      delete_failures:
-        If true, the temporary file is deleted if there is an exception
-
-      kwargs:
-         Keywords passed to ``open()``
+``safer.writer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+    
+    (DEPRECATED) A shorthand for ``open(file, 'w')``

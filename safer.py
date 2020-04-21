@@ -10,7 +10,7 @@ nothing.
 file for writing or printing: if an Exception is raised, then the original file
 is left unaltered.
 
-Install ``safer`` from the command line using
+Install ``safer`` from the command line with
 `pip <https://pypi.org/project/pip/>`_:
 
 .. code-block:: bash
@@ -30,9 +30,8 @@ import shutil
 import tempfile
 
 __version__ = '1.0.1'
-__all__ = 'writer', 'printer'
+__all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
-
 
 if platform.python_version() < '3':
     Path = ()
@@ -70,62 +69,21 @@ else:
         return _open(name, mode, buffering, make_parents, delete_failures, a)
 
 
+@functools.wraps(open)
 @contextlib.contextmanager
-def writer(
-    name,
-    mode='w',
-    buffering=-1,
-    make_parents=False,
-    delete_failures=True,
-    **kwargs
-):
-    """
-    A context manager that yields {result}, but leaves the file unchanged
-    if an exception is raised.
-
-    It uses an extra temporary file which is renamed over the file only after
-    the context manager exits successfully: this requires as much disk space
-    as the old and new files put together.
-
-    If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
-    the original file will be copied to the temporary file before writing
-    starts.
-
-    Arguments:
-      name:
-        Path to the file to be opened
-
-      mode:
-        Mode string passed to ``open()``
-
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
-
-      delete_failures:
-        If true, the temporary file is deleted if there is an exception
-
-      kwargs:
-         Keywords passed to ``open()``
-    """
+def printer(name, mode='w', *args, **kwargs):
     if 'r' in mode and '+' not in mode:
         raise IOError('File not open for writing')
-    w = open(
-        name,
-        mode,
-        buffering,
-        make_parents=make_parents,
-        delete_failures=delete_failures,
-        **kwargs
-    )
-    with w as fp:
-        yield fp
 
-
-@functools.wraps(writer)
-@contextlib.contextmanager
-def printer(*args, **kwargs):
-    with writer(*args, **kwargs) as fp:
+    with open(name, mode, *args, **kwargs) as fp:
         yield functools.partial(print, file=fp)
+
+
+@functools.wraps(open)
+def writer(name, mode='w', *args, **kwargs):
+    if 'r' in mode and '+' not in mode:
+        raise IOError('File not open for writing')
+    return open(name, mode, *args, **kwargs)
 
 
 def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
@@ -213,34 +171,57 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     return stream
 
 
-printer.__doc__ = printer.__doc__.format(
-    result='a function that prints to the opened file'
-)
-writer.__doc__ = writer.__doc__.format(
-    result='a writable stream returned from open()'
-)
+_DOC_COMMON = """
 
-writer._examples = """\
-# dangerous
-with open(file, 'w') as fp:
-    json.dump(data, fp)    # If this fails, the file is corrupted
+If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
+the original file will be copied to the temporary file before writing
+starts.
 
-# safer
-with safer.writer(file) as fp:
-    json.dump(data, fp)    # If this fails, the file is unaltered
+Note that ``safer`` uses an extra temporary file which is renamed over the file
+only after the stream closes without failing, which uses as much disk space as
+the old and new files put together.
 """
 
-printer._examples = """\
-# dangerous
-with open(file, 'w') as fp:
-    for item in items:
-        print(item, file=fp)
-    # Prints a partial file if ``items`` raises an exception while iterating
-    # or any ``item.__str__()`` raises an exception
+_DOC_ARGS = """
+ARGUMENTS
 
-# safer
-with safer.printer(file) as print:
-    for item in items:
-        print(item)
-    # Either the whole file is written, or nothing
+  make_parents:
+    If true, create the parent directory of the file if it doesn't exist
+
+  delete_failures:
+    If true, the temporary file is deleted if there is an exception
+
+The remaining arguments are the same as for built-in ``open()``.
 """
+
+_DOC_FAILURE = """
+
+``safer`` adds a property named ``.failed`` with initial value ``False`` to
+writable streams.
+
+If the writable stream is used as a context manager and an exception is raised,
+``.failed`` is set to ``True``.
+
+In the stream's ``.close()`` method, if ``.failed`` is false then the temporary
+file is moved over the original file, successfully completing the write.
+
+If both ``.failed`` and ``delete_failures`` are true then the temporary file is
+deleted.
+"""
+
+_DOC_FUNC = {
+    'open': """
+A drop-in replacement for ``open()`` which returns a stream which only
+overwrites the original file when close() is called, and only if there was no
+failure""",
+    'writer': """
+(DEPRECATED) A shorthand for ``open(file, 'w')``""",
+    'printer': """
+A context manager that yields a function that prints to the opened file,
+only overwriting the original file at the exit of the context,
+and only if there was no exception thrown""",
+}
+
+open.__doc__ = _DOC_FUNC['open'] + _DOC_FAILURE + _DOC_COMMON + _DOC_ARGS
+writer.__doc__ = _DOC_FUNC['writer'] + _DOC_FAILURE + _DOC_COMMON + _DOC_ARGS
+printer.__doc__ = _DOC_FUNC['printer'] + _DOC_COMMON + _DOC_ARGS
