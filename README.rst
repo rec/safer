@@ -3,11 +3,17 @@
 
 No more partial writes or corruption!
 
+Install ``safer`` from the command line with `pip
+<https://pypi.org/project/pip/>`_: ``pip install safer``.
+
+Tested on Python 2.7, and 3.4 through 3.8.
+
 ``safer.open()``
 =================
 
 ``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
-built-in ``open()`` except that it leaves the file unchanged on failure.
+built-in ``open()`` except that ``safer.open()`` leaves the original file
+unchanged on failure.
 
 EXAMPLE
 
@@ -21,16 +27,16 @@ EXAMPLE
     # safer
     with safer.open(filename, 'w') as fp:
         json.dump(data, fp)
-        # If an exception was raised, the file is unchanged.
+        # If an exception is raised, the file is unchanged.
 
 
 ``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
-would, except that it writes to a temporary file in the same directory as
-``filename``.
+would, except that ``fp`` writes to a temporary file in the same directory.
 
-if ``fp`` is used as a context manager and if an exception is raised, then the
-property ``fp.failed`` is set to ``True``. And when ``fp.close()`` is called,
-the temporary file is moved over ``filename`` *unless* ``fp.failed`` is true.
+If ``fp`` is used as a context manager and an exception is raised, then
+``fp.failed`` is automatically set to ``True``. And when ``fp.close()`` is
+called, the temporary file is moved over ``filename`` *unless* ``fp.failed`` is
+true.
 
 ------------------------------------
 
@@ -40,8 +46,8 @@ the temporary file is moved over ``filename`` *unless* ``fp.failed`` is true.
 ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
 that prints to the open file - it's very convenient for printing text.
 
-Like ``safer.open()``, if an exception is raised during the context manager,
-the changes are discarded and the original file is unchanged
+Like ``safer.open()``, if an exception is raised within the context manager,
+the original file is left unchanged.
 
 EXAMPLE
 
@@ -58,17 +64,6 @@ EXAMPLE
         for item in items:
             print(item)
         # Either the whole file is written, or nothing
-
------------------
-
-Install ``safer`` from the command line with
-`pip <https://pypi.org/project/pip/>`_:
-
-.. code-block:: bash
-
-    pip install safer
-
-Tested on Python 2.7, and 3.4 through 3.8.
 
 NOTES
 --------

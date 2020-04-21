@@ -159,6 +159,11 @@ class TestSafer(TestCase):
                     pass
             assert 'not open' in m.exception.args[0].lower()
 
+            with self.assertRaises(ValueError) as m:
+                with safer.printer(filename, 'wb'):
+                    pass
+            assert 'binary mode' in m.exception.args[0].lower()
+
     @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
     def test_make_doc(self):
         with TemporaryDirectory() as td:
