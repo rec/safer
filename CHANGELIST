@@ -1,4 +1,4 @@
-## v0.9.11 - 2020-04-19
+## v1.0.1 - 2020-04-19
 
 * Copy file modes (fix #1)
 * Use tempfile.mkstemp() for tempfiles (fix #3)
