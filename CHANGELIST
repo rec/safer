@@ -1,3 +1,7 @@
+## v2.0.1 - 2020-04-22
+
+# Add a '=' to a title underline in README.rst
+
 ## v2.0.0 - 2020-04-21
 
 * New safer.open()
