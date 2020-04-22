@@ -78,6 +78,7 @@ import platform
 import shutil
 import tempfile
 import traceback
+import warnings
 
 __version__ = '1.0.1'
 __all__ = 'open', 'printer', 'writer'
@@ -134,7 +135,7 @@ def printer(name, mode='w', *args, **kwargs):
 
 @functools.wraps(open)
 def writer(name, mode='w', *args, **kwargs):
-    # DEPRECATED: use safer.open()
+    warnings.warn('Use safer.open() instead', DeprecationWarning)
     if 'r' in mode and '+' not in mode:
         raise IOError('File not open for writing')
     return open(name, mode, *args, **kwargs)

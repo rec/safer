@@ -4,6 +4,7 @@ import doc_safer
 import os
 import platform
 import safer
+import warnings
 
 
 class TestSafer(TestCase):
@@ -15,11 +16,13 @@ class TestSafer(TestCase):
             assert read_text(filename) == 'hello'
 
     def test_simple_writer(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.writer(filename) as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            with TemporaryDirectory() as td:
+                filename = td + '/test.txt'
+                with safer.writer(filename) as fp:
+                    fp.write('hello')
+                assert read_text(filename) == 'hello'
 
     def test_no_copy(self):
         with TemporaryDirectory() as td:
