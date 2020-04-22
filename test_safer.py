@@ -245,6 +245,28 @@ class TestSafer(TestCase):
             with safer.open(filename, 'rb') as fp:
                 assert fp.read() == b'hello there'
 
+    def test_all_modes(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
+
+            for m in modes:
+                with safer.open(filename, m):
+                    pass
+                with safer.open(filename, m + 'b'):
+                    pass
+
+    def test_mode_x(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'x') as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+
+            with self.assertRaises(safer.FileExistsError):
+                with safer.open(filename, 'x') as fp:
+                    fp.write('mode x')
+
 
 def read_text(filename):
     with open(filename) as fp:

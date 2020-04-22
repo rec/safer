@@ -84,6 +84,7 @@ __version__ = '1.0.1'
 __all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
 IS_PY2 = platform.python_version() < '3'
+FileExistsError = __builtins__.get('FileExistsError', IOError)
 
 if IS_PY2:
     # See https://docs.python.org/2/library/functions.html#open
@@ -172,6 +173,11 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if not isinstance(name, str):
         type_name = type(name).__name__
         raise TypeError('`name` argument must be string, not ' + type_name)
+
+    if 'x' in mode:
+        if os.path.exists(name):
+            raise FileExistsError("File exists: '%s'" % name)
+        mode = mode.replace('x', 'w')
 
     copy = '+' in mode or 'a' in mode
     read = 'r' in mode and not copy
