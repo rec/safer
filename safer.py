@@ -83,10 +83,12 @@ import warnings
 __version__ = '1.0.1'
 __all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
+IS_PY2 = platform.python_version() < '3'
 
-if platform.python_version() < '3':
-    Path = ()
 
+if IS_PY2:
+
+    # See https://docs.python.org/2/library/functions.html#open
     def open(
         name, mode='r', buffering=-1, make_parents=False, delete_failures=True
     ):
@@ -94,10 +96,8 @@ if platform.python_version() < '3':
 
 
 else:
-    from pathlib import Path
 
-    file = None
-
+    # See https://docs.python.org/3/library/functions.html#open
     def open(
         name,
         mode='r',
@@ -110,14 +110,24 @@ else:
         make_parents=False,
         delete_failures=True,
     ):
-        a = {
-            'encoding': encoding,
-            'errors': errors,
-            'newline': newline,
-            'closefd': closefd,
-            'opener': opener,
-        }
-        return _open(name, mode, buffering, make_parents, delete_failures, a)
+        if not closefd:
+            raise ValueError('Cannot use closefd=False with file name')
+
+        arg = {'opener': opener}
+        if 'b' not in mode:
+            arg.update(encoding=encoding, errors=errors, newline=newline)
+        elif newline:
+            raise ValueError('binary mode doesn\'t take a newline argument')
+        elif encoding:
+            raise ValueError('binary mode doesn\'t take an encoding argument')
+        elif errors:
+            raise ValueError('binary mode doesn\'t take an errors argument')
+
+        from pathlib import Path
+
+        if isinstance(name, Path):
+            name = str(name)
+        return _open(name, mode, buffering, make_parents, delete_failures, arg)
 
 
 @functools.wraps(open)
@@ -142,6 +152,10 @@ def writer(name, mode='w', *args, **kwargs):
 
 
 def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
+    if not isinstance(name, str):
+        type_name = type(name).__name__
+        raise TypeError('`name` argument must be string, not ' + type_name)
+
     copy = '+' in mode or 'a' in mode
     read = 'r' in mode and not copy
 
@@ -151,9 +165,8 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
-    name = str(name) if isinstance(name, Path) else name
-    if not isinstance(name, str):
-        raise IOError('`name` argument must be a string')
+    if 'b' in mode and buffering == 1:
+        raise ValueError('buffering = 1 only allowed for text streams')
 
     parent = os.path.dirname(os.path.abspath(name))
     if not os.path.exists(parent):
@@ -167,7 +180,7 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
 
-    def safer_class(parent):
+    def wrap_class(parent):
         def __exit__(self, *args):
             self.failed = bool(args[0])
             return parent.__exit__(self, *args)
@@ -185,7 +198,8 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
                 success()
 
         members = {'__exit__': __exit__, 'close': close}
-        return type('Safe' + parent.__name__, (parent,), members)
+        class_name = 'SaferWrapped' + parent.__name__
+        return type(class_name, (parent,), members)
 
     def success():
         if not copy:
@@ -202,37 +216,27 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
         except Exception:
             traceback.print_exc()
 
-    def check_extra_args():
-        if kwargs:
-            args = ', '.join('='.join(i) for i in kwargs.items())
-            raise ValueError('Extra arguments to open: ' + args)
-
-    if file:
-        check_extra_args()
-        return safer_class(file)(temp_file, mode, buffering)
+    if IS_PY2:
+        maker = wrap_class(file)  # noqa: F821: undefined name 'file' (py3)
+        return maker(temp_file, mode, buffering)
 
     makers = [io.FileIO]
     if buffering > 1:
-        buf = io.BufferedRandom if '+' in mode else io.BufferedWriter
-        makers.append(buf)
-
+        makers.append(io.BufferedRandom if '+' in mode else io.BufferedWriter)
     if 'b' not in mode:
         makers.append(io.TextIOWrapper)
-    elif buffering == 1:
-        raise ValueError('buffer_size=1 only allowed for text makers')
 
-    makers[-1] = safer_class(makers[-1])
+    makers[-1] = wrap_class(makers[-1])
 
-    closefd = kwargs.pop('closefd')
-    opener = kwargs.pop('opener')
-    stream = makers.pop(0)(temp_file, mode, closefd, opener)
+    stream = makers.pop(0)(temp_file, mode, opener=kwargs.pop('opener', None))
 
     if buffering > 1:
         stream = makers.pop(0)(stream, buffering)
-    if makers:
-        return makers.pop(0)(stream, **kwargs)
 
-    check_extra_args()
+    if makers:
+        line_buffering = buffering == 1
+        stream = makers.pop(0)(stream, line_buffering=line_buffering, **kwargs)
+
     return stream
 
 

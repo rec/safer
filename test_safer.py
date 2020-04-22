@@ -203,18 +203,47 @@ class TestSafer(TestCase):
             assert os.stat(filename).st_mode == new_mode
 
     def test_int_filename(self):
-        with self.assertRaises(IOError) as m:
+        with self.assertRaises(TypeError) as m:
             with safer.open(1, 'w') as fp:
                 fp.write('hello')
 
-        assert m.exception.args[0] == '`name` argument must be a string'
+        assert m.exception.args[0] == '`name` argument must be string, not int'
 
-    @skipIf(platform.python_version() < '3', 'Needs Python 3')
+    @skipIf(safer.IS_PY2, 'Needs Python 3')
     def test_help(self):
         for name in safer.__all__:
             func = getattr(safer, name)
             value = pydoc.render_doc(func, title='%s')
             assert value.startswith('function %s in module safer' % name)
+
+    def test_line_buffering(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with self.assertRaises(ValueError) as m:
+                safer.open(filename, 'wb', buffering=1)
+            msg = 'buffering = 1 only allowed for text streams'
+            assert m.exception.args[0] == msg
+
+            with safer.printer(filename, buffering=1) as print:
+                print('foo')
+                print('b', end='')
+                print('ar')
+            assert read_text(filename) == 'foo\nbar\n'
+
+    @skipIf(safer.IS_PY2, 'Needs Python 3')
+    def test_binary(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'wb') as fp:
+                fp.write(b'hello')
+                fp.write(b' there')
+                with self.assertRaises(TypeError):
+                    fp.write('hello')
+
+            with open(filename, 'rb') as fp:
+                assert fp.read() == b'hello there'
+            with safer.open(filename, 'rb') as fp:
+                assert fp.read() == b'hello there'
 
 
 def read_text(filename):
