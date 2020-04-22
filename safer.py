@@ -43,7 +43,7 @@ is called, the temporary file is moved over ``filename`` *unless*
 ------------------------------------
 
 ``safer.printer()``
-==================
+===================
 
 ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
 that prints to the open file - it's very convenient for printing text.
