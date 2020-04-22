@@ -3,6 +3,7 @@ from unittest import TestCase, skipIf
 import doc_safer
 import os
 import platform
+import pydoc
 import safer
 import warnings
 
@@ -207,6 +208,13 @@ class TestSafer(TestCase):
                 fp.write('hello')
 
         assert m.exception.args[0] == '`name` argument must be a string'
+
+    @skipIf(platform.python_version() < '3', 'Needs Python 3')
+    def test_help(self):
+        for name in safer.__all__:
+            func = getattr(safer, name)
+            value = pydoc.render_doc(func, title='%s')
+            assert value.startswith('function %s in module safer' % name)
 
 
 def read_text(filename):

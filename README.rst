@@ -68,24 +68,21 @@ EXAMPLE
 NOTES
 --------
 
-``safer`` adds a property named ``.failed`` with initial value ``False`` to
-writable streams.
+If a stream ``fp`` return from ``safer.open()`` is used as a context manager
+and an exception is raised, the property ``fp.failed`` is set to ``True``.
 
-If the writable stream is used as a context manager and an exception is raised,
-``.failed`` is set to ``True``.
-
-In the stream's ``.close()`` method, if ``.failed`` is false then the temporary
+In the method ``fp.close()``, if ``fp.failed`` is *not* set, then the temporary
 file is moved over the original file, successfully completing the write.
 
-If both ``.failed`` and ``delete_failures`` are true then the temporary file is
-deleted.
+If ``fp.failed`` is true, then if ``delete_failures`` is true, the temporary
+file is deleted.
 
-If ``mode`` contains either ``'a'`` (append), or ``'+'`` (update), then
-the original file will be copied to the temporary file before writing
+If the ``mode`` argument contains either ``'a'`` (append), or ``'+'`` (update),
+then the original file will be copied to the temporary file before writing
 starts.
 
 Note that ``safer`` uses an extra temporary file which is renamed over the file
-only after the stream closes without failing, which uses as much disk space as
+only after the stream closes without failing.  This uses as much disk space as
 the old and new files put together.
 
 FUNCTIONS
