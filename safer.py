@@ -36,9 +36,9 @@ EXAMPLE
 would, except that ``fp`` writes to a temporary file in the same directory.
 
 If ``fp`` is used as a context manager and an exception is raised, then
-``fp.failed`` is automatically set to ``True``. And when ``fp.close()`` is
-called, the temporary file is moved over ``filename`` *unless* ``fp.failed`` is
-true.
+``fp.safer_failed`` is automatically set to ``True``. And when ``fp.close()``
+is called, the temporary file is moved over ``filename`` *unless*
+``fp.safer_failed`` is true.
 
 ------------------------------------
 
@@ -85,17 +85,32 @@ __all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
 IS_PY2 = platform.python_version() < '3'
 
-
 if IS_PY2:
-
     # See https://docs.python.org/2/library/functions.html#open
     def open(
         name, mode='r', buffering=-1, make_parents=False, delete_failures=True
     ):
         return _open(name, mode, buffering, make_parents, delete_failures, {})
 
+    def lru_cache():
+        def maker(fn):
+            cache = {}
+
+            @functools.wraps(fn)
+            def wrapped(parent):
+                cached = cache.get(parent)
+                if cached is None:
+                    cached = fn(parent)
+                    cache[parent] = cached
+                return cached
+
+            return wrapped
+
+        return maker
+
 
 else:
+    from functools import lru_cache
 
     # See https://docs.python.org/3/library/functions.html#open
     def open(
@@ -146,8 +161,10 @@ def printer(name, mode='w', *args, **kwargs):
 @functools.wraps(open)
 def writer(name, mode='w', *args, **kwargs):
     warnings.warn('Use safer.open() instead', DeprecationWarning)
+
     if 'r' in mode and '+' not in mode:
         raise IOError('File not open for writing')
+
     return open(name, mode, *args, **kwargs)
 
 
@@ -180,64 +197,76 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
 
-    def wrap_class(parent):
+    if IS_PY2:
+        maker = _wrap_class(file)  # noqa: F821: undefined name 'file' (py3)
+        fp = maker(temp_file, mode, buffering)
+
+    else:
+        makers = [io.FileIO]
+        if buffering > 1:
+            if '+' in mode:
+                makers.append(io.BufferedRandom)
+            else:
+                makers.append(io.BufferedWriter)
+        if 'b' not in mode:
+            makers.append(io.TextIOWrapper)
+
+        makers[-1] = _wrap_class(makers[-1])
+
+        opener = kwargs.pop('opener', None)
+        fp = makers.pop(0)(temp_file, mode, opener=opener)
+
+        if buffering > 1:
+            fp = makers.pop(0)(fp, buffering)
+
+        if makers:
+            line_buffering = buffering == 1
+            fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
+
+    def safer_close(failed):
+        try:
+            if failed:
+                if delete_failures and os.path.exists(temp_file):
+                    os.remove(temp_file)
+            else:
+                if not copy:
+                    if os.path.exists(name):
+                        shutil.copymode(name, temp_file)
+                    else:
+                        os.chmod(temp_file, 0o100644)
+                os.rename(temp_file, name)
+        except Exception:
+            traceback.print_exc()
+
+    fp.safer_close = safer_close
+    return fp
+
+
+@lru_cache()
+def _wrap_class(parent):
+    def members():
         def __exit__(self, *args):
-            self.failed = bool(args[0])
+            self.safer_failed = bool(args[0])
             return parent.__exit__(self, *args)
 
         def close(self):
             try:
                 parent.close(self)
             except Exception:
-                failure()
+                self.safer_close(True)
                 raise
 
-            if getattr(self, 'failed', False):
-                failure()
-            else:
-                success()
+            self.safer_close(self.safer_failed)
 
-        members = {'__exit__': __exit__, 'close': close}
-        class_name = 'SaferWrapped' + parent.__name__
-        return type(class_name, (parent,), members)
+        safer_failed = False
+        return locals()
 
-    def success():
-        if not copy:
-            if os.path.exists(name):
-                shutil.copymode(name, temp_file)
-            else:
-                os.chmod(temp_file, 0o100644)
-        os.rename(temp_file, name)
+    class_name = 'SaferWrapped' + parent.__name__
+    return type(class_name, (parent,), members())
 
-    def failure():
-        try:
-            if delete_failures and os.path.exists(temp_file):
-                os.remove(temp_file)
-        except Exception:
-            traceback.print_exc()
 
-    if IS_PY2:
-        maker = wrap_class(file)  # noqa: F821: undefined name 'file' (py3)
-        return maker(temp_file, mode, buffering)
-
-    makers = [io.FileIO]
-    if buffering > 1:
-        makers.append(io.BufferedRandom if '+' in mode else io.BufferedWriter)
-    if 'b' not in mode:
-        makers.append(io.TextIOWrapper)
-
-    makers[-1] = wrap_class(makers[-1])
-
-    stream = makers.pop(0)(temp_file, mode, opener=kwargs.pop('opener', None))
-
-    if buffering > 1:
-        stream = makers.pop(0)(stream, buffering)
-
-    if makers:
-        line_buffering = buffering == 1
-        stream = makers.pop(0)(stream, line_buffering=line_buffering, **kwargs)
-
-    return stream
+if not IS_PY2:
+    _wrap_class = functools.lru_cache()(_wrap_class)
 
 
 _DOC_COMMON = """
@@ -266,13 +295,15 @@ The remaining arguments are the same as for built-in ``open()``.
 _DOC_FAILURE = """
 
 If a stream ``fp`` return from ``safer.open()`` is used as a context manager
-and an exception is raised, the property ``fp.failed`` is set to ``True``.
+and an exception is raised, the property ``fp.safer_failed`` is set to
+``True``.
 
-In the method ``fp.close()``, if ``fp.failed`` is *not* set, then the temporary
-file is moved over the original file, successfully completing the write.
+In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+temporary file is moved over the original file, successfully completing the
+write.
 
-If ``fp.failed`` is true, then if ``delete_failures`` is true, the temporary
-file is deleted.
+If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+temporary file is deleted.
 """
 
 _DOC_FUNC = {

@@ -34,9 +34,9 @@ EXAMPLE
 would, except that ``fp`` writes to a temporary file in the same directory.
 
 If ``fp`` is used as a context manager and an exception is raised, then
-``fp.failed`` is automatically set to ``True``. And when ``fp.close()`` is
-called, the temporary file is moved over ``filename`` *unless* ``fp.failed`` is
-true.
+``fp.safer_failed`` is automatically set to ``True``. And when ``fp.close()``
+is called, the temporary file is moved over ``filename`` *unless*
+``fp.safer_failed`` is true.
 
 ------------------------------------
 
@@ -69,13 +69,15 @@ NOTES
 --------
 
 If a stream ``fp`` return from ``safer.open()`` is used as a context manager
-and an exception is raised, the property ``fp.failed`` is set to ``True``.
+and an exception is raised, the property ``fp.safer_failed`` is set to
+``True``.
 
-In the method ``fp.close()``, if ``fp.failed`` is *not* set, then the temporary
-file is moved over the original file, successfully completing the write.
+In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+temporary file is moved over the original file, successfully completing the
+write.
 
-If ``fp.failed`` is true, then if ``delete_failures`` is true, the temporary
-file is deleted.
+If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+temporary file is deleted.
 
 If the ``mode`` argument contains either ``'a'`` (append), or ``'+'`` (update),
 then the original file will be copied to the temporary file before writing
