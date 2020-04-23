@@ -93,26 +93,8 @@ if IS_PY2:
     ):
         return _open(name, mode, buffering, make_parents, delete_failures, {})
 
-    def lru_cache():
-        def maker(fn):
-            cache = {}
-
-            @functools.wraps(fn)
-            def wrapped(parent):
-                cached = cache.get(parent)
-                if cached is None:
-                    cached = fn(parent)
-                    cache[parent] = cached
-                return cached
-
-            return wrapped
-
-        return maker
-
 
 else:
-    from functools import lru_cache
-
     # See https://docs.python.org/3/library/functions.html#open
     def open(
         name,
@@ -248,32 +230,33 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     return fp
 
 
-@lru_cache()
 def _wrap_class(parent):
-    def members():
-        def __exit__(self, *args):
-            self.safer_failed = bool(args[0])
-            return parent.__exit__(self, *args)
+    Class = _WRAP_CLASS.get(parent)
+    if not Class:
 
-        def close(self):
-            try:
-                parent.close(self)
-            except Exception:
-                self.safer_close(True)
-                raise
+        class Class(parent):
+            def __exit__(self, *args):
+                self.safer_failed = bool(args[0])
+                return parent.__exit__(self, *args)
 
-            self.safer_close(self.safer_failed)
+            def close(self):
+                try:
+                    parent.close(self)
+                except Exception:
+                    self.safer_close(True)
+                    raise
 
-        safer_failed = False
-        return locals()
+                self.safer_close(self.safer_failed)
 
-    class_name = 'SaferWrapped' + parent.__name__
-    return type(class_name, (parent,), members())
+            safer_failed = False
+
+        Class.__name__ = 'Safer' + parent.__name__
+        _WRAP_CLASS[parent] = Class
+
+    return Class
 
 
-if not IS_PY2:
-    _wrap_class = functools.lru_cache()(_wrap_class)
-
+_WRAP_CLASS = {}
 
 _DOC_COMMON = """
 
