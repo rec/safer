@@ -80,7 +80,7 @@ import tempfile
 import traceback
 import warnings
 
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 __all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
 IS_PY2 = platform.python_version() < '3'
