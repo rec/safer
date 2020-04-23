@@ -161,6 +161,10 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
             raise FileExistsError("File exists: '%s'" % name)
         mode = mode.replace('x', 'w')
 
+    if 'b' in mode and 't' in mode:
+        raise ValueError('Inconsistent mode ' + mode)
+    mode = mode.replace('t', '')
+
     copy = '+' in mode or 'a' in mode
     read = 'r' in mode and not copy
 

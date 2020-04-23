@@ -267,6 +267,17 @@ class TestSafer(TestCase):
                 with safer.open(filename, 'x') as fp:
                     fp.write('mode x')
 
+    def test_mode_t(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'wt') as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+
+            with self.assertRaises(ValueError) as m:
+                safer.open(filename, 'bt')
+            assert m.exception.args[0] == 'Inconsistent mode bt'
+
 
 def read_text(filename):
     with open(filename) as fp:
