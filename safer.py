@@ -8,7 +8,8 @@ No more partial writes or corruption!
 Install `safer` from the command line with `pip
 <https://pypi.org/project/pip/>`_: `pip install safer`.
 
-Tested on Python 2.7, and 3.4 through 3.8.
+Tested on Python 3.4 and 3.8
+For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 `safer.open()`
 =================
@@ -69,12 +70,10 @@ EXAMPLE
 
 """
 
-from __future__ import print_function
 import contextlib
 import functools
 import io
 import os
-import platform
 import shutil
 import tempfile
 import traceback
@@ -83,75 +82,38 @@ import warnings
 __version__ = '2.0.5'
 __all__ = 'open', 'printer', 'writer'
 _raw_open = __builtins__['open']
-IS_PY2 = platform.python_version() < '3'
-FileExistsError = __builtins__.get('FileExistsError', IOError)
-
-if IS_PY2:
-    # See https://docs.python.org/2/library/functions.html#open
-    def open(
-        name, mode='r', buffering=-1, make_parents=False, delete_failures=True
-    ):
-        return _open(name, mode, buffering, make_parents, delete_failures, {})
 
 
-else:
-    # See https://docs.python.org/3/library/functions.html#open
-    def open(
-        name,
-        mode='r',
-        buffering=-1,
-        encoding=None,
-        errors=None,
-        newline=None,
-        closefd=True,
-        opener=None,
-        make_parents=False,
-        delete_failures=True,
-    ):
-        if not closefd:
-            raise ValueError('Cannot use closefd=False with file name')
+# See https://docs.python.org/3/library/functions.html#open
+def open(
+    name,
+    mode='r',
+    buffering=-1,
+    encoding=None,
+    errors=None,
+    newline=None,
+    closefd=True,
+    opener=None,
+    make_parents=False,
+    delete_failures=True,
+):
+    if not closefd:
+        raise ValueError('Cannot use closefd=False with file name')
 
-        arg = {'opener': opener}
-        if 'b' not in mode:
-            arg.update(encoding=encoding, errors=errors, newline=newline)
-        elif newline:
-            raise ValueError('binary mode doesn\'t take a newline argument')
-        elif encoding:
-            raise ValueError('binary mode doesn\'t take an encoding argument')
-        elif errors:
-            raise ValueError('binary mode doesn\'t take an errors argument')
+    kwargs = {'opener': opener}
+    if 'b' not in mode:
+        kwargs.update(encoding=encoding, errors=errors, newline=newline)
+    elif newline:
+        raise ValueError('binary mode doesn\'t take a newline argument')
+    elif encoding:
+        raise ValueError('binary mode doesn\'t take an encoding argument')
+    elif errors:
+        raise ValueError('binary mode doesn\'t take an errors argument')
 
-        from pathlib import Path
+    from pathlib import Path
 
-        if isinstance(name, Path):
-            name = str(name)
-        return _open(name, mode, buffering, make_parents, delete_failures, arg)
-
-
-@functools.wraps(open)
-@contextlib.contextmanager
-def printer(name, mode='w', *args, **kwargs):
-    if 'r' in mode and '+' not in mode:
-        raise IOError('File not open for writing')
-
-    if 'b' in mode:
-        raise ValueError('Cannot print to a file open in binary mode')
-
-    with open(name, mode, *args, **kwargs) as fp:
-        yield functools.partial(print, file=fp)
-
-
-@functools.wraps(open)
-def writer(name, mode='w', *args, **kwargs):
-    warnings.warn('Use safer.open() instead', DeprecationWarning)
-
-    if 'r' in mode and '+' not in mode:
-        raise IOError('File not open for writing')
-
-    return open(name, mode, *args, **kwargs)
-
-
-def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
+    if isinstance(name, Path):
+        name = str(name)
     if not isinstance(name, str):
         type_name = type(name).__name__
         raise TypeError('`name` argument must be string, not ' + type_name)
@@ -190,31 +152,26 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
 
-    if IS_PY2:
-        maker = _wrap_class(file)  # noqa: F821: undefined name 'file' (py3)
-        fp = maker(temp_file, mode, buffering)
+    makers = [io.FileIO]
+    if buffering > 1:
+        if '+' in mode:
+            makers.append(io.BufferedRandom)
+        else:
+            makers.append(io.BufferedWriter)
+    if 'b' not in mode:
+        makers.append(io.TextIOWrapper)
 
-    else:
-        makers = [io.FileIO]
-        if buffering > 1:
-            if '+' in mode:
-                makers.append(io.BufferedRandom)
-            else:
-                makers.append(io.BufferedWriter)
-        if 'b' not in mode:
-            makers.append(io.TextIOWrapper)
+    makers[-1] = _wrap_class(makers[-1])
 
-        makers[-1] = _wrap_class(makers[-1])
+    opener = kwargs.pop('opener', None)
+    fp = makers.pop(0)(temp_file, mode, opener=opener)
 
-        opener = kwargs.pop('opener', None)
-        fp = makers.pop(0)(temp_file, mode, opener=opener)
+    if buffering > 1:
+        fp = makers.pop(0)(fp, buffering)
 
-        if buffering > 1:
-            fp = makers.pop(0)(fp, buffering)
-
-        if makers:
-            line_buffering = buffering == 1
-            fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
+    if makers:
+        line_buffering = buffering == 1
+        fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
 
     def safer_close(failed):
         try:
@@ -233,6 +190,29 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
 
     fp.safer_close = safer_close
     return fp
+
+
+@functools.wraps(open)
+@contextlib.contextmanager
+def printer(name, mode='w', *args, **kwargs):
+    if 'r' in mode and '+' not in mode:
+        raise IOError('File not open for writing')
+
+    if 'b' in mode:
+        raise ValueError('Cannot print to a file open in binary mode')
+
+    with open(name, mode, *args, **kwargs) as fp:
+        yield functools.partial(print, file=fp)
+
+
+@functools.wraps(open)
+def writer(name, mode='w', *args, **kwargs):
+    warnings.warn('Use safer.open() instead', DeprecationWarning)
+
+    if 'r' in mode and '+' not in mode:
+        raise IOError('File not open for writing')
+
+    return open(name, mode, *args, **kwargs)
 
 
 def _wrap_class(parent):

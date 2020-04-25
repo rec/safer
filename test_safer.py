@@ -205,7 +205,6 @@ class TestSafer(TestCase):
 
         assert m.exception.args[0] == '`name` argument must be string, not int'
 
-    @skipIf(safer.IS_PY2, 'Needs Python 3')
     def test_help(self):
         for name in safer.__all__:
             func = getattr(safer, name)
@@ -226,7 +225,6 @@ class TestSafer(TestCase):
                 print('ar')
             assert read_text(filename) == 'foo\nbar\n'
 
-    @skipIf(safer.IS_PY2, 'Needs Python 3')
     def test_binary(self):
         with TemporaryDirectory() as td:
             filename = td + '/test.txt'
@@ -259,7 +257,7 @@ class TestSafer(TestCase):
                 fp.write('hello')
             assert read_text(filename) == 'hello'
 
-            with self.assertRaises(safer.FileExistsError):
+            with self.assertRaises(FileExistsError):
                 with safer.open(filename, 'x') as fp:
                     fp.write('mode x')
 
@@ -287,7 +285,6 @@ class TestSafer(TestCase):
                 fp.write('overwritten')
             assert read_text(filename) == 'overwritten'
 
-    @skipIf(safer.IS_PY2, 'Needs Python 3')  # for target_is_directory
     def test_symlink_directory(self):
         with TemporaryDirectory() as td:
             filename = td + '/sub/test.txt'
