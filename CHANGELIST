@@ -1,3 +1,7 @@
+## v2.0.4 - 2020-04-24
+
+* Correctly handle symlinks (fix #7)
+
 ## v2.0.3 - 2020-04-23
 
 * Correctly handle 't' mode (fix #6)
