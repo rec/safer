@@ -155,6 +155,7 @@ def _open(name, mode, buffering, make_parents, delete_failures, kwargs):
     if not isinstance(name, str):
         type_name = type(name).__name__
         raise TypeError('`name` argument must be string, not ' + type_name)
+    name = os.path.realpath(name)
 
     if 'x' in mode:
         if os.path.exists(name):

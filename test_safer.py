@@ -278,6 +278,33 @@ class TestSafer(TestCase):
                 safer.open(filename, 'bt')
             assert m.exception.args[0] == 'Inconsistent mode bt'
 
+    def test_symlink_file(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'w') as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+
+            sym_filename = filename + '.sym'
+            os.symlink(filename, sym_filename)
+            with safer.open(sym_filename, 'w') as fp:
+                fp.write('overwritten')
+            assert read_text(filename) == 'overwritten'
+
+    @skipIf(safer.IS_PY2, 'Needs Python 3')  # for target_is_directory
+    def test_symlink_directory(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/sub/test.txt'
+            with safer.open(filename, 'w', make_parents=True) as fp:
+                fp.write('hello')
+            assert read_text(filename) == 'hello'
+            os.symlink(td + '/sub', td + '/sub.sym', target_is_directory=True)
+
+            sym_filename = td + '/sub.sym/test.txt'
+            with safer.open(sym_filename, 'w') as fp:
+                fp.write('overwritten')
+            assert read_text(filename) == 'overwritten'
+
 
 def read_text(filename):
     with open(filename) as fp:
