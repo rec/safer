@@ -3,8 +3,8 @@
 
 No more partial writes or corruption!
 
-Install ``safer`` from the command line with `pip
-<https://pypi.org/project/pip/>`_: ``pip install safer``.
+Install ``safer`` from the command line with ``pip
+<https://pypi.org/project/pip/>``_: ``pip install safer``.
 
 Tested on Python 2.7, and 3.4 through 3.8.
 
@@ -90,16 +90,6 @@ the old and new files put together.
 FUNCTIONS
 ---------
 
-ARGUMENTS
-
-  make_parents:
-    If true, create the parent directory of the file if it doesn't exist
-
-  delete_failures:
-    If true, the temporary file is deleted if there is an exception
-
-The remaining arguments are the same as for built-in ``open()``.
-
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
     
     A drop-in replacement for ``open()`` which returns a stream which only
@@ -115,3 +105,13 @@ The remaining arguments are the same as for built-in ``open()``.
 ``safer.writer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
     
     (DEPRECATED) A shorthand for ``open(file, 'w')``
+
+
+ARGUMENTS
+  make_parents:
+    If true, create the parent directory of the file if it doesn't exist
+
+  delete_failures:
+    If true, the temporary file is deleted if there is an exception
+
+The remaining arguments are the same as for built-in ``open()``.

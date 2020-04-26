@@ -170,13 +170,9 @@ class TestSafer(TestCase):
 
     @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
     def test_make_doc(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/README.rst'
-            with safer.printer(filename) as print:
-                doc_safer.make_doc(print)
-            actual = read_text(filename)
-            in_repo = read_text(doc_safer.README_FILE)
-            assert actual == in_repo
+        actual = doc_safer.make_doc()
+        in_repo = read_text(doc_safer.README_FILE)
+        assert actual.rstrip() == in_repo.rstrip()
 
     def test_file_perms(self):
         with TemporaryDirectory() as td:
