@@ -1,3 +1,8 @@
+## v2.0.5 - 2020-04-24
+
+* Change to status stable
+* Move to production status stablex1
+
 ## v2.0.4 - 2020-04-24
 
 * Correctly handle symlinks (fix #7)
