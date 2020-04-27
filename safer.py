@@ -70,6 +70,7 @@ EXAMPLE
 
 """
 
+from pathlib import Path
 import contextlib
 import functools
 import io
@@ -81,7 +82,6 @@ import warnings
 
 __version__ = '2.0.5'
 __all__ = 'open', 'printer', 'writer'
-_raw_open = __builtins__['open']
 
 
 # See https://docs.python.org/3/library/functions.html#open
@@ -94,6 +94,7 @@ def open(
     newline=None,
     closefd=True,
     opener=None,
+    follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
 ):
@@ -110,14 +111,14 @@ def open(
     elif errors:
         raise ValueError('binary mode doesn\'t take an errors argument')
 
-    from pathlib import Path
-
     if isinstance(name, Path):
         name = str(name)
-    if not isinstance(name, str):
+    elif not isinstance(name, str):
         type_name = type(name).__name__
         raise TypeError('`name` argument must be string, not ' + type_name)
-    name = os.path.realpath(name)
+
+    if follow_symlinks:
+        name = os.path.realpath(name)
 
     if 'x' in mode:
         if os.path.exists(name):
@@ -132,7 +133,7 @@ def open(
     read = 'r' in mode and not copy
 
     if read:
-        return _raw_open(name, mode, buffering, **kwargs)
+        return __builtins__['open'](name, mode, buffering, **kwargs)
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
@@ -158,6 +159,7 @@ def open(
             makers.append(io.BufferedRandom)
         else:
             makers.append(io.BufferedWriter)
+
     if 'b' not in mode:
         makers.append(io.TextIOWrapper)
 
@@ -215,33 +217,25 @@ def writer(name, mode='w', *args, **kwargs):
     return open(name, mode, *args, **kwargs)
 
 
+@functools.lru_cache()
 def _wrap_class(parent):
-    Class = _WRAP_CLASS.get(parent)
-    if not Class:
+    class Class(parent):
+        def __exit__(self, *args):
+            self.safer_failed = bool(args[0])
+            return parent.__exit__(self, *args)
 
-        class Class(parent):
-            def __exit__(self, *args):
-                self.safer_failed = bool(args[0])
-                return parent.__exit__(self, *args)
+        def close(self):
+            try:
+                parent.close(self)
+            except Exception:
+                self.safer_close(True)
+                raise
 
-            def close(self):
-                try:
-                    parent.close(self)
-                except Exception:
-                    self.safer_close(True)
-                    raise
+            self.safer_close(getattr(self, 'safer_failed', False))
 
-                self.safer_close(self.safer_failed)
-
-            safer_failed = False
-
-        Class.__name__ = 'Safer' + parent.__name__
-        _WRAP_CLASS[parent] = Class
-
+    Class.__name__ = 'Safer' + parent.__name__
     return Class
 
-
-_WRAP_CLASS = {}
 
 _DOC_COMMON = """
 
@@ -261,6 +255,9 @@ ARGUMENTS
 
   delete_failures:
     If true, the temporary file is deleted if there is an exception
+
+  follow_symlinks:
+    If true, overwrite the file pointed to and not the symlink
 
 The remaining arguments are the same as for built-in `open()`.
 """

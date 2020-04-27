@@ -91,19 +91,19 @@ the old and new files put together.
 FUNCTIONS
 ---------
 
-``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
     
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was no
     failure
 
-``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
     
     A context manager that yields a function that prints to the opened file,
     only overwriting the original file at the exit of the context,
     and only if there was no exception thrown
 
-``safer.writer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True)``
+``safer.writer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
     
     (DEPRECATED) A shorthand for ``open(file, 'w')``
 
@@ -114,5 +114,8 @@ ARGUMENTS
 
   delete_failures:
     If true, the temporary file is deleted if there is an exception
+
+  follow_symlinks:
+    If true, overwrite the file pointed to and not the symlink
 
 The remaining arguments are the same as for built-in ``open()``.
