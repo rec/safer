@@ -78,10 +78,9 @@ import os
 import shutil
 import tempfile
 import traceback
-import warnings
 
 __version__ = '2.0.5'
-__all__ = 'open', 'printer', 'writer'
+__all__ = 'open', 'printer'
 
 
 # See https://docs.python.org/3/library/functions.html#open
@@ -207,16 +206,6 @@ def printer(name, mode='w', *args, **kwargs):
         yield functools.partial(print, file=fp)
 
 
-@functools.wraps(open)
-def writer(name, mode='w', *args, **kwargs):
-    warnings.warn('Use safer.open() instead', DeprecationWarning)
-
-    if 'r' in mode and '+' not in mode:
-        raise IOError('File not open for writing')
-
-    return open(name, mode, *args, **kwargs)
-
-
 @functools.lru_cache()
 def _wrap_class(parent):
     class Class(parent):
@@ -281,8 +270,6 @@ _DOC_FUNC = {
 A drop-in replacement for `open()` which returns a stream which only
 overwrites the original file when close() is called, and only if there was no
 failure""",
-    'writer': """
-(DEPRECATED) A shorthand for `open(file, 'w')`""",
     'printer': """
 A context manager that yields a function that prints to the opened file,
 only overwriting the original file at the exit of the context,
@@ -291,7 +278,5 @@ and only if there was no exception thrown""",
 
 open.__doc__ = _DOC_FUNC['open'] + _DOC_FAILURE + _DOC_COMMON + _DOC_ARGS
 printer.__doc__ = _DOC_FUNC['printer'] + _DOC_COMMON + _DOC_ARGS
-writer.__doc__ = _DOC_FUNC['writer'] + _DOC_FAILURE + _DOC_COMMON + _DOC_ARGS
 
 printer.__name__ = 'printer'
-writer.__name__ = 'writer'

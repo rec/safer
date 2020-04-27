@@ -103,10 +103,6 @@ FUNCTIONS
     only overwriting the original file at the exit of the context,
     and only if there was no exception thrown
 
-``safer.writer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
-    
-    (DEPRECATED) A shorthand for ``open(file, 'w')``
-
 
 ARGUMENTS
   make_parents:
