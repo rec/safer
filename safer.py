@@ -242,7 +242,7 @@ def printer(name, mode='w', *args, **kwargs):
 
 @functools.lru_cache()
 def _wrap_class(parent):
-    class Class(parent):
+    def members():
         def __exit__(self, *args):
             self.safer_failed = bool(args[0])
             return parent.__exit__(self, *args)
@@ -253,11 +253,11 @@ def _wrap_class(parent):
             except Exception:
                 self.safer_close(True)
                 raise
-
             self.safer_close(getattr(self, 'safer_failed', False))
 
-    Class.__name__ = 'Safer' + parent.__name__
-    return Class
+        return locals()
+
+    return type('Safer' + parent.__name__, (parent,), members())
 
 
 _DOC_COMMON = """
