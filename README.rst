@@ -97,6 +97,9 @@ FUNCTIONS
     overwrites the original file when close() is called, and only if there was no
     failure
 
+``safer.writer(stream, mode=None)``
+    Write safely to file streams, sockets and callables
+
 ``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
     
     A context manager that yields a function that prints to the opened file,

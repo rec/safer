@@ -288,6 +288,73 @@ class TestSafer(TestCase):
                 fp.write('overwritten')
             assert read_text(filename) == 'overwritten'
 
+    def test_writer_callable(self):
+        results = []
+        with safer.writer(results.append) as write:
+            write('abc')
+            write('d')
+        assert results == ['abcd']
+
+    def test_writer_callable_error(self):
+        results = []
+        with self.assertRaises(ValueError):
+            with safer.writer(results.append) as write:
+                write('abc')
+                write('d')
+                raise ValueError
+        assert results == []
+
+    def test_writer_file(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'w') as fp:
+                fp.write('one')
+                with safer.writer(fp) as write:
+                    write('two')
+                    write('three')
+                fp.write('four')
+            assert read_text(filename) == 'onetwothreefour'
+
+    def test_writer_file_error(self):
+        with TemporaryDirectory() as td:
+            filename = td + '/test.txt'
+            with safer.open(filename, 'w') as fp:
+                fp.write('one')
+                with self.assertRaises(ValueError):
+                    with safer.writer(fp) as write:
+                        write('two')
+                        write('three')
+                        raise ValueError
+                fp.write('four')
+            assert read_text(filename) == 'onefour'
+
+    def test_writer_socket(self):
+        sock = socket()
+        with safer.writer(sock) as write:
+            write(b'one')
+            write(b'two')
+        assert sock.items == [b'onetwo']
+
+    def test_writer_socket_error(self):
+        sock = socket()
+        with self.assertRaises(ValueError):
+            with safer.writer(sock) as write:
+                write(b'one')
+                write(b'two')
+                raise ValueError
+        assert sock.items == []
+
+
+class socket:
+    def __init__(self):
+        self.items = []
+
+    def send(self, item):
+        self.items.append(item)
+
+    def recv(self):
+        pass
+
 
 def read_text(filename):
     with open(filename) as fp:

@@ -80,7 +80,7 @@ import tempfile
 import traceback
 
 __version__ = '3.0.0'
-__all__ = 'open', 'printer'
+__all__ = 'open', 'writer', 'printer'
 
 
 # See https://docs.python.org/3/library/functions.html#open
@@ -174,6 +174,9 @@ def open(
         line_buffering = buffering == 1
         fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
 
+    if not hasattr(fp, 'mode'):
+        fp.mode = mode
+
     def safer_close(failed):
         try:
             if failed:
@@ -191,6 +194,37 @@ def open(
 
     fp.safer_close = safer_close
     return fp
+
+
+@contextlib.contextmanager
+def writer(stream, mode=None):
+    """Write safely to file streams, sockets and callables"""
+    if mode and not callable(stream):
+        raise ValueError('Can only set mode for callable streams')
+
+    write = getattr(stream, 'write', None)
+    send = getattr(stream, 'send', None)
+    smode = getattr(stream, 'mode', None)
+
+    if write and smode:  # It looks like a file
+        writer, mode = write, (mode or smode)
+    elif send and hasattr(stream, 'recv'):  # It looks like a socket:
+        writer, mode = send, (mode or 'wb')
+    elif callable(stream):
+        writer, mode = stream, (mode or 'w')
+    else:
+        raise ValueError('Stream is not a file, a socket, or callable')
+
+    if not set('w+a').intersection(mode):
+        raise ValueError('Stream mode %s is not a write mode' % smode)
+
+    result = io.BytesIO() if 'b' in mode else io.StringIO()
+    yield result.write
+
+    value = result.getvalue()
+    while value:
+        written = writer(value)
+        value = None if written is None else value[written:]
 
 
 @functools.wraps(open)

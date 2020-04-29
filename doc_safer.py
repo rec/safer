@@ -9,8 +9,11 @@ def make_doc():
     def api(name):
         func = getattr(safer, name)
         sig = inspect.signature(func)
-        docs = safer._DOC_FUNC[name].splitlines()
-        doc = '\n'.join('    ' + i for i in docs)
+        if name == 'writer':
+            docs = func.__doc__
+        else:
+            docs = safer._DOC_FUNC[name]
+        doc = '\n'.join('    ' + i for i in docs.splitlines())
         return '`safer.{name}{sig}`\n{doc}\n'.format(**locals())
 
     doc = safer.__doc__.strip()
