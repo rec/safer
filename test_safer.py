@@ -1,4 +1,5 @@
-from __future__ import print_function
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase, skipIf
 import doc_safer
 import os
@@ -8,185 +9,169 @@ import safer
 
 
 class TestSafer(TestCase):
+    def setUp(self):
+        self.td_context = TemporaryDirectory()
+        self.td = Path(self.td_context.__enter__())
+        self.filename = self.td / 'test.txt'
+
+    def tearDown(self):
+        self.td_context.__exit__(None, None, None)
+
     def test_open(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'w') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
     def test_no_copy(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'a') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'a') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
     def test_copy(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'c')
-            with safer.open(filename, 'a') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'chello'
+        self.filename.write_text('c')
+        with safer.open(self.filename, 'a') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'chello'
 
     def test_error(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'hello')
+        self.filename.write_text('hello')
 
-            with self.assertRaises(ValueError):
-                with safer.open(filename, 'w') as fp:
-                    fp.write('GONE')
-                    raise ValueError
+        with self.assertRaises(ValueError):
+            with safer.open(self.filename, 'w') as fp:
+                fp.write('GONE')
+                raise ValueError
 
-            assert read_text(filename) == 'hello'
+        assert self.filename.read_text() == 'hello'
 
     def test_make_parents(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/foo/test.txt'
-            with self.assertRaises(IOError):
-                with safer.open(filename, 'w'):
-                    pass
+        self.filename = self.td / 'foo/test.txt'
+        with self.assertRaises(IOError):
+            with safer.open(self.filename, 'w'):
+                pass
 
-            with safer.open(filename, 'w', make_parents=True) as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'w', make_parents=True) as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
     def test_two_errors(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'hello')
-            before = set(os.listdir(td))
+        self.filename.write_text('hello')
+        before = set(os.listdir(self.td))
 
-            with self.assertRaises(ValueError):
-                with safer.open(filename, 'w') as fp:
-                    fp.write('GONE')
-                    raise ValueError
-            assert read_text(filename) == 'hello'
+        with self.assertRaises(ValueError):
+            with safer.open(self.filename, 'w') as fp:
+                fp.write('GONE')
+                raise ValueError
+        assert self.filename.read_text() == 'hello'
 
-            after = set(os.listdir(td))
-            assert before == after
+        after = set(os.listdir(self.td))
+        assert before == after
 
-            with self.assertRaises(ValueError):
-                with safer.open(filename, 'w', delete_failures=False) as fp:
-                    fp.write('GONE')
-                    raise ValueError
+        with self.assertRaises(ValueError):
+            with safer.open(self.filename, 'w', delete_failures=False) as fp:
+                fp.write('GONE')
+                raise ValueError
 
-            assert read_text(filename) == 'hello'
-            after = set(os.listdir(td))
-            assert len(before) + 1 == len(after)
-            assert len(after.difference(before)) == 1
+        assert self.filename.read_text() == 'hello'
+        after = set(os.listdir(self.td))
+        assert len(before) + 1 == len(after)
+        assert len(after.difference(before)) == 1
 
-            with safer.open(filename, 'w') as fp:
-                fp.write('OK!')
-                after = set(os.listdir(td))
-                assert len(before) + 2 == len(after)
-                assert len(after.difference(before)) == 2
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('OK!')
+            after = set(os.listdir(self.td))
+            assert len(before) + 2 == len(after)
+            assert len(after.difference(before)) == 2
 
-            assert read_text(filename) == 'OK!'
+        assert self.filename.read_text() == 'OK!'
 
-            after = set(os.listdir(td))
-            assert len(before) + 1 == len(after)
-            assert len(after.difference(before)) == 1
+        after = set(os.listdir(self.td))
+        assert len(before) + 1 == len(after)
+        assert len(after.difference(before)) == 1
 
     def test_explicit_close(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'hello')
-            assert read_text(filename) == 'hello'
-            before = set(os.listdir(td))
+        self.filename.write_text('hello')
+        assert self.filename.read_text() == 'hello'
+        before = set(os.listdir(self.td))
 
-            fp = safer.open(filename, 'w')
-            fp.write('OK!')
-            assert read_text(filename) == 'hello'
+        fp = safer.open(self.filename, 'w')
+        fp.write('OK!')
+        assert self.filename.read_text() == 'hello'
 
-            after = set(os.listdir(td))
-            assert len(before) + 1 == len(after)
-            assert len(after.difference(before)) == 1
+        after = set(os.listdir(self.td))
+        assert len(before) + 1 == len(after)
+        assert len(after.difference(before)) == 1
 
-            fp.close()
+        fp.close()
 
-            self.assertEqual(read_text(filename), 'OK!')
-            assert read_text(filename) == 'OK!'
-            after = set(os.listdir(td))
-            assert before == after
+        self.assertEqual(self.filename.read_text(), 'OK!')
+        assert self.filename.read_text() == 'OK!'
+        after = set(os.listdir(self.td))
+        assert before == after
 
     def test_read(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'hello')
-            with safer.open(filename, 'r+') as fp:
-                assert fp.read() == 'hello'
+        self.filename.write_text('hello')
+        with safer.open(self.filename, 'r+') as fp:
+            assert fp.read() == 'hello'
 
     def test_error_with_copy(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            write_text(filename, 'hello')
+        self.filename.write_text('hello')
 
-            with self.assertRaises(ValueError):
-                with safer.open(filename, 'a') as fp:
-                    fp.write('GONE')
-                    raise ValueError
+        with self.assertRaises(ValueError):
+            with safer.open(self.filename, 'a') as fp:
+                fp.write('GONE')
+                raise ValueError
 
-            assert read_text(filename) == 'hello'
+        assert self.filename.read_text() == 'hello'
 
     def test_printer(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.printer(filename) as print:
-                print('hello')
-            assert read_text(filename) == 'hello\n'
+        with safer.printer(self.filename) as print:
+            print('hello')
+        assert self.filename.read_text() == 'hello\n'
 
     def test_printer_errors(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.printer(filename):
+        with safer.printer(self.filename):
+            pass
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'r'):
                 pass
-            with self.assertRaises(IOError) as m:
-                with safer.printer(filename, 'r'):
-                    pass
-            assert 'not open' in m.exception.args[0].lower()
+        assert 'not open' in m.exception.args[0].lower()
 
-            with self.assertRaises(IOError) as m:
-                with safer.printer(filename, 'rb'):
-                    pass
-            assert 'not open' in m.exception.args[0].lower()
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'rb'):
+                pass
+        assert 'not open' in m.exception.args[0].lower()
 
-            with self.assertRaises(ValueError) as m:
-                with safer.printer(filename, 'wb'):
-                    pass
-            assert 'binary mode' in m.exception.args[0].lower()
+        with self.assertRaises(ValueError) as m:
+            with safer.printer(self.filename, 'wb'):
+                pass
+        assert 'binary mode' in m.exception.args[0].lower()
 
     @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
     def test_make_doc(self):
         actual = doc_safer.make_doc()
-        in_repo = read_text(doc_safer.README_FILE)
+        in_repo = Path(doc_safer.README_FILE).read_text()
         assert actual.rstrip() == in_repo.rstrip()
 
     def test_file_perms(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
+        (self.td / 'test2.txt').write_text('hello')
 
-            write_text(td + '/test2.txt', 'hello')
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
+        mode = os.stat(self.filename).st_mode
+        assert mode in (0o100664, 0o100644)
+        new_mode = mode & 0o100770
 
-            with safer.open(filename, 'w') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
-            mode = os.stat(filename).st_mode
-            assert mode in (0o100664, 0o100644)
-            new_mode = mode & 0o100770
+        os.chmod(self.filename, new_mode)
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('bye')
+        assert self.filename.read_text() == 'bye'
+        assert os.stat(self.filename).st_mode == new_mode
 
-            os.chmod(filename, new_mode)
-            with safer.open(filename, 'w') as fp:
-                fp.write('bye')
-            assert read_text(filename) == 'bye'
-            assert os.stat(filename).st_mode == new_mode
-
-            with safer.open(filename, 'a') as fp:
-                fp.write(' there')
-            assert read_text(filename) == 'bye there'
-            assert os.stat(filename).st_mode == new_mode
+        with safer.open(self.filename, 'a') as fp:
+            fp.write(' there')
+        assert self.filename.read_text() == 'bye there'
+        assert os.stat(self.filename).st_mode == new_mode
 
     def test_int_filename(self):
         with self.assertRaises(TypeError) as m:
@@ -202,91 +187,80 @@ class TestSafer(TestCase):
             assert value.startswith('function %s in module safer' % name)
 
     def test_line_buffering(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with self.assertRaises(ValueError) as m:
-                safer.open(filename, 'wb', buffering=1)
-            msg = 'buffering = 1 only allowed for text streams'
-            assert m.exception.args[0] == msg
+        with self.assertRaises(ValueError) as m:
+            safer.open(self.filename, 'wb', buffering=1)
+        msg = 'buffering = 1 only allowed for text streams'
+        assert m.exception.args[0] == msg
 
-            with safer.printer(filename, buffering=1) as print:
-                print('foo')
-                print('b', end='')
-                print('ar')
-            assert read_text(filename) == 'foo\nbar\n'
+        with safer.printer(self.filename, buffering=1) as print:
+            print('foo')
+            print('b', end='')
+            print('ar')
+        assert self.filename.read_text() == 'foo\nbar\n'
 
     def test_binary(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'wb') as fp:
-                fp.write(b'hello')
-                fp.write(b' there')
-                with self.assertRaises(TypeError):
-                    fp.write('hello')
+        with safer.open(self.filename, 'wb') as fp:
+            fp.write(b'hello')
+            fp.write(b' there')
+            with self.assertRaises(TypeError):
+                fp.write('hello')
 
-            with open(filename, 'rb') as fp:
-                assert fp.read() == b'hello there'
-            with safer.open(filename, 'rb') as fp:
-                assert fp.read() == b'hello there'
+        with open(self.filename, 'rb') as fp:
+            assert fp.read() == b'hello there'
+        with safer.open(self.filename, 'rb') as fp:
+            assert fp.read() == b'hello there'
 
     def test_all_modes(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
+        modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
 
-            for m in modes:
-                with safer.open(filename, m):
-                    pass
-                with safer.open(filename, m + 'b'):
-                    pass
+        for m in modes:
+            with safer.open(self.filename, m):
+                pass
+            with safer.open(self.filename, m + 'b'):
+                pass
 
     def test_mode_x(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'x') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'x') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
-            with self.assertRaises(FileExistsError):
-                with safer.open(filename, 'x') as fp:
-                    fp.write('mode x')
+        with self.assertRaises(FileExistsError):
+            with safer.open(self.filename, 'x') as fp:
+                fp.write('mode x')
 
     def test_mode_t(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'wt') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'wt') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
-            with self.assertRaises(ValueError) as m:
-                safer.open(filename, 'bt')
-            assert m.exception.args[0] == 'Inconsistent mode bt'
+        with self.assertRaises(ValueError) as m:
+            safer.open(self.filename, 'bt')
+        assert m.exception.args[0] == 'Inconsistent mode bt'
 
     def test_symlink_file(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'w') as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
 
-            sym_filename = filename + '.sym'
-            os.symlink(filename, sym_filename)
-            with safer.open(sym_filename, 'w') as fp:
-                fp.write('overwritten')
-            assert read_text(filename) == 'overwritten'
+        sym_filename = self.filename.with_suffix('.sym')
+        os.symlink(self.filename, sym_filename)
+        with safer.open(sym_filename, 'w') as fp:
+            fp.write('overwritten')
+        assert self.filename.read_text() == 'overwritten'
 
     def test_symlink_directory(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/sub/test.txt'
-            with safer.open(filename, 'w', make_parents=True) as fp:
-                fp.write('hello')
-            assert read_text(filename) == 'hello'
-            os.symlink(td + '/sub', td + '/sub.sym', target_is_directory=True)
+        self.filename = self.td / 'sub/test.txt'
+        with safer.open(self.filename, 'w', make_parents=True) as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
+        os.symlink(
+            self.td / 'sub', self.td / 'sub.sym', target_is_directory=True
+        )
 
-            sym_filename = td + '/sub.sym/test.txt'
-            with safer.open(sym_filename, 'w') as fp:
-                fp.write('overwritten')
-            assert read_text(filename) == 'overwritten'
+        sym_filename = self.td / 'sub.sym/test.txt'
+        with safer.open(sym_filename, 'w') as fp:
+            fp.write('overwritten')
+        assert self.filename.read_text() == 'overwritten'
 
     def test_writer_callable(self):
         results = []
@@ -305,28 +279,24 @@ class TestSafer(TestCase):
         assert results == []
 
     def test_writer_file(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'w') as fp:
-                fp.write('one')
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('one')
+            with safer.writer(fp) as write:
+                write('two')
+                write('three')
+            fp.write('four')
+        assert self.filename.read_text() == 'onetwothreefour'
+
+    def test_writer_file_error(self):
+        with safer.open(self.filename, 'w') as fp:
+            fp.write('one')
+            with self.assertRaises(ValueError):
                 with safer.writer(fp) as write:
                     write('two')
                     write('three')
-                fp.write('four')
-            assert read_text(filename) == 'onetwothreefour'
-
-    def test_writer_file_error(self):
-        with TemporaryDirectory() as td:
-            filename = td + '/test.txt'
-            with safer.open(filename, 'w') as fp:
-                fp.write('one')
-                with self.assertRaises(ValueError):
-                    with safer.writer(fp) as write:
-                        write('two')
-                        write('three')
-                        raise ValueError
-                fp.write('four')
-            assert read_text(filename) == 'onefour'
+                    raise ValueError
+            fp.write('four')
+        assert self.filename.read_text() == 'onefour'
 
     def test_writer_socket(self):
         sock = socket()
@@ -354,41 +324,3 @@ class socket:
 
     def recv(self):
         pass
-
-
-def read_text(filename):
-    with open(filename) as fp:
-        return fp.read()
-
-
-def write_text(filename, text):
-    with open(filename, 'w') as fp:
-        fp.write(text)
-
-
-try:
-    from tempfile import TemporaryDirectory
-
-except ImportError:
-    # Python 2.7 doesn't have TemporaryDirectory, so make a simple replacement.
-
-    import contextlib
-    import itertools
-    import shutil
-    import tempfile
-    import threading
-
-    @contextlib.contextmanager
-    def TemporaryDirectory():
-        td = tempfile.gettempdir()
-        root = '%s/safer-%d' % (td, threading.current_thread().ident)
-        names = ('%s.%d' % (root, i) for i in itertools.count())
-        name = next(n for n in names if not os.path.exists(n))
-        os.mkdir(name)
-        try:
-            yield name
-        finally:
-            try:
-                shutil.rmtree(name)
-            except Exception:
-                pass
