@@ -5,8 +5,8 @@
 
 No more partial writes or corruption!
 
-Install `safer` from the command line with `pip
-<https://pypi.org/project/pip/>`_: `pip install safer`.
+Install `safer` from the command line with pip
+(https://pypi.org/project/pip): `pip install safer`.
 
 Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
