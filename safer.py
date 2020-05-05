@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ✏️safer: a safer file opener ✏️
 -------------------------------
@@ -10,6 +9,9 @@ Install `safer` from the command line with pip
 
 Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
+
+See the Medium article `here.
+<https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
 `safer.open()`
 =================
