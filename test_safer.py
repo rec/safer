@@ -262,14 +262,24 @@ class TestSafer(TestCase):
             fp.write('overwritten')
         assert self.filename.read_text() == 'overwritten'
 
-    def test_writer_callable(self):
+
+class TestWriter(TestCase):
+    def setUp(self):
+        self.td_context = TemporaryDirectory()
+        self.td = Path(self.td_context.__enter__())
+        self.filename = self.td / 'test.txt'
+
+    def tearDown(self):
+        self.td_context.__exit__(None, None, None)
+
+    def test_callable(self):
         results = []
         with safer.writer(results.append) as write:
             write('abc')
             write('d')
         assert results == ['abcd']
 
-    def test_writer_callable_error(self):
+    def test_callable_error(self):
         results = []
         with self.assertRaises(ValueError):
             with safer.writer(results.append) as write:
@@ -278,7 +288,7 @@ class TestSafer(TestCase):
                 raise ValueError
         assert results == []
 
-    def test_writer_file(self):
+    def test_file(self):
         with safer.open(self.filename, 'w') as fp:
             fp.write('one')
             with safer.writer(fp) as write:
@@ -287,7 +297,7 @@ class TestSafer(TestCase):
             fp.write('four')
         assert self.filename.read_text() == 'onetwothreefour'
 
-    def test_writer_file_error(self):
+    def test_file_error(self):
         with safer.open(self.filename, 'w') as fp:
             fp.write('one')
             with self.assertRaises(ValueError):
@@ -298,14 +308,14 @@ class TestSafer(TestCase):
             fp.write('four')
         assert self.filename.read_text() == 'onefour'
 
-    def test_writer_socket(self):
+    def test_socket(self):
         sock = socket()
         with safer.writer(sock) as write:
             write(b'one')
             write(b'two')
         assert sock.items == [b'onetwo']
 
-    def test_writer_socket_error(self):
+    def test_socket_error(self):
         sock = socket()
         with self.assertRaises(ValueError):
             with safer.writer(sock) as write:
