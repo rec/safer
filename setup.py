@@ -3,7 +3,6 @@ import safer
 
 _classifiers = [
     'Development Status :: 5 - Production/Stable',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
