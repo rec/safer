@@ -262,6 +262,15 @@ class TestSafer(TestCase):
             fp.write('overwritten')
         assert self.filename.read_text() == 'overwritten'
 
+    def test_file_exists_error(self):
+        with safer.open(self.filename, 'wt') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
+
+        with safer.open(self.filename, 'wt') as fp:
+            fp.write('goodbye')
+        assert self.filename.read_text() == 'goodbye'
+
 
 class TestWriter(TestCase):
     def setUp(self):
