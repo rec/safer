@@ -221,7 +221,7 @@ def writer(stream, mode=None):
         raise ValueError('Stream mode %s is not a write mode' % smode)
 
     result = io.BytesIO() if 'b' in mode else io.StringIO()
-    yield result.write
+    yield result
 
     value = result.getvalue()
     while value:
