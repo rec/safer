@@ -10,13 +10,13 @@ environment:
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python38"
 
-install:
-  # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install wheel"
+# install:
+#   # We need wheel installed to build wheels
+#   - "%PYTHON%\\python.exe -m pip install wheel"
 
 build: off
 
-# test_script:
+test_script:
 #   # Put your test command here.
 #   # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
 #   # you can remove "build.cmd" from the front of the command, as it's
@@ -24,7 +24,7 @@ build: off
 #   # Note that you must use the environment variable %PYTHON% to refer to
 #   # the interpreter you're using - Appveyor does not do anything special
 #   # to put the Python version you want to use on PATH.
-#   - "build.cmd %PYTHON%\\python.exe -m unittest discover"
+  - "%PYTHON%\\python.exe -m unittest discover"
 
 # after_test:
 #   # This step builds your wheels.
