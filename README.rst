@@ -72,7 +72,7 @@ EXAMPLE
         write_body(sock)
         write_footer(sock)
      except:
-        write_error(sock)  # Perhaps you already wrote it
+        write_error(sock)  # You already wrote the header!
 
     # safer
     with safer.write(sock) as s:
@@ -138,7 +138,7 @@ FUNCTIONS
     overwrites the original file when close() is called, and only if there was no
     failure
 
-``safer.writer(stream, is_binary=None, close_on_exit=False)``
+``safer.writer(stream, close_on_exit=False, is_binary=None)``
     
         Write safely to file streams, sockets and callables.
     
@@ -176,5 +176,9 @@ ARGUMENTS
 
   follow_symlinks:
     If true, overwrite the file pointed to and not the symlink
+
+  cache_in_memory:
+    If true, cache the writes in memory - otherwise use a disk file
+    and os.rename
 
 The remaining arguments are the same as for built-in ``open()``.

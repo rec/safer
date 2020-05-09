@@ -2,10 +2,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase, skipIf
 import doc_safer
+import functools
 import os
 import platform
 import pydoc
 import safer
+
+copen = functools.partial(safer.open, mode='w', cache_in_memory=True)
 
 
 class TestSafer(TestCase):
@@ -22,8 +25,18 @@ class TestSafer(TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
+    def test_open_memory(self):
+        with copen(self.filename) as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
+
     def test_no_copy(self):
         with safer.open(self.filename, 'a') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'hello'
+
+    def test_no_copy_memory(self):
+        with copen(self.filename) as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
@@ -33,11 +46,27 @@ class TestSafer(TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'chello'
 
+    def test_copy_memory(self):
+        self.filename.write_text('c')
+        with copen(self.filename, mode='a') as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'chello'
+
     def test_error(self):
         self.filename.write_text('hello')
 
         with self.assertRaises(ValueError):
             with safer.open(self.filename, 'w') as fp:
+                fp.write('GONE')
+                raise ValueError
+
+        assert self.filename.read_text() == 'hello'
+
+    def test_error_memory(self):
+        self.filename.write_text('hello')
+
+        with self.assertRaises(ValueError):
+            with copen(self.filename) as fp:
                 fp.write('GONE')
                 raise ValueError
 
@@ -122,35 +151,6 @@ class TestSafer(TestCase):
                 raise ValueError
 
         assert self.filename.read_text() == 'hello'
-
-    def test_printer(self):
-        with safer.printer(self.filename) as print:
-            print('hello')
-        assert self.filename.read_text() == 'hello\n'
-
-    def test_printer_errors(self):
-        with safer.printer(self.filename):
-            pass
-        with self.assertRaises(IOError) as m:
-            with safer.printer(self.filename, 'r'):
-                pass
-        assert 'not open' in m.exception.args[0].lower()
-
-        with self.assertRaises(IOError) as m:
-            with safer.printer(self.filename, 'rb'):
-                pass
-        assert 'not open' in m.exception.args[0].lower()
-
-        with self.assertRaises(ValueError) as m:
-            with safer.printer(self.filename, 'wb'):
-                pass
-        assert 'binary mode' in m.exception.args[0].lower()
-
-    @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
-    def test_make_doc(self):
-        actual = doc_safer.make_doc()
-        in_repo = Path(doc_safer.README_FILE).read_text()
-        assert actual.rstrip() == in_repo.rstrip()
 
     def test_file_perms(self):
         (self.td / 'test2.txt').write_text('hello')
@@ -270,6 +270,47 @@ class TestSafer(TestCase):
         with safer.open(self.filename, 'wt') as fp:
             fp.write('goodbye')
         assert self.filename.read_text() == 'goodbye'
+
+
+class TestPrinter(TestCase):
+    def setUp(self):
+        self.td_context = TemporaryDirectory()
+        self.td = Path(self.td_context.__enter__())
+        self.filename = self.td / 'test.txt'
+
+    def tearDown(self):
+        self.td_context.__exit__(None, None, None)
+
+    def test_printer(self):
+        with safer.printer(self.filename) as print:
+            print('hello')
+        assert self.filename.read_text() == 'hello\n'
+
+    def test_printer_errors(self):
+        with safer.printer(self.filename):
+            pass
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'r'):
+                pass
+        assert 'not open' in m.exception.args[0].lower()
+
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'rb'):
+                pass
+        assert 'not open' in m.exception.args[0].lower()
+
+        with self.assertRaises(ValueError) as m:
+            with safer.printer(self.filename, 'wb'):
+                pass
+        assert 'binary mode' in m.exception.args[0].lower()
+
+
+class TestDoc(TestCase):
+    @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
+    def test_make_doc(self):
+        actual = doc_safer.make_doc()
+        in_repo = Path(doc_safer.README_FILE).read_text()
+        assert actual.rstrip() == in_repo.rstrip()
 
 
 class TestWriter(TestCase):

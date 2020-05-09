@@ -72,7 +72,7 @@ EXAMPLE
         write_body(sock)
         write_footer(sock)
      except:
-        write_error(sock)  # Perhaps you already wrote it
+        write_error(sock)  # You already wrote the header!
 
     # safer
     with safer.write(sock) as s:
@@ -137,9 +137,9 @@ def open(
     delete_failures=True,
     cache_in_memory=False,
 ):
-    copy = '+' in mode or 'a' in mode
-    read = 'r' in mode and not copy
-    binary = 'b' in mode
+    is_copy = '+' in mode or 'a' in mode
+    is_read = 'r' in mode and not is_copy
+    is_binary = 'b' in mode
 
     kwargs = {
         'encoding': encoding,
@@ -148,16 +148,26 @@ def open(
         'opener': opener,
     }
 
-    if read or cache_in_memory:
-        fp = __builtins__['open'](name, mode, buffering, **kwargs)
-        if read:
-            return fp
-        return writer(fp, binary, close_on_exit=True)
+    def simple_open():
+        return __builtins__['open'](name, mode, buffering, **kwargs)
+
+    if is_read:
+        return simple_open()
+
+    if cache_in_memory:
+        if '+' in mode:
+            raise ValueError('+ mode is not compatible with cache_in_memory')
+
+        def write(value):
+            with simple_open() as fp:
+                fp.write(value)
+
+        return _MemoryCloser(write, is_binary, close_on_exit=True).fp
 
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
 
-    if binary:
+    if is_binary:
         if newline:
             raise ValueError('binary mode doesn\'t take a newline argument')
         if encoding:
@@ -168,8 +178,8 @@ def open(
     if isinstance(name, Path):
         name = str(name)
     elif not isinstance(name, str):
-        type_name = type(name).__name__
-        raise TypeError('`name` argument must be string, not ' + type_name)
+        tname = type(name).__name__
+        raise TypeError('`name` argument must be string, not %s' % tname)
 
     if follow_symlinks:
         name = os.path.realpath(name)
@@ -179,7 +189,7 @@ def open(
             raise FileExistsError("File exists: '%s'" % name)
         mode = mode.replace('x', 'w')
 
-    if binary and 't' in mode:
+    if is_binary and 't' in mode:
         raise ValueError('Inconsistent mode ' + mode)
     mode = mode.replace('t', '')
 
@@ -198,7 +208,7 @@ def open(
     fd, temp_file = tempfile.mkstemp(dir=parent)
     os.close(fd)
 
-    if copy and os.path.exists(name):
+    if is_copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
 
     makers = [io.FileIO]
@@ -208,7 +218,7 @@ def open(
         else:
             makers.append(io.BufferedWriter)
 
-    if not binary:
+    if not is_binary:
         makers.append(io.TextIOWrapper)
 
     closer = _FileCloser(name, temp_file, delete_failures)
@@ -230,7 +240,7 @@ def open(
     return fp
 
 
-def writer(stream, is_binary=None, close_on_exit=False):
+def writer(stream, close_on_exit=False, is_binary=None):
     """
     Write safely to file streams, sockets and callables.
 
@@ -278,11 +288,10 @@ def writer(stream, is_binary=None, close_on_exit=False):
     else:
         raise ValueError('Stream is not a file, a socket, or callable')
 
-    io_class = io.BytesIO if is_binary else io.StringIO
-    closer = _MemoryCloser(write, close_on_exit)
-    fp = closer.wrap(io_class)()
+    fp = _MemoryCloser(write, is_binary, close_on_exit).fp
     if send is write:
         fp.send = write
+
     return fp
 
 
@@ -306,10 +315,11 @@ class _Closer:
     def wrap(self, cls):
         @functools.wraps(cls)
         def wrapped(*args, **kwargs):
-            assert not self.fp
             closer = _closer_class(cls)
+
             self.fp = closer(*args, **kwargs)
             self.fp.safer_closer = self
+
             return self.fp
 
         return wrapped
@@ -339,23 +349,6 @@ class _Closer:
         pass
 
 
-@functools.lru_cache()
-def _closer_class(cls):
-    def members():
-        @functools.wraps(cls.__exit__)
-        def __exit__(self, *args):
-            self.safer_closer.failed = bool(args[0])
-            return cls.__exit__(self, *args)
-
-        @functools.wraps(cls.close)
-        def close(self):
-            self.safer_closer.close(cls.close)
-
-        return locals()
-
-    return type('Safer' + cls.__name__, (cls,), members())
-
-
 class _FileCloser(_Closer):
     def __init__(self, name, temp_file, delete_failures):
         self.name = name
@@ -375,22 +368,42 @@ class _FileCloser(_Closer):
 
 
 class _MemoryCloser(_Closer):
-    def __init__(self, write, close_on_exit):
+    def __init__(self, write, is_binary, close_on_exit):
         self.write = write
         self.close_on_exit = close_on_exit
+        io_class = io.BytesIO if is_binary else io.StringIO
+        fp = self.wrap(io_class)()
+        assert fp == self.fp
 
     def close(self, close):
         self.value = self.fp.getvalue()
         super().close(close)
 
         if self.close_on_exit:
-            self.fp.close()
+            close(self.fp)
 
     def _success(self):
         v = self.value
         while v:
             written = self.write(v)
             v = None if written is None else v[written:]
+
+
+@functools.lru_cache()
+def _closer_class(cls):
+    def members():
+        @functools.wraps(cls.__exit__)
+        def __exit__(self, *args):
+            self.safer_closer.failed = bool(args[0])
+            return cls.__exit__(self, *args)
+
+        @functools.wraps(cls.close)
+        def close(self):
+            self.safer_closer.close(cls.close)
+
+        return locals()
+
+    return type('Safer' + cls.__name__, (cls,), members())
 
 
 _DOC_COMMON = """
@@ -414,6 +427,10 @@ ARGUMENTS
 
   follow_symlinks:
     If true, overwrite the file pointed to and not the symlink
+
+  cache_in_memory:
+    If true, cache the writes in memory - otherwise use a disk file
+    and os.rename
 
 The remaining arguments are the same as for built-in `open()`.
 """
