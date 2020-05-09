@@ -9,18 +9,16 @@ Install ``safer`` from the command line with pip
 Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
-See the Medium article `here.
-<https://medium.com/@TomSwirly/
-%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
+See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
 * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
-   writes a whole file or nothing by caching written data on disk.
+  writes a whole file or nothing by caching written data on disk.
 
 * ``safer.writer()`` wraps an existing writer or socket and writes a whole
-response or nothing by caching written data in memory
+  response or nothing by caching written data in memory
 
 * ``safer.printer()`` is exactly like ``safer.open()`` except that it yields a
-a function that prints to the stream
+  a function that prints to the stream
 
 ------------------
 
@@ -57,7 +55,7 @@ is called, the temporary file is moved over ``filename`` *unless*
 ------------------------------------
 
 ``safer.writer()``
-================
+==================
 
 ``safer.writer()`` is like ``safer.open()`` except that it uses an existing
 writer, a socket, or a callback.
