@@ -25,6 +25,7 @@ a function that prints to the stream
 ------------------
 
 ``safer.open()``
+=================
 
 ``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
 built-in ``open()`` except that ``safer.open()`` leaves the original file
@@ -55,7 +56,8 @@ is called, the temporary file is moved over ``filename`` *unless*
 
 ------------------------------------
 
-``safer.wrter()``
+``safer.writer()``
+================
 
 ``safer.writer()`` is like ``safer.open()`` except that it uses an existing
 writer, a socket, or a callback.
