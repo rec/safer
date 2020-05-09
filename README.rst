@@ -9,9 +9,9 @@ Install ``safer`` from the command line with pip
 Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
-See the Medium article ``here.
+See the Medium article `here.
 <https://medium.com/@TomSwirly/
-%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>``_
+%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
 * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
    writes a whole file or nothing by caching written data on disk.
@@ -57,8 +57,8 @@ is called, the temporary file is moved over ``filename`` *unless*
 
 ``safer.wrter()``
 
-``safer.writer()`` is like ``safer.open()`` except that it uses an existing writer,
-a socket, or a callback.
+``safer.writer()`` is like ``safer.open()`` except that it uses an existing
+writer, a socket, or a callback.
 
 EXAMPLE
 
@@ -132,17 +132,17 @@ the old and new files put together.
 FUNCTIONS
 ---------
 
-``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)``
+`safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)`
     
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was no
     failure
 
-``safer.writer(stream, close_on_exit=False, is_binary=None)``
+`safer.writer(stream, close_on_exit=False, is_binary=None)`
     
         Write safely to file streams, sockets and callables.
     
-        ````safer.writer```` yields an in-memory stream that you can write
+        ``safer.writer`` yields an in-memory stream that you can write
         to, but which is only written to the original stream if the
         context finished without raising an exception.
     
@@ -154,13 +154,13 @@ FUNCTIONS
             A file stream, a socket, or a callable that will receive data
     
           is_binary:
-            Is ````stream```` a binary stream?
+            Is ``stream`` a binary stream?
     
-            If ````is_binary```` is ````None````, deduce whether it's a binary file from
+            If ``is_binary`` is ``None``, deduce whether it's a binary file from
             the stream, or assume it's text otherwise.
         
 
-``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)``
+`safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)`
     
     A context manager that yields a function that prints to the opened file,
     only overwriting the original file at the exit of the context,

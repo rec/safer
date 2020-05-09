@@ -178,7 +178,8 @@ class TestSafer(TestCase):
             with safer.open(1, 'w') as fp:
                 fp.write('hello')
 
-        assert m.exception.args[0] == '`name` argument must be string, not int'
+        arg = m.exception.args[0]
+        assert arg == '``name`` argument must be string, not int'
 
     def test_help(self):
         for name in safer.__all__:

@@ -21,7 +21,7 @@ def make_doc():
     common = safer._DOC_COMMON.strip()
     args = safer._DOC_ARGS.strip()
     apis = '\n'.join(api(name) for name in safer.__all__)
-    return BODY.format(**locals()).strip().replace('`', '``')
+    return BODY.format(**locals()).strip()
 
 
 def main():
