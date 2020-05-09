@@ -1,8 +1,10 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase
+from unittest import TestCase, skipIf
+import doc_safer
 import functools
 import os
+import platform
 import pydoc
 import safer
 
@@ -269,3 +271,117 @@ class TestSafer(TestCase):
         with safer.open(self.filename, 'wt') as fp:
             fp.write('goodbye')
         assert self.filename.read_text() == 'goodbye'
+
+
+class TestPrinter(TestCase):
+    def setUp(self):
+        self.td_context = TemporaryDirectory()
+        self.td = Path(self.td_context.__enter__())
+        self.filename = self.td / 'test.txt'
+
+    def tearDown(self):
+        self.td_context.__exit__(None, None, None)
+
+    def test_printer(self):
+        with safer.printer(self.filename) as print:
+            print('hello')
+        assert self.filename.read_text() == 'hello\n'
+
+    def test_printer_errors(self):
+        with safer.printer(self.filename):
+            pass
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'r'):
+                pass
+        assert 'not open' in m.exception.args[0].lower()
+
+        with self.assertRaises(IOError) as m:
+            with safer.printer(self.filename, 'rb'):
+                pass
+        assert 'not open' in m.exception.args[0].lower()
+
+        with self.assertRaises(ValueError) as m:
+            with safer.printer(self.filename, 'wb'):
+                pass
+        assert 'binary mode' in m.exception.args[0].lower()
+
+
+class TestDoc(TestCase):
+    @skipIf(platform.python_version() < '3.6', 'Needs Python 3.6 or greater')
+    def test_make_doc(self):
+        actual = doc_safer.make_doc()
+        in_repo = Path(doc_safer.README_FILE).read_text()
+        assert actual.rstrip() == in_repo.rstrip()
+
+
+class TestWriter(TestCase):
+    def setUp(self):
+        self.td_context = TemporaryDirectory()
+        self.td = Path(self.td_context.__enter__())
+        self.filename = self.td / 'test.txt'
+
+    def tearDown(self):
+        self.td_context.__exit__(None, None, None)
+
+    def test_callable(self):
+        results = []
+        with safer.writer(results.append) as fp:
+            fp.write('abc')
+            fp.write('d')
+        assert results == ['abcd']
+
+    def test_callable_error(self):
+        results = []
+        with self.assertRaises(ValueError):
+            with safer.writer(results.append) as fp:
+                fp.write('abc')
+                fp.write('d')
+                raise ValueError
+        assert results == []
+
+    def test_one_file(self):
+        with safer.open(self.filename, 'w') as fp1:
+            fp1.write('one')
+            with safer.writer(fp1) as fp2:
+                fp2.write('two')
+                fp2.write('three')
+            fp1.write('four')
+        assert self.filename.read_text() == 'onetwothreefour'
+
+    def test_file_error(self):
+        with safer.open(self.filename, 'w') as fp1:
+            fp1.write('one')
+            with self.assertRaises(ValueError):
+                with safer.writer(fp1) as fp2:
+                    fp2.write('two')
+                    fp2.write('three')
+                    raise ValueError
+            fp1.write('four')
+        assert self.filename.read_text() == 'onefour'
+
+    def test_socket(self):
+        sock = socket()
+        with safer.writer(sock) as fp:
+            fp.write(b'one')
+            fp.write(b'two')
+        assert sock.items == [b'onetwo']
+
+    def test_socket_error(self):
+        sock = socket()
+        with self.assertRaises(ValueError):
+            with safer.writer(sock) as fp:
+                fp.write(b'one')
+                fp.write(b'two')
+                raise ValueError
+        assert sock.items == []
+
+
+class socket:
+    def __init__(self):
+        self.items = []
+
+    def send(self, item):
+        self.items.append(item)
+
+    def recv(self):
+        pass
