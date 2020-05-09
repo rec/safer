@@ -132,13 +132,13 @@ the old and new files put together.
 FUNCTIONS
 ---------
 
-``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
+``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)``
     
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was no
     failure
 
-``safer.writer(stream, is_binary=None)``
+``safer.writer(stream, is_binary=None, close_on_exit=False)``
     
         Write safely to file streams, sockets and callables.
     
@@ -160,7 +160,7 @@ FUNCTIONS
             the stream, or assume it's text otherwise.
         
 
-``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
+``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, cache_in_memory=False)``
     
     A context manager that yields a function that prints to the opened file,
     only overwriting the original file at the exit of the context,

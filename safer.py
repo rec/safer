@@ -135,19 +135,35 @@ def open(
     follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
+    cache_in_memory=False,
 ):
+    copy = '+' in mode or 'a' in mode
+    read = 'r' in mode and not copy
+    binary = 'b' in mode
+
+    kwargs = {
+        'encoding': encoding,
+        'errors': errors,
+        'newline': newline,
+        'opener': opener,
+    }
+
+    if read or cache_in_memory:
+        fp = __builtins__['open'](name, mode, buffering, **kwargs)
+        if read:
+            return fp
+        return writer(fp, binary, close_on_exit=True)
+
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
 
-    kwargs = {'opener': opener}
-    if 'b' not in mode:
-        kwargs.update(encoding=encoding, errors=errors, newline=newline)
-    elif newline:
-        raise ValueError('binary mode doesn\'t take a newline argument')
-    elif encoding:
-        raise ValueError('binary mode doesn\'t take an encoding argument')
-    elif errors:
-        raise ValueError('binary mode doesn\'t take an errors argument')
+    if binary:
+        if newline:
+            raise ValueError('binary mode doesn\'t take a newline argument')
+        if encoding:
+            raise ValueError('binary mode doesn\'t take an encoding argument')
+        if errors:
+            raise ValueError('binary mode doesn\'t take an errors argument')
 
     if isinstance(name, Path):
         name = str(name)
@@ -163,15 +179,9 @@ def open(
             raise FileExistsError("File exists: '%s'" % name)
         mode = mode.replace('x', 'w')
 
-    if 'b' in mode and 't' in mode:
+    if binary and 't' in mode:
         raise ValueError('Inconsistent mode ' + mode)
     mode = mode.replace('t', '')
-
-    copy = '+' in mode or 'a' in mode
-    read = 'r' in mode and not copy
-
-    if read:
-        return __builtins__['open'](name, mode, buffering, **kwargs)
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
@@ -198,7 +208,7 @@ def open(
         else:
             makers.append(io.BufferedWriter)
 
-    if 'b' not in mode:
+    if not binary:
         makers.append(io.TextIOWrapper)
 
     closer = _FileCloser(name, temp_file, delete_failures)
@@ -220,7 +230,7 @@ def open(
     return fp
 
 
-def writer(stream, is_binary=None):
+def writer(stream, is_binary=None, close_on_exit=False):
     """
     Write safely to file streams, sockets and callables.
 
@@ -269,7 +279,7 @@ def writer(stream, is_binary=None):
         raise ValueError('Stream is not a file, a socket, or callable')
 
     io_class = io.BytesIO if is_binary else io.StringIO
-    closer = _MemoryCloser(write)
+    closer = _MemoryCloser(write, close_on_exit)
     fp = closer.wrap(io_class)()
     if send is write:
         fp.send = write
@@ -365,12 +375,16 @@ class _FileCloser(_Closer):
 
 
 class _MemoryCloser(_Closer):
-    def __init__(self, write):
+    def __init__(self, write, close_on_exit):
         self.write = write
+        self.close_on_exit = close_on_exit
 
     def close(self, close):
         self.value = self.fp.getvalue()
         super().close(close)
+
+        if self.close_on_exit:
+            self.fp.close()
 
     def _success(self):
         v = self.value
