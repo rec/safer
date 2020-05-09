@@ -1,5 +1,4 @@
-"""
-✏️safer: a safer file opener ✏️
+"""✏️safer: a safer file opener ✏️
 -------------------------------
 
 No more partial writes or corruption!
@@ -11,10 +10,21 @@ Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here.
-<https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
+<https://medium.com/@TomSwirly/
+%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
+
+* `safer.open()` is a drop-in replacement for built-in `open` that
+   writes a whole file or nothing by caching written data on disk.
+
+* `safer.writer()` wraps an existing writer or socket and writes a whole
+response or nothing by caching written data in memory
+
+* `safer.printer()` is exactly like `safer.open()` except that it yields a
+a function that prints to the stream
+
+------------------
 
 `safer.open()`
-=================
 
 `safer.open()` writes a whole file or nothing. It's a drop-in replacement for
 built-in `open()` except that `safer.open()` leaves the original file
@@ -45,13 +55,40 @@ is called, the temporary file is moved over `filename` *unless*
 
 ------------------------------------
 
+`safer.wrter()`
+
+`safer.writer()` is like `safer.open()` except that it uses an existing writer,
+a socket, or a callback.
+
+EXAMPLE
+
+.. code-block:: python
+
+    sock = socket.socket(*args)
+
+    # dangerous
+    try:
+        write_header(sock)
+        write_body(sock)
+        write_footer(sock)
+     except:
+        write_error(sock)  # Perhaps you already wrote it
+
+    # safer
+    with safer.write(sock) as s:
+        write_header(s)
+        write_body(s)
+        write_footer(s)
+     except:
+        write_error(sock)  # Nothing has been written
+
 `safer.printer()`
 ===================
 
 `safer.printer()` is similar to `safer.open()` except it yields a function
 that prints to the open file - it's very convenient for printing text.
 
-Like `safer.open()`, if an exception is raised within the context manager,
+Like `safer.open()`, if an exception is raised within its context manager,
 the original file is left unchanged.
 
 EXAMPLE
@@ -164,7 +201,8 @@ def open(
     if 'b' not in mode:
         makers.append(io.TextIOWrapper)
 
-    makers[-1] = _wrap_class(makers[-1])
+    closer = _FileCloser(name, temp_file, delete_failures)
+    makers[-1] = closer.wrap(makers[-1])
 
     opener = kwargs.pop('opener', None)
     fp = makers.pop(0)(temp_file, mode, opener=opener)
@@ -179,54 +217,63 @@ def open(
     if not hasattr(fp, 'mode'):
         fp.mode = mode
 
-    def safer_close(failed):
-        try:
-            if failed:
-                if delete_failures and os.path.exists(temp_file):
-                    os.remove(temp_file)
-            else:
-                if not copy:
-                    if os.path.exists(name):
-                        shutil.copymode(name, temp_file)
-                    else:
-                        os.chmod(temp_file, 0o100644)
-                os.rename(temp_file, name)
-        except Exception:
-            traceback.print_exc()
-
-    fp.safer_close = safer_close
     return fp
 
 
-@contextlib.contextmanager
-def writer(stream, mode=None):
-    """Write safely to file streams, sockets and callables"""
-    if mode and not callable(stream):
-        raise ValueError('Can only set mode for callable streams')
+def writer(stream, is_binary=None):
+    """
+    Write safely to file streams, sockets and callables.
 
+    ``safer.writer`` yields an in-memory stream that you can write
+    to, but which is only written to the original stream if the
+    context finished without raising an exception.
+
+    Because the actual writing happens when the context exits, it's possible
+    to block indefinitely if the underlying socket, stream or callable does.
+
+    ARGUMENTS
+      stream:
+        A file stream, a socket, or a callable that will receive data
+
+      is_binary:
+        Is ``stream`` a binary stream?
+
+        If ``is_binary`` is ``None``, deduce whether it's a binary file from
+        the stream, or assume it's text otherwise.
+    """
     write = getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
-    smode = getattr(stream, 'mode', None)
+    mode = getattr(stream, 'mode', None)
 
-    if write and smode:  # It looks like a file
-        writer, mode = write, (mode or smode)
+    if write and mode:
+        if not set('w+a').intersection(mode):
+            raise ValueError('Stream mode %s is not a write mode' % mode)
+
+        binary_mode = 'b' in mode
+        if is_binary is not None and is_binary is not binary_mode:
+            raise ValueError('is_binary is inconsistent with the file stream')
+
+        is_binary = binary_mode
+
     elif send and hasattr(stream, 'recv'):  # It looks like a socket:
-        writer, mode = send, (mode or 'wb')
+        write = send
+
+        if is_binary is not None and is_binary is not True:
+            raise ValueError('is_binary=False is inconsistent with a socket')
+        is_binary = True
+
     elif callable(stream):
-        writer, mode = stream, (mode or 'w')
+        write = stream
+
     else:
         raise ValueError('Stream is not a file, a socket, or callable')
 
-    if not set('w+a').intersection(mode):
-        raise ValueError('Stream mode %s is not a write mode' % smode)
-
-    result = io.BytesIO() if 'b' in mode else io.StringIO()
-    yield result
-
-    value = result.getvalue()
-    while value:
-        written = writer(value)
-        value = None if written is None else value[written:]
+    io_class = io.BytesIO if is_binary else io.StringIO
+    closer = _MemoryCloser(write)
+    fp = closer.wrap(io_class)()
+    if send is write:
+        fp.send = write
+    return fp
 
 
 @functools.wraps(open)
@@ -242,24 +289,94 @@ def printer(name, mode='w', *args, **kwargs):
         yield functools.partial(print, file=fp)
 
 
-@functools.lru_cache()
-def _wrap_class(parent):
-    def members():
-        def __exit__(self, *args):
-            self.safer_failed = bool(args[0])
-            return parent.__exit__(self, *args)
+class _Closer:
+    fp = None
+    failed = False
 
+    def wrap(self, cls):
+        @functools.wraps(cls)
+        def wrapped(*args, **kwargs):
+            assert not self.fp
+            closer = _closer_class(cls)
+            self.fp = closer(*args, **kwargs)
+            self.fp.safer_closer = self
+            return self.fp
+
+        return wrapped
+
+    def close(self, close):
+        try:
+            close(self.fp)
+        except Exception:
+            self._close(True)
+            raise
+
+        self._close(self.failed)
+
+    def _close(self, failed):
+        try:
+            if failed:
+                self._failure()
+            else:
+                self._success()
+        except Exception:
+            traceback.print_exc()
+
+    def _success(self):
+        pass
+
+    def _failure(self):
+        pass
+
+
+@functools.lru_cache()
+def _closer_class(cls):
+    def members():
+        @functools.wraps(cls.__exit__)
+        def __exit__(self, *args):
+            self.safer_closer.failed = bool(args[0])
+            return cls.__exit__(self, *args)
+
+        @functools.wraps(cls.close)
         def close(self):
-            try:
-                parent.close(self)
-            except Exception:
-                self.safer_close(True)
-                raise
-            self.safer_close(getattr(self, 'safer_failed', False))
+            self.safer_closer.close(cls.close)
 
         return locals()
 
-    return type('Safer' + parent.__name__, (parent,), members())
+    return type('Safer' + cls.__name__, (cls,), members())
+
+
+class _FileCloser(_Closer):
+    def __init__(self, name, temp_file, delete_failures):
+        self.name = name
+        self.temp_file = temp_file
+        self.delete_failures = delete_failures
+
+    def _failure(self):
+        if self.delete_failures and os.path.exists(self.temp_file):
+            os.remove(self.temp_file)
+
+    def _success(self):
+        if os.path.exists(self.name):
+            shutil.copymode(self.name, self.temp_file)
+        else:
+            os.chmod(self.temp_file, 0o100644)
+        os.rename(self.temp_file, self.name)
+
+
+class _MemoryCloser(_Closer):
+    def __init__(self, write):
+        self.write = write
+
+    def close(self, close):
+        self.value = self.fp.getvalue()
+        super().close(close)
+
+    def _success(self):
+        v = self.value
+        while v:
+            written = self.write(v)
+            v = None if written is None else v[written:]
 
 
 _DOC_COMMON = """

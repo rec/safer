@@ -297,7 +297,7 @@ class TestWriter(TestCase):
                 raise ValueError
         assert results == []
 
-    def test_file(self):
+    def test_one_file(self):
         with safer.open(self.filename, 'w') as fp1:
             fp1.write('one')
             with safer.writer(fp1) as fp2:

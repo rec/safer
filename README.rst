@@ -10,10 +10,21 @@ Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article ``here.
-<https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>``_
+<https://medium.com/@TomSwirly/
+%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>``_
+
+* ``safer.open()`` is a drop-in replacement for built-in ``open`` that
+   writes a whole file or nothing by caching written data on disk.
+
+* ``safer.writer()`` wraps an existing writer or socket and writes a whole
+response or nothing by caching written data in memory
+
+* ``safer.printer()`` is exactly like ``safer.open()`` except that it yields a
+a function that prints to the stream
+
+------------------
 
 ``safer.open()``
-=================
 
 ``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
 built-in ``open()`` except that ``safer.open()`` leaves the original file
@@ -44,13 +55,40 @@ is called, the temporary file is moved over ``filename`` *unless*
 
 ------------------------------------
 
+``safer.wrter()``
+
+``safer.writer()`` is like ``safer.open()`` except that it uses an existing writer,
+a socket, or a callback.
+
+EXAMPLE
+
+.. code-block:: python
+
+    sock = socket.socket(*args)
+
+    # dangerous
+    try:
+        write_header(sock)
+        write_body(sock)
+        write_footer(sock)
+     except:
+        write_error(sock)  # Perhaps you already wrote it
+
+    # safer
+    with safer.write(sock) as s:
+        write_header(s)
+        write_body(s)
+        write_footer(s)
+     except:
+        write_error(sock)  # Nothing has been written
+
 ``safer.printer()``
 ===================
 
 ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
 that prints to the open file - it's very convenient for printing text.
 
-Like ``safer.open()``, if an exception is raised within the context manager,
+Like ``safer.open()``, if an exception is raised within its context manager,
 the original file is left unchanged.
 
 EXAMPLE
@@ -100,8 +138,27 @@ FUNCTIONS
     overwrites the original file when close() is called, and only if there was no
     failure
 
-``safer.writer(stream, mode=None)``
-    Write safely to file streams, sockets and callables
+``safer.writer(stream, is_binary=None)``
+    
+        Write safely to file streams, sockets and callables.
+    
+        ````safer.writer```` yields an in-memory stream that you can write
+        to, but which is only written to the original stream if the
+        context finished without raising an exception.
+    
+        Because the actual writing happens when the context exits, it's possible
+        to block indefinitely if the underlying socket, stream or callable does.
+    
+        ARGUMENTS
+          stream:
+            A file stream, a socket, or a callable that will receive data
+    
+          is_binary:
+            Is ````stream```` a binary stream?
+    
+            If ````is_binary```` is ````None````, deduce whether it's a binary file from
+            the stream, or assume it's text otherwise.
+        
 
 ``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True)``
     
