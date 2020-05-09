@@ -9,12 +9,11 @@ Install ``safer`` from the command line with pip
 Tested on Python 3.4 and 3.8
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
-See the Medium article `here.
-<https://medium.com/@TomSwirly/
+See the Medium article `here.<https://medium.com/@TomSwirly/
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
 * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
-   writes a whole file or nothing by caching written data on disk.
+writes a whole file or nothing by caching written data on disk.
 
 * ``safer.writer()`` wraps an existing writer or socket and writes a whole
 response or nothing by caching written data in memory
