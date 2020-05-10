@@ -200,7 +200,7 @@ def open(
     follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
-    cache_in_memory=False,
+    use_tempfile=True,
 ):
     """
     A drop-in replacement for ``open()`` which returns a stream which only
@@ -224,9 +224,9 @@ def open(
     if is_read:
         return simple_open()
 
-    if cache_in_memory:
+    if not use_tempfile:
         if '+' in mode:
-            raise ValueError('+ mode is not compatible with cache_in_memory')
+            raise ValueError('+ mode is incompatible with use_tempfile=False')
 
         def write(value):
             with simple_open() as fp:
@@ -455,9 +455,9 @@ _DOC_ARGS = """
       follow_symlinks:
         If true, overwrite the file pointed to and not the symlink
 
-      cache_in_memory:
-        If true, cache the writes in memory - otherwise use a disk file
-        and os.rename
+      use_tempfile:
+        If true use a disk file and os.rename() at the end, otherwise
+        cache the writes in memory
 
     The remaining arguments are the same as for built-in ``open()``.
 """
