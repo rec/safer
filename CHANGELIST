@@ -1,9 +1,9 @@
-## v3.1.0 - 2020-04-27
+## v3.1.1 - 2020-05-09
 
 * Fix README.rst
 * Add unittest to make sure the .rst renders
 
-## v3.1.0 - 2020-04-27
+## v3.1.0 - 2020-05-09
 
 * New improved safer.writer()
 * In-memory caching

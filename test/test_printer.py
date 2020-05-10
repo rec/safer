@@ -182,10 +182,16 @@ class TestSafer(TestCase):
         assert arg == '``name`` argument must be string, not int'
 
     def test_help(self):
+        errors = []
+
         for name in safer.__all__:
             func = getattr(safer, name)
             value = pydoc.render_doc(func, title='%s')
-            assert value.startswith('function %s in module safer' % name)
+            test_value = 'function %s in module safer' % name
+            if not value.startswith(test_value):
+                # errors.append(value[: len(test_value)])
+                errors.append(name)
+        assert errors == []
 
     def test_line_buffering(self):
         with self.assertRaises(ValueError) as m:
