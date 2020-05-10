@@ -65,6 +65,40 @@ class TestWriter(TestCase):
                 raise ValueError
         assert sock.items == []
 
+    def test_callable2(self):
+        results = []
+        with safer.writer(results.append) as fp:
+            fp.write('one')
+            fp.write('two')
+            assert results == []
+
+        assert results == ['onetwo']
+
+    def test_callable_closer(self):
+        results = []
+        with safer.closer(results.append, close_on_exit=True) as fp:
+            fp.write('one')
+            fp.write('two')
+            assert results == []
+
+        assert results == ['onetwo']
+
+    def test_callable_closer2(self):
+        class CB:
+            def __call__(self, item):
+                results.append(item)
+
+            def close(self, failed=-5):
+                results.append(('close', failed))
+
+        results = []
+        with safer.writer(CB(), close_on_exit=True) as fp:
+            fp.write('one')
+            fp.write('two')
+            assert results == []
+
+        assert results == ['onetwo', ('close', False)]
+
 
 class socket:
     def __init__(self):

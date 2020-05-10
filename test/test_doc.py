@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest import TestCase, skipIf
 import doc_safer
+import io
 import platform
 from readme_renderer import rst
 
@@ -14,5 +15,8 @@ class TestDoc(TestCase):
         assert actual.rstrip() == README_TEXT.rstrip()
 
     def test_rendering(self):
-        actual = rst.render(README_TEXT)
+        out = io.StringIO()
+        actual = rst.render(README_TEXT, out)
+        print('XXX')
+        print(out.getvalue())
         assert actual is not None

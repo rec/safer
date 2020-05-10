@@ -13,17 +13,25 @@ For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 See the Medium article `here. <https://medium.com/@TomSwirly/\
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
+``safer`` does not force atomic writing of files!  It is aimed at preventing
+corrupt files, streams, socket connections or similar, but from to a programmer
+error, not because of concurrent modification of files from other threads or
+processes.  See https://pypi.org/project/atomicwrites/ if you need atomic file
+writing.
+
 * ``safer.writer()`` wraps an existing writer or socket and writes a whole
-  response or nothing by caching written data in memory
+  response or nothing, by caching written data in memory
 
 * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
   writes a whole file or nothing by caching written data on disk.
+  Unfortunately, disk caching does not work on Windows.
 
 * ``safer.closer()`` returns a stream like from ``safer.write()`` that also
   closes the underlying stream or callable when it closes.
 
 * ``safer.printer()`` is ``safer.open()`` except that it yields a
-  a function that prints to the stream
+  a function that prints to the stream.  Like ``safer.open()``, it
+  unfortunately does not work on Windows.
 
 ------------------
 
@@ -394,8 +402,12 @@ class _MemoryCloser(_Closer):
         self.value = self.fp.getvalue()
         super().close(close)
 
-        if self.close_on_exit and close:
-            close(self.fp)
+        if self.close_on_exit:
+            if close:
+                close(self.fp)
+            closer = getattr(self.write, 'close', None)
+            if closer:
+                closer(self.failed)
 
     def _success(self):
         v = self.value
