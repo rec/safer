@@ -146,6 +146,7 @@ def writer(stream, is_binary=None, close_on_exit=False):
     Because the actual writing happens when the context exits, it's possible
     to block indefinitely if the underlying socket, stream or callable does.
     """
+
     write = getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
     mode = getattr(stream, 'mode', None)
@@ -180,13 +181,6 @@ def writer(stream, is_binary=None, close_on_exit=False):
     return fp
 
 
-def closer(stream, is_binary=None, close_on_exit=False):
-    """
-    Like ``safer.writer()`` but with ``close_on_exit=True`` by default
-    """
-    return writer(stream, is_binary, close_on_exit)
-
-
 # See https://docs.python.org/3/library/functions.html#open
 def open(
     name,
@@ -200,7 +194,7 @@ def open(
     follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
-    use_tempfile=True,
+    temp_file=True,
 ):
     """
     A drop-in replacement for ``open()`` which returns a stream which only
@@ -224,9 +218,9 @@ def open(
     if is_read:
         return simple_open()
 
-    if not use_tempfile:
+    if not temp_file:
         if '+' in mode:
-            raise ValueError('+ mode is incompatible with use_tempfile=False')
+            raise ValueError('+ mode requires a temp_file argument')
 
         def write(value):
             with simple_open() as fp:
@@ -275,8 +269,9 @@ def open(
             raise IOError('Directory does not exist')
         os.makedirs(parent)
 
-    fd, temp_file = tempfile.mkstemp(dir=parent)
-    os.close(fd)
+    if temp_file is True:
+        fd, temp_file = tempfile.mkstemp(dir=parent)
+        os.close(fd)
 
     if is_copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
@@ -291,7 +286,7 @@ def open(
     if not is_binary:
         makers.append(io.TextIOWrapper)
 
-    closer = _FileCloser(name, temp_file, delete_failures)
+    closer = _FileRenameCloser(name, temp_file, delete_failures)
     makers[-1] = closer.wrap(makers[-1])
 
     opener = kwargs.pop('opener', None)
@@ -310,10 +305,14 @@ def open(
     return fp
 
 
-_WRAP_ASSIGNED = '__module__', '__annotations__'
+def closer(stream, is_binary=None, close_on_exit=False):
+    """
+    Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+    """
+    return writer(stream, is_binary, close_on_exit)
 
 
-@functools.wraps(open, assigned=_WRAP_ASSIGNED)
+@functools.wraps(open, assigned=('__module__', '__annotations__'))
 @contextlib.contextmanager
 def printer(name, mode='w', *args, **kwargs):
     """
@@ -349,7 +348,7 @@ class _Closer:
 
     def close(self, close):
         try:
-            close(self.fp)
+            close()
         except Exception:
             self._close(True)
             raise
@@ -373,8 +372,7 @@ class _Closer:
 
 
 class _FileCloser(_Closer):
-    def __init__(self, name, temp_file, delete_failures):
-        self.name = name
+    def __init__(self, temp_file, delete_failures):
         self.temp_file = temp_file
         self.delete_failures = delete_failures
 
@@ -382,12 +380,40 @@ class _FileCloser(_Closer):
         if self.delete_failures and os.path.exists(self.temp_file):
             os.remove(self.temp_file)
 
+
+class _FileRenameCloser(_FileCloser):
+    def __init__(self, name, temp_file, delete_failures):
+        self.name = name
+        super().__init__(temp_file, delete_failures)
+
     def _success(self):
         if os.path.exists(self.name):
             shutil.copymode(self.name, self.temp_file)
         else:
             os.chmod(self.temp_file, 0o100644)
         os.rename(self.temp_file, self.name)
+
+
+class _WriterCloser(_Closer):
+    def __init__(self, write, close_on_exit):
+        self.write = write
+        self.close_on_exit = close_on_exit
+
+    def close(self, close=None):
+        super().close(close)
+
+        if self.close_on_exit:
+            if close:
+                close()
+            closer = getattr(self.write, 'close', None)
+            if closer:
+                closer(self.failed)
+
+    def _success(self):
+        v = self.value
+        while v:
+            written = self.write(v)
+            v = None if written is None else v[written:]
 
 
 class _MemoryCloser(_Closer):
@@ -404,7 +430,7 @@ class _MemoryCloser(_Closer):
 
         if self.close_on_exit:
             if close:
-                close(self.fp)
+                close()
             closer = getattr(self.write, 'close', None)
             if closer:
                 closer(self.failed)
@@ -426,7 +452,7 @@ def _closer_class(cls):
 
         @functools.wraps(cls.close)
         def close(self):
-            self.safer_closer.close(cls.close)
+            self.safer_closer.close(lambda: cls.close(self))
 
         return locals()
 
@@ -455,9 +481,12 @@ _DOC_ARGS = """
       follow_symlinks:
         If true, overwrite the file pointed to and not the symlink
 
-      use_tempfile:
+      temp_file:
         If true use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory
+        cache the writes in memory.  If it's a string, use this as the
+        name of the temporary file, otherwise select one in the same
+        directory as the target file, or in the system tempfile for streams
+        that aren't files.
 
     The remaining arguments are the same as for built-in ``open()``.
 """

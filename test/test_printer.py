@@ -8,7 +8,7 @@ import platform
 import pydoc
 import safer
 
-copen = functools.partial(safer.open, mode='w', use_tempfile=False)
+copen = functools.partial(safer.open, mode='w', temp_file=False)
 
 
 class TestSafer(TestCase):
