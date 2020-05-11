@@ -1,3 +1,8 @@
+## v3.1.2 - 2020-05-10
+
+* New `safer.closer()`
+* Now `safer.open()` can also cache in memory
+
 ## v3.1.1 - 2020-05-09
 
 * Fix README.rst

@@ -131,7 +131,7 @@ import shutil
 import tempfile
 import traceback
 
-__version__ = '3.1.1'
+__version__ = '3.1.2'
 __all__ = 'writer', 'open', 'closer', 'printer'
 
 
