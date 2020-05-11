@@ -164,7 +164,7 @@ def writer(stream, is_binary=None, close_on_exit=False):
     elif send and hasattr(stream, 'recv'):  # It looks like a socket:
         write = send
 
-        if is_binary is not None and is_binary is not True:
+        if not (is_binary is None or is_binary is True):
             raise ValueError('is_binary=False is inconsistent with a socket')
         is_binary = True
 
