@@ -496,17 +496,6 @@ _DOC_FAILURE = """
     temporary file is deleted.
 """
 
-_DOC_FUNC = {
-    'open': """
-A drop-in replacement for ``open()`` which returns a stream which only
-overwrites the original file when close() is called, and only if there was no
-failure""",
-    'printer': """
-A context manager that yields a function that prints to the opened file,
-only overwriting the original file at the exit of the context,
-and only if there was no exception thrown""",
-}
-
 _DOC_WRITER_ARGS = """
     ARGUMENTS
       stream:

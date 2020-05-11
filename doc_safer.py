@@ -1,6 +1,6 @@
-from __future__ import print_function
 import inspect
 import safer
+from test import get_help
 
 README_FILE = 'README.rst'
 
@@ -27,6 +27,8 @@ def make_doc():
 def main():
     with safer.printer(README_FILE) as print:
         print(make_doc())
+
+    get_help.write_help()
 
 
 BODY = """

@@ -3,7 +3,6 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 import functools
 import os
-import pydoc
 import safer
 import stat
 
@@ -183,12 +182,6 @@ class TestSafer(TestCase):
 
         arg = m.exception.args[0]
         assert arg == '`name` must be string, not int'
-
-    def test_help(self):
-        for name in safer.__all__:
-            func = getattr(safer, name)
-            value = pydoc.render_doc(func, title='%s')
-            assert value.startswith('function %s in module safer' % name)
 
     @temps_test
     def test_line_buffering(self, safer_open):
