@@ -160,7 +160,7 @@ FUNCTIONS
     set to ``True``.
 
     In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
-    cached results is moved over the original file, successfully completing the
+    cached results replace the original file, successfully completing the
     write.
 
     If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
@@ -179,14 +179,15 @@ FUNCTIONS
 
     The arguments mean the same as for built-in ``open()``, except these:
 
+      follow_symlinks:
+        If true, overwrite the file pointed to and not the symlink
+
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
-        If true, the temporary file is deleted if there is an exception
-
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
+        If set to false, any temporary files created are not deleted
+        if there is an exception
 
       temp_file:
         If true, use a disk file and os.rename() at the end, otherwise
@@ -220,7 +221,7 @@ FUNCTIONS
 ==================================================
 
     A context manager that yields a function that prints to the opened file,
-    only overwriting the original file at the exit of the context,
+    only writing to the original file at the exit of the context,
     and only if there was no exception thrown
 
     ARGUMENTS:
@@ -231,7 +232,7 @@ FUNCTIONS
         The mode string passed to ``safer.open()``
 
       args:
-        Positional arguments ``safer.open()``
+        Positional arguments to ``safer.open()``
 
       mode:
         Keywoard arguments to ``safer.open()``

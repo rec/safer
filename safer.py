@@ -219,7 +219,7 @@ def open(
     set to ``True``.
 
     In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
-    cached results is moved over the original file, successfully completing the
+    cached results replace the original file, successfully completing the
     write.
 
     If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
@@ -238,14 +238,15 @@ def open(
 
     The arguments mean the same as for built-in ``open()``, except these:
 
+      follow_symlinks:
+        If true, overwrite the file pointed to and not the symlink
+
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
       delete_failures:
-        If true, the temporary file is deleted if there is an exception
-
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
+        If set to false, any temporary files created are not deleted
+        if there is an exception
 
       temp_file:
         If true, use a disk file and os.rename() at the end, otherwise
@@ -378,7 +379,7 @@ def closer(stream, is_binary=None, close_on_exit=False):
 def printer(name, mode='w', *args, **kwargs):
     """
     A context manager that yields a function that prints to the opened file,
-    only overwriting the original file at the exit of the context,
+    only writing to the original file at the exit of the context,
     and only if there was no exception thrown
 
     ARGUMENTS:
@@ -389,7 +390,7 @@ def printer(name, mode='w', *args, **kwargs):
         The mode string passed to ``safer.open()``
 
       args:
-        Positional arguments ``safer.open()``
+        Positional arguments to ``safer.open()``
 
       mode:
         Keywoard arguments to ``safer.open()``
@@ -406,7 +407,6 @@ def printer(name, mode='w', *args, **kwargs):
 
 class _Closer:
     fp = None
-    failed = False
 
     def wrap(self, cls):
         @functools.wraps(cls)
@@ -420,9 +420,14 @@ class _Closer:
 
         return wrapped
 
-    def close(self, close):
+    @property
+    def failed(self):
+        return self.fp and getattr(self.fp, 'safer_failed', False)
+
+    def close(self, close=None):
         try:
-            close()
+            if close:
+                close()
         except Exception:
             try:
                 self._close(True)
@@ -463,28 +468,6 @@ class _FileCloser(_Closer):
             os.remove(self.temp_file)
 
 
-class _WriterCloser(_Closer):
-    def __init__(self, write, close_on_exit):
-        self.write = write
-        self.close_on_exit = close_on_exit
-
-    def close(self, close=None):
-        super().close(close)
-
-        if self.close_on_exit:
-            if close:
-                close()
-            closer = getattr(self.write, 'close', None)
-            if closer:
-                closer(self.failed)
-
-    def _success(self):
-        v = self.value
-        while v:
-            written = self.write(v)
-            v = None if written is None else v[written:]
-
-
 class _MemoryCloser(_Closer):
     def __init__(self, write, is_binary, close_on_exit):
         self.write = write
@@ -518,7 +501,7 @@ def _closer_class(cls):
     def members():
         @functools.wraps(cls.__exit__)
         def __exit__(self, *args):
-            self.safer_closer.failed = bool(args[0])
+            self.safer_failed = bool(args[0])
             return cls.__exit__(self, *args)
 
         @functools.wraps(cls.close)
