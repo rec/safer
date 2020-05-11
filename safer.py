@@ -141,7 +141,14 @@ __version__ = '3.1.2'
 __all__ = 'writer', 'open', 'closer', 'printer'
 
 
-def writer(stream, is_binary=None, close_on_exit=False):
+def writer(
+    stream,
+    is_binary=None,
+    close_on_exit=False,
+    temp_file=False,
+    chunk_size=0x100000,
+    delete_failures=True,
+):
     """
     Write safely to file streams, sockets and callables.
 
@@ -165,7 +172,6 @@ def writer(stream, is_binary=None, close_on_exit=False):
       close_on_exit: If True, the underlying stream is closed when the writer
         closes
     """
-
     write = getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
     mode = getattr(stream, 'mode', None)
@@ -193,11 +199,22 @@ def writer(stream, is_binary=None, close_on_exit=False):
     else:
         raise ValueError('Stream is not a file, a socket, or callable')
 
-    fp = _MemoryCloser(write, is_binary, close_on_exit).fp
-    if send is write:
-        fp.send = write
+    if temp_file:
+        closer = _MemoryFileCloser(
+            write,
+            close_on_exit,
+            is_binary,
+            temp_file,
+            chunk_size,
+            delete_failures,
+        )
+    else:
+        closer = _MemoryStreamCloser(write, close_on_exit, is_binary)
 
-    return fp
+    if send is write:
+        closer.fp.send = write
+
+    return closer.fp
 
 
 # See https://docs.python.org/3/library/functions.html#open
@@ -260,7 +277,6 @@ def open(
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
-
     """
     is_copy = '+' in mode or 'a' in mode
     is_read = 'r' in mode and not is_copy
@@ -272,6 +288,7 @@ def open(
 
     if isinstance(name, Path):
         name = str(name)
+
     if not isinstance(name, str):
         raise TypeError('`name` must be string, not %s' % type(name).__name__)
 
@@ -303,7 +320,7 @@ def open(
             with simple_open() as fp:
                 fp.write(value)
 
-        closer = _MemoryCloser(write, is_binary, close_on_exit=True)
+        closer = _MemoryStreamCloser(write, True, is_binary)
         return add_mode(closer.fp)
 
     if not closefd:
@@ -319,17 +336,13 @@ def open(
         if errors:
             raise ValueError('binary mode doesn\'t take an errors argument')
 
-    if 'x' in mode:
-        if os.path.exists(name):
-            raise FileExistsError("File exists: '%s'" % name)
+    if 'x' in mode and os.path.exists(name):
+        raise FileExistsError("File exists: '%s'" % name)
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
-    if temp_file is True:
-        fd, temp_file = tempfile.mkstemp(dir=parent)
-        os.close(fd)
-
+    temp_file = _resolve_temp_file(temp_file, parent)
     if is_copy and os.path.exists(name):
         shutil.copy2(name, temp_file)
 
@@ -411,6 +424,14 @@ def printer(name, mode='w', *args, **kwargs):
         yield functools.partial(print, file=fp)
 
 
+def _resolve_temp_file(temp_file, parent=None):
+    if temp_file is True:
+        fd, temp_file = tempfile.mkstemp(dir=parent)
+        os.close(fd)
+
+    return temp_file
+
+
 class _Closer:
     fp = None
 
@@ -430,10 +451,10 @@ class _Closer:
     def failed(self):
         return self.fp and getattr(self.fp, 'safer_failed', False)
 
-    def close(self, close=None):
+    def close(self, parent_close=None):
         try:
-            if close:
-                close()
+            if parent_close:
+                parent_close()
         except Exception:
             try:
                 self._close(True)
@@ -475,15 +496,11 @@ class _FileCloser(_Closer):
 
 
 class _MemoryCloser(_Closer):
-    def __init__(self, write, is_binary, close_on_exit):
+    def __init__(self, write, close_on_exit):
         self.write = write
         self.close_on_exit = close_on_exit
-        io_class = io.BytesIO if is_binary else io.StringIO
-        fp = self.wrap(io_class)()
-        assert fp == self.fp
 
     def close(self, close=None):
-        self.value = self.fp.getvalue()
         super().close(close)
 
         if self.close_on_exit:
@@ -493,13 +510,61 @@ class _MemoryCloser(_Closer):
             if closer:
                 closer(self.failed)
 
-    def _success(self):
-        v = self.value
+
+class _MemoryStreamCloser(_MemoryCloser):
+    def __init__(self, write, close_on_exit, is_binary):
+        super().__init__(write, close_on_exit)
+        io_class = io.BytesIO if is_binary else io.StringIO
+        fp = self.wrap(io_class)()
+        assert fp == self.fp
+
+    def close(self, parent_close=None):
+        self.value = self.fp.getvalue()
+        super().close(parent_close)
+
+    def _write(self, v):
         while True:
             written = self.write(v)
             v = (written is not None) and v[written:]
             if not v:
                 break
+
+    def _success(self):
+        self._write(self.value)
+
+
+class _MemoryFileCloser(_MemoryCloser):
+    def __init__(
+        self,
+        write,
+        close_on_exit,
+        is_binary,
+        temp_file,
+        chunk_size,
+        delete_failures,
+    ):
+        super().__init__(write, close_on_exit)
+        self.is_binary = is_binary
+        self.temp_file = _resolve_temp_file(temp_file)
+        self.chunk_size = chunk_size
+        self.delete_failures = delete_failures
+
+    def _failure(self):
+        if self.delete_failures:
+            try:
+                if os.path.exists(self.temp_file):
+                    os.remove(self.temp_file)
+            except Exception:
+                traceback.print_exc()
+
+    def _success(self):
+        mode = 'rb' if self.is_binary else 'r'
+        with open(self.temp_file, mode) as fp:
+            while True:
+                data = fp.read(self.chunk_size)
+                if not data:
+                    break
+                self.write(data)
 
 
 @functools.lru_cache()

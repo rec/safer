@@ -129,8 +129,8 @@ EXAMPLE
 FUNCTIONS
 ---------
 
-``safer.writer(stream, is_binary=None, close_on_exit=False)``
-=============================================================
+``safer.writer(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
+========================================================================================================================
 
     Write safely to file streams, sockets and callables.
 
@@ -202,7 +202,6 @@ FUNCTIONS
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
-
     
 
 ``safer.closer(stream, is_binary=None, close_on_exit=False)``

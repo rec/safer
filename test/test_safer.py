@@ -1,54 +1,27 @@
-from pathlib import Path
-from tempfile import TemporaryDirectory
-from unittest import TestCase
-import functools
+from . import helpers
 import os
 import safer
 import stat
 
-topen = functools.partial(safer.open, temp_file=True)
 
-
-def temps_test(fn):
-    @functools.wraps(fn)
-    def wrapped(self):
-        fn(self, safer.open)
-        self.tearDown()
-        self.setUp()
-        fn(self, topen)
-
-    return wrapped
-
-
-class TestSafer(TestCase):
-    def setUp(self):
-        self.td_context = TemporaryDirectory()
-        self.td = Path(self.td_context.__enter__())
-        self.filename = self.td / 'test.txt'
-
-    def tearDown(self):
-        self.td_context.__exit__(None, None, None)
-
-    @temps_test
+@helpers.temps(safer.open)
+class TestSafer(helpers.TestCase):
     def test_open(self, safer_open):
         with safer_open(self.filename, 'w') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_no_copy(self, safer_open):
         with safer_open(self.filename, 'a') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_copy(self, safer_open):
         self.filename.write_text('c')
         with safer_open(self.filename, 'a') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'chello'
 
-    @temps_test
     def test_error(self, safer_open):
         self.filename.write_text('hello')
 
@@ -59,7 +32,6 @@ class TestSafer(TestCase):
 
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_make_parents(self, safer_open):
         self.filename = self.td / 'foo/test.txt'
         with self.assertRaises(IOError):
@@ -70,7 +42,6 @@ class TestSafer(TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_two_errors(self, safer_open):
         uses_files = safer_open is not safer.open
 
@@ -114,35 +85,6 @@ class TestSafer(TestCase):
             assert len(before) + 1 == len(after)
             assert len(after.difference(before)) == 1
 
-    def test_explicit_close(self):
-        self.filename.write_text('hello')
-        assert self.filename.read_text() == 'hello'
-        before = set(os.listdir(self.td))
-
-        fp = topen(self.filename, 'w')
-        fp.write('OK!')
-        assert self.filename.read_text() == 'hello'
-
-        after = set(os.listdir(self.td))
-        assert len(before) + 1 == len(after)
-        assert len(after.difference(before)) == 1
-
-        fp.close()
-
-        self.assertEqual(self.filename.read_text(), 'OK!')
-        assert self.filename.read_text() == 'OK!'
-        after = set(os.listdir(self.td))
-        assert before == after
-
-    def test_read(self):
-        self.filename.write_text('hello')
-        with topen(self.filename, 'r+') as fp:
-            assert fp.read() == 'hello'
-
-        with self.assertRaises(ValueError):
-            safer.open(self.filename, 'r+')
-
-    @temps_test
     def test_error_with_copy(self, safer_open):
         self.filename.write_text('hello')
 
@@ -153,7 +95,6 @@ class TestSafer(TestCase):
 
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_file_perms(self, safer_open):
         (self.td / 'test2.txt').write_text('hello')
 
@@ -175,15 +116,6 @@ class TestSafer(TestCase):
         assert self.filename.read_text() == 'bye there'
         assert os.stat(self.filename).st_mode == new_mode
 
-    def test_int_filename(self):
-        with self.assertRaises(TypeError) as m:
-            with topen(1, 'w') as fp:
-                fp.write('hello')
-
-        arg = m.exception.args[0]
-        assert arg == '`name` must be string, not int'
-
-    @temps_test
     def test_line_buffering(self, safer_open):
         temp_file = safer_open is not safer.open
         sp = safer.printer(self.filename, buffering=1, temp_file=temp_file)
@@ -193,7 +125,6 @@ class TestSafer(TestCase):
             print('ar')
         assert self.filename.read_text() == 'foo\nbar\n'
 
-    @temps_test
     def test_binary(self, safer_open):
         with safer_open(self.filename, 'wb') as fp:
             fp.write(b'hello')
@@ -206,22 +137,11 @@ class TestSafer(TestCase):
         with safer.open(self.filename, 'rb') as fp:
             assert fp.read() == b'hello there'
 
-    def test_all_modes(self):
-        modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
-
-        for m in modes:
-            with topen(self.filename, m):
-                pass
-            with topen(self.filename, m + 'b'):
-                pass
-
-    @temps_test
     def test_basic_write(self, safer_open):
         with safer_open(self.filename, 'w'):
             pass
         assert os.path.exists(self.filename), self.filename
 
-    @temps_test
     def test_mode_x(self, safer_open):
         with safer_open(self.filename, 'x') as fp:
             fp.write('hello')
@@ -231,13 +151,11 @@ class TestSafer(TestCase):
             with safer_open(self.filename, 'x') as fp:
                 fp.write('mode x')
 
-    @temps_test
     def test_mode_t(self, safer_open):
         with safer_open(self.filename, 'wt') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    @temps_test
     def test_symlink_file(self, safer_open):
         with safer_open(self.filename, 'w') as fp:
             fp.write('hello')
@@ -249,7 +167,6 @@ class TestSafer(TestCase):
             fp.write('overwritten')
         assert self.filename.read_text() == 'overwritten'
 
-    @temps_test
     def test_symlink_directory(self, safer_open):
         self.filename = self.td / 'sub/test.txt'
         with safer_open(self.filename, 'w', make_parents=True) as fp:
@@ -264,7 +181,6 @@ class TestSafer(TestCase):
             fp.write('overwritten')
         assert self.filename.read_text() == 'overwritten'
 
-    @temps_test
     def test_file_exists_error(self, safer_open):
         with safer_open(self.filename, 'wt') as fp:
             fp.write('hello')
@@ -273,3 +189,50 @@ class TestSafer(TestCase):
         with safer_open(self.filename, 'wt') as fp:
             fp.write('goodbye')
         assert self.filename.read_text() == 'goodbye'
+
+
+class TestSaferFiles(helpers.TestCase):
+    def test_all_modes(self):
+        modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
+
+        for m in modes:
+            with safer.open(self.filename, m, temp_file=True):
+                pass
+            with safer.open(self.filename, m + 'b', temp_file=True):
+                pass
+
+    def test_explicit_close(self):
+        self.filename.write_text('hello')
+        assert self.filename.read_text() == 'hello'
+        before = set(os.listdir(self.td))
+
+        fp = safer.open(self.filename, 'w', temp_file=True)
+        fp.write('OK!')
+        assert self.filename.read_text() == 'hello'
+
+        after = set(os.listdir(self.td))
+        assert len(before) + 1 == len(after)
+        assert len(after.difference(before)) == 1
+
+        fp.close()
+
+        self.assertEqual(self.filename.read_text(), 'OK!')
+        assert self.filename.read_text() == 'OK!'
+        after = set(os.listdir(self.td))
+        assert before == after
+
+    def test_read(self):
+        self.filename.write_text('hello')
+        with safer.open(self.filename, 'r+', temp_file=True) as fp:
+            assert fp.read() == 'hello'
+
+        with self.assertRaises(ValueError):
+            safer.open(self.filename, 'r+')
+
+    def test_int_filename(self):
+        with self.assertRaises(TypeError) as m:
+            with safer.open(1, 'w', temp_file=True) as fp:
+                fp.write('hello')
+
+        arg = m.exception.args[0]
+        assert arg == '`name` must be string, not int'

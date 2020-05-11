@@ -1,6 +1,6 @@
 Help on function writer in module safer:
 
-wwrriitteerr(stream, is_binary=None, close_on_exit=False)
+wwrriitteerr(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
     Write safely to file streams, sockets and callables.
     
     ``safer.writer`` yields an in-memory stream that you can write
@@ -320,7 +320,7 @@ FFUUNNCCTTIIOONNSS
           mode:
             Keywoard arguments to ``safer.open()``
     
-    wwrriitteerr(stream, is_binary=None, close_on_exit=False)
+    wwrriitteerr(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
         Write safely to file streams, sockets and callables.
         
         ``safer.writer`` yields an in-memory stream that you can write
