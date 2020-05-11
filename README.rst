@@ -40,6 +40,36 @@ writes the data to a temporary file on disk, which is moved over using
 
 ------------------
 
+``safer.writer()``
+==================
+
+``safer.writer()`` wraps an existing stream - a writer, socket, or callback
+in a temporary stream which is only copied to the target stream at closer() and
+only if no exception was raised
+
+EXAMPLE
+
+.. code-block:: python
+
+    sock = socket.socket(*args)
+
+    # dangerous
+    try:
+        write_header(sock)
+        write_body(sock)   # Exception is thrown here
+        write_footer(sock)
+     except:
+        write_error(sock)  # Oops, the header was already written
+
+    # safer
+    try:
+        with safer.writer(sock) as s:
+            write_header(s)
+            write_body(s)  # Exception is thrown here
+            write_footer(s)
+     except:
+        write_error(sock)  # Nothing has been written
+
 ``safer.open()``
 =================
 
@@ -72,34 +102,6 @@ is called, the cached data is stored in ``filename`` *unless*
 ``fp.safer_failed`` is true.
 
 ------------------------------------
-
-``safer.writer()``
-==================
-
-``safer.writer()`` is like ``safer.open()`` except that it uses an existing
-writer, a socket, or a callback.
-
-EXAMPLE
-
-.. code-block:: python
-
-    sock = socket.socket(*args)
-
-    # dangerous
-    try:
-        write_header(sock)
-        write_body(sock)
-        write_footer(sock)
-     except:
-        write_error(sock)  # You already wrote the header!
-
-    # safer
-    with safer.write(sock) as s:
-        write_header(s)
-        write_body(s)
-        write_footer(s)
-     except:
-        write_error(sock)  # Nothing has been written
 
 ``safer.printer()``
 ===================
@@ -153,6 +155,21 @@ FUNCTIONS
 
       close_on_exit: If True, the underlying stream is closed when the writer
         closes
+
+      temp_file:
+        If not false, use a disk file and os.rename() at the end, otherwise
+        cache the writes in memory.  If it's a string, use this as the
+        name of the temporary file, otherwise select one in the same
+        directory as the target file, or in the system tempfile for streams
+        that aren't files.
+
+      chunk_size:
+        Transfer data from the temporary file to the underlying stream in
+        chunks of this byte size
+
+      delete_failures:
+        If set to false, any temporary files created are not deleted
+        if there is an exception
     
 
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)``
@@ -230,15 +247,5 @@ FUNCTIONS
     only writing to the original file at the exit of the context,
     and only if there was no exception thrown
 
-    ARGUMENTS:
-      name:
-        The name of file to open for printing
-
-      mode:
-        The mode string passed to ``safer.open()``
-
-      args:
-        Positional arguments to ``safer.open()``
-
-      mode:
-        Keywoard arguments to ``safer.open()``
+    ARGUMENTS
+      Same as for ``safer.open()``

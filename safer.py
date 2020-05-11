@@ -41,6 +41,36 @@ writes the data to a temporary file on disk, which is moved over using
 
 ------------------
 
+``safer.writer()``
+==================
+
+``safer.writer()`` wraps an existing stream - a writer, socket, or callback
+in a temporary stream which is only copied to the target stream at closer() and
+only if no exception was raised
+
+EXAMPLE
+
+.. code-block:: python
+
+    sock = socket.socket(*args)
+
+    # dangerous
+    try:
+        write_header(sock)
+        write_body(sock)   # Exception is thrown here
+        write_footer(sock)
+     except:
+        write_error(sock)  # Oops, the header was already written
+
+    # safer
+    try:
+        with safer.writer(sock) as s:
+            write_header(s)
+            write_body(s)  # Exception is thrown here
+            write_footer(s)
+     except:
+        write_error(sock)  # Nothing has been written
+
 ``safer.open()``
 =================
 
@@ -74,34 +104,6 @@ is called, the cached data is stored in ``filename`` *unless*
 
 ------------------------------------
 
-``safer.writer()``
-==================
-
-``safer.writer()`` is like ``safer.open()`` except that it uses an existing
-writer, a socket, or a callback.
-
-EXAMPLE
-
-.. code-block:: python
-
-    sock = socket.socket(*args)
-
-    # dangerous
-    try:
-        write_header(sock)
-        write_body(sock)
-        write_footer(sock)
-     except:
-        write_error(sock)  # You already wrote the header!
-
-    # safer
-    with safer.write(sock) as s:
-        write_header(s)
-        write_body(s)
-        write_footer(s)
-     except:
-        write_error(sock)  # Nothing has been written
-
 ``safer.printer()``
 ===================
 
@@ -134,6 +136,7 @@ import functools
 import io
 import os
 import shutil
+import sys
 import tempfile
 import traceback
 
@@ -171,6 +174,21 @@ def writer(
 
       close_on_exit: If True, the underlying stream is closed when the writer
         closes
+
+      temp_file:
+        If not false, use a disk file and os.rename() at the end, otherwise
+        cache the writes in memory.  If it's a string, use this as the
+        name of the temporary file, otherwise select one in the same
+        directory as the target file, or in the system tempfile for streams
+        that aren't files.
+
+      chunk_size:
+        Transfer data from the temporary file to the underlying stream in
+        chunks of this byte size
+
+      delete_failures:
+        If set to false, any temporary files created are not deleted
+        if there is an exception
     """
     write = getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
@@ -187,10 +205,10 @@ def writer(
         is_binary = binary_mode
 
     elif send and hasattr(stream, 'recv'):  # It looks like a socket:
-        write = send
-
         if not (is_binary is None or is_binary is True):
             raise ValueError('is_binary=False is inconsistent with a socket')
+
+        write = send
         is_binary = True
 
     elif callable(stream):
@@ -200,7 +218,7 @@ def writer(
         raise ValueError('Stream is not a file, a socket, or callable')
 
     if temp_file:
-        closer = _MemoryFileCloser(
+        closer = _FileStreamCloser(
             write,
             close_on_exit,
             is_binary,
@@ -217,7 +235,6 @@ def writer(
     return closer.fp
 
 
-# See https://docs.python.org/3/library/functions.html#open
 def open(
     name,
     mode='r',
@@ -301,13 +318,8 @@ def open(
             raise IOError('Directory does not exist')
         os.makedirs(parent)
 
-    def add_mode(fp):
-        if not hasattr(fp, 'mode'):
-            fp.mode = mode
-        return fp
-
     def simple_open():
-        return add_mode(__builtins__['open'](name, mode, buffering, **kwargs))
+        return __builtins__['open'](name, mode, buffering, **kwargs)
 
     if is_read:
         return simple_open()
@@ -320,8 +332,11 @@ def open(
             with simple_open() as fp:
                 fp.write(value)
 
-        closer = _MemoryStreamCloser(write, True, is_binary)
-        return add_mode(closer.fp)
+        fp = _MemoryStreamCloser(write, True, is_binary).fp
+
+        if not hasattr(fp, 'mode'):
+            fp.mode = mode
+        return fp
 
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
@@ -342,36 +357,12 @@ def open(
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
-    temp_file = _resolve_temp_file(temp_file, parent)
+    closer = _FileRenameCloser(name, temp_file, delete_failures, parent)
+
     if is_copy and os.path.exists(name):
-        shutil.copy2(name, temp_file)
+        shutil.copy2(name, closer.temp_file)
 
-    makers = [io.FileIO]
-    if buffering > 1:
-        if '+' in mode:
-            makers.append(io.BufferedRandom)
-        else:
-            makers.append(io.BufferedWriter)
-
-    if not is_binary:
-        makers.append(io.TextIOWrapper)
-
-    closer = _FileCloser(name, temp_file, delete_failures)
-    makers[-1] = closer.wrap(makers[-1])
-
-    opener = kwargs.pop('opener', None)
-
-    new_mode = mode.replace('x', 'w').replace('t', '')
-    fp = makers.pop(0)(temp_file, new_mode, opener=opener)
-
-    if buffering > 1:
-        fp = makers.pop(0)(fp, buffering)
-
-    if makers:
-        line_buffering = buffering == 1
-        fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
-
-    return add_mode(fp)
+    return closer._make_stream(buffering, mode, **kwargs)
 
 
 def closer(stream, is_binary=None, close_on_exit=False):
@@ -401,18 +392,8 @@ def printer(name, mode='w', *args, **kwargs):
     only writing to the original file at the exit of the context,
     and only if there was no exception thrown
 
-    ARGUMENTS:
-      name:
-        The name of file to open for printing
-
-      mode:
-        The mode string passed to ``safer.open()``
-
-      args:
-        Positional arguments to ``safer.open()``
-
-      mode:
-        Keywoard arguments to ``safer.open()``
+    ARGUMENTS
+      Same as for ``safer.open()``
     """
     if 'r' in mode and '+' not in mode:
         raise IOError('File not open for writing')
@@ -424,33 +405,7 @@ def printer(name, mode='w', *args, **kwargs):
         yield functools.partial(print, file=fp)
 
 
-def _resolve_temp_file(temp_file, parent=None):
-    if temp_file is True:
-        fd, temp_file = tempfile.mkstemp(dir=parent)
-        os.close(fd)
-
-    return temp_file
-
-
 class _Closer:
-    fp = None
-
-    def wrap(self, cls):
-        @functools.wraps(cls)
-        def wrapped(*args, **kwargs):
-            closer = _closer_class(cls)
-
-            self.fp = closer(*args, **kwargs)
-            self.fp.safer_closer = self
-
-            return self.fp
-
-        return wrapped
-
-    @property
-    def failed(self):
-        return self.fp and getattr(self.fp, 'safer_failed', False)
-
     def close(self, parent_close=None):
         try:
             if parent_close:
@@ -462,7 +417,7 @@ class _Closer:
                 traceback.print_exc()
             raise
 
-        self._close(self.failed)
+        self._close(self.fp.safer_failed)
 
     def _close(self, failed):
         if failed:
@@ -476,26 +431,92 @@ class _Closer:
     def _failure(self):
         pass
 
+    def _wrap(self, stream_cls):
+        @functools.wraps(stream_cls)
+        def wrapped(*args, **kwargs):
+            wrapped_cls = self._wrap_class(stream_cls)
+            self.fp = wrapped_cls(*args, **kwargs)
+            self.fp.safer_closer = self
+            self.fp.safer_failed = False
+            return self.fp
+
+        return wrapped
+
+    @staticmethod
+    @functools.lru_cache()
+    def _wrap_class(stream_cls):
+        def members():
+            @functools.wraps(stream_cls.__exit__)
+            def __exit__(self, *args):
+                self.safer_failed = bool(args[0])
+                return stream_cls.__exit__(self, *args)
+
+            @functools.wraps(stream_cls.close)
+            def close(self):
+                self.safer_closer.close(lambda: stream_cls.close(self))
+
+            return locals()
+
+        return type('Safer' + stream_cls.__name__, (stream_cls,), members())
+
 
 class _FileCloser(_Closer):
-    def __init__(self, name, temp_file, delete_failures):
-        self.name = name
+    def __init__(self, temp_file, delete_failures, parent=None):
+        if temp_file is True:
+            fd, temp_file = tempfile.mkstemp(dir=parent)
+            os.close(fd)
+
         self.temp_file = temp_file
         self.delete_failures = delete_failures
 
+    def _failure(self):
+        if os.path.exists(self.temp_file):
+            if self.delete_failures:
+                os.remove(self.temp_file)
+            else:
+                print('Temp_file saved:', self.temp_file, file=sys.stderr)
+
+    def _make_stream(self, buffering, mode, **kwargs):
+        makers = [io.FileIO]
+        if buffering > 1:
+            if '+' in mode:
+                makers.append(io.BufferedRandom)
+            else:
+                makers.append(io.BufferedWriter)
+
+        if 'b' not in mode:
+            makers.append(io.TextIOWrapper)
+
+        makers[-1] = self._wrap(makers[-1])
+
+        new_mode = mode.replace('x', 'w').replace('t', '')
+        opener = kwargs.pop('opener', None)
+        fp = makers.pop(0)(self.temp_file, new_mode, opener=opener)
+
+        if buffering > 1:
+            fp = makers.pop(0)(fp, buffering)
+
+        if makers:
+            line_buffering = buffering == 1
+            fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
+
+        return fp
+
+
+class _FileRenameCloser(_FileCloser):
+    def __init__(self, target_file, temp_file, delete_failures, parent=None):
+        self.target_file = target_file
+        super().__init__(temp_file, delete_failures, parent)
+
     def _success(self):
-        if os.path.exists(self.name):
-            shutil.copymode(self.name, self.temp_file)
+        if os.path.exists(self.target_file):
+            shutil.copymode(self.target_file, self.temp_file)
         else:
             os.chmod(self.temp_file, 0o100644)
-        os.rename(self.temp_file, self.name)
-
-    def _failure(self):
-        if self.delete_failures and os.path.exists(self.temp_file):
-            os.remove(self.temp_file)
+        os.rename(self.temp_file, self.target_file)
 
 
-class _MemoryCloser(_Closer):
+class _StreamCloser(_Closer):
     def __init__(self, write, close_on_exit):
         self.write = write
         self.close_on_exit = close_on_exit
@@ -508,14 +529,14 @@ class _MemoryCloser(_Closer):
                 close()
             closer = getattr(self.write, 'close', None)
             if closer:
-                closer(self.failed)
+                closer(self.fp.safer_failed)
 
 
-class _MemoryStreamCloser(_MemoryCloser):
+class _MemoryStreamCloser(_StreamCloser):
     def __init__(self, write, close_on_exit, is_binary):
         super().__init__(write, close_on_exit)
         io_class = io.BytesIO if is_binary else io.StringIO
-        fp = self.wrap(io_class)()
+        fp = self._wrap(io_class)()
         assert fp == self.fp
 
     def close(self, parent_close=None):
@@ -533,7 +554,7 @@ class _MemoryStreamCloser(_MemoryCloser):
         self._write(self.value)
 
 
-class _MemoryFileCloser(_MemoryCloser):
+class _FileStreamCloser(_StreamCloser, _FileCloser):
     def __init__(
         self,
         write,
@@ -543,19 +564,14 @@ class _MemoryFileCloser(_MemoryCloser):
         chunk_size,
         delete_failures,
     ):
-        super().__init__(write, close_on_exit)
-        self.is_binary = is_binary
-        self.temp_file = _resolve_temp_file(temp_file)
-        self.chunk_size = chunk_size
-        self.delete_failures = delete_failures
+        _StreamCloser.__init__(self, write, close_on_exit)
+        _FileCloser.__init__(self, temp_file, delete_failures)
 
-    def _failure(self):
-        if self.delete_failures:
-            try:
-                if os.path.exists(self.temp_file):
-                    os.remove(self.temp_file)
-            except Exception:
-                traceback.print_exc()
+        self.is_binary = is_binary
+        self.chunk_size = chunk_size
+        mode = 'wb' if is_binary else 'w'
+
+        self.fp = self._make_stream(-1, mode)
 
     def _success(self):
         mode = 'rb' if self.is_binary else 'r'
@@ -566,19 +582,5 @@ class _MemoryFileCloser(_MemoryCloser):
                     break
                 self.write(data)
 
-
-@functools.lru_cache()
-def _closer_class(cls):
-    def members():
-        @functools.wraps(cls.__exit__)
-        def __exit__(self, *args):
-            self.safer_failed = bool(args[0])
-            return cls.__exit__(self, *args)
-
-        @functools.wraps(cls.close)
-        def close(self):
-            self.safer_closer.close(lambda: cls.close(self))
-
-        return locals()
-
-    return type('Safer' + cls.__name__, (cls,), members())
+    def _failure(self):
+        _FileCloser._failure(self)
