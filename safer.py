@@ -452,7 +452,6 @@ def _closer_class(cls):
 
 
 _DOC_COMMON = """
-
     If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
     (update), then the original file will be copied to the temporary file
     before writing starts.
@@ -510,5 +509,5 @@ _DOC_WRITER_ARGS = """
 
 writer.__doc__ += _DOC_WRITER_ARGS
 closer.__doc__ += _DOC_WRITER_ARGS
-open.__doc__ += _DOC_FAILURE + _DOC_COMMON + _DOC_ARGS
+open.__doc__ += _DOC_FAILURE + '\n' + _DOC_COMMON + _DOC_ARGS
 printer.__doc__ += _DOC_COMMON + _DOC_ARGS
