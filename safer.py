@@ -172,7 +172,9 @@ def writer(stream, is_binary=None, close_on_exit=False):
         write = stream
 
     else:
-        raise ValueError('Stream is not a file, a socket, or callable')
+        raise ValueError(
+            'Stream is not a file, a socket, or callable', type(stream)
+        )
 
     fp = _MemoryCloser(write, is_binary, close_on_exit).fp
     if send is write:
@@ -194,7 +196,7 @@ def open(
     follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
-    temp_file=True,
+    temp_file=False,
 ):
     """
     A drop-in replacement for ``open()`` which returns a stream which only
@@ -212,11 +214,31 @@ def open(
         'opener': opener,
     }
 
+    if isinstance(name, Path):
+        name = str(name)
+    elif not isinstance(name, str):
+        tname = type(name).__name__
+        raise TypeError('``name`` argument must be string, not %s' % tname)
+
+    if follow_symlinks:
+        name = os.path.realpath(name)
+
+    parent = os.path.dirname(os.path.abspath(name))
+    if not os.path.exists(parent):
+        if not make_parents:
+            raise IOError('Directory does not exist')
+        os.makedirs(parent)
+
+    def add_mode(fp):
+        if not hasattr(fp, 'mode'):
+            fp.mode = mode
+        return fp
+
     def simple_open():
-        return __builtins__['open'](name, mode, buffering, **kwargs)
+        return add_mode(__builtins__['open'](name, mode, buffering, **kwargs))
 
     if is_read:
-        return simple_open()
+        return add_mode(simple_open())
 
     if not temp_file:
         if '+' in mode:
@@ -226,7 +248,7 @@ def open(
             with simple_open() as fp:
                 fp.write(value)
 
-        return _MemoryCloser(write, is_binary, close_on_exit=True).fp
+        return add_mode(_MemoryCloser(write, is_binary, close_on_exit=True).fp)
 
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
@@ -239,35 +261,15 @@ def open(
         if errors:
             raise ValueError('binary mode doesn\'t take an errors argument')
 
-    if isinstance(name, Path):
-        name = str(name)
-    elif not isinstance(name, str):
-        tname = type(name).__name__
-        raise TypeError('``name`` argument must be string, not %s' % tname)
-
-    if follow_symlinks:
-        name = os.path.realpath(name)
-
     if 'x' in mode:
         if os.path.exists(name):
             raise FileExistsError("File exists: '%s'" % name)
         mode = mode.replace('x', 'w')
 
-    if is_binary and 't' in mode:
-        raise ValueError('Inconsistent mode ' + mode)
     mode = mode.replace('t', '')
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
-
-    if 'b' in mode and buffering == 1:
-        raise ValueError('buffering = 1 only allowed for text streams')
-
-    parent = os.path.dirname(os.path.abspath(name))
-    if not os.path.exists(parent):
-        if not make_parents:
-            raise IOError('Directory does not exist')
-        os.makedirs(parent)
 
     if temp_file is True:
         fd, temp_file = tempfile.mkstemp(dir=parent)
@@ -299,10 +301,7 @@ def open(
         line_buffering = buffering == 1
         fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
 
-    if not hasattr(fp, 'mode'):
-        fp.mode = mode
-
-    return fp
+    return add_mode(fp)
 
 
 def closer(stream, is_binary=None, close_on_exit=False):
@@ -350,19 +349,19 @@ class _Closer:
         try:
             close()
         except Exception:
-            self._close(True)
+            try:
+                self._close(True)
+            except Exception:
+                traceback.print_exc()
             raise
 
         self._close(self.failed)
 
     def _close(self, failed):
-        try:
-            if failed:
-                self._failure()
-            else:
-                self._success()
-        except Exception:
-            traceback.print_exc()
+        if failed:
+            self._failure()
+        else:
+            self._success()
 
     def _success(self):
         pass
@@ -437,9 +436,11 @@ class _MemoryCloser(_Closer):
 
     def _success(self):
         v = self.value
-        while v:
+        while True:
             written = self.write(v)
-            v = None if written is None else v[written:]
+            v = (written is not None) and v[written:]
+            if not v:
+                break
 
 
 @functools.lru_cache()

@@ -165,7 +165,7 @@ FUNCTIONS
             If ``is_binary`` is ``None``, deduce whether it's a binary file from
             the stream, or assume it's text otherwise.
 
-`safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=True)`
+`safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)`
     
         A drop-in replacement for ``open()`` which returns a stream which only
         overwrites the original file when close() is called, and only if there was
@@ -224,7 +224,7 @@ FUNCTIONS
             If ``is_binary`` is ``None``, deduce whether it's a binary file from
             the stream, or assume it's text otherwise.
 
-`safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=True)`
+`safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)`
     
         A context manager that yields a function that prints to the opened file,
         only overwriting the original file at the exit of the context,
