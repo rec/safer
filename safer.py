@@ -172,9 +172,7 @@ def writer(stream, is_binary=None, close_on_exit=False):
         write = stream
 
     else:
-        raise ValueError(
-            'Stream is not a file, a socket, or callable', type(stream)
-        )
+        raise ValueError('Stream is not a file, a socket, or callable')
 
     fp = _MemoryCloser(write, is_binary, close_on_exit).fp
     if send is write:
@@ -207,18 +205,14 @@ def open(
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode
 
-    kwargs = {
-        'encoding': encoding,
-        'errors': errors,
-        'newline': newline,
-        'opener': opener,
-    }
+    kwargs = dict(
+        encoding=encoding, errors=errors, newline=newline, opener=opener
+    )
 
     if isinstance(name, Path):
         name = str(name)
-    elif not isinstance(name, str):
-        tname = type(name).__name__
-        raise TypeError('``name`` argument must be string, not %s' % tname)
+    if not isinstance(name, str):
+        raise TypeError('`name` must be string, not %s' % type(name).__name__)
 
     if follow_symlinks:
         name = os.path.realpath(name)
@@ -238,7 +232,7 @@ def open(
         return add_mode(__builtins__['open'](name, mode, buffering, **kwargs))
 
     if is_read:
-        return add_mode(simple_open())
+        return simple_open()
 
     if not temp_file:
         if '+' in mode:
@@ -248,12 +242,15 @@ def open(
             with simple_open() as fp:
                 fp.write(value)
 
-        return add_mode(_MemoryCloser(write, is_binary, close_on_exit=True).fp)
+        closer = _MemoryCloser(write, is_binary, close_on_exit=True)
+        return add_mode(closer.fp)
 
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
 
     if is_binary:
+        if 't' in mode:
+            raise ValueError('can\'t have text and binary mode at once')
         if newline:
             raise ValueError('binary mode doesn\'t take a newline argument')
         if encoding:
@@ -264,9 +261,6 @@ def open(
     if 'x' in mode:
         if os.path.exists(name):
             raise FileExistsError("File exists: '%s'" % name)
-        mode = mode.replace('x', 'w')
-
-    mode = mode.replace('t', '')
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
@@ -288,11 +282,13 @@ def open(
     if not is_binary:
         makers.append(io.TextIOWrapper)
 
-    closer = _FileRenameCloser(name, temp_file, delete_failures)
+    closer = _FileCloser(name, temp_file, delete_failures)
     makers[-1] = closer.wrap(makers[-1])
 
     opener = kwargs.pop('opener', None)
-    fp = makers.pop(0)(temp_file, mode, opener=opener)
+
+    new_mode = mode.replace('x', 'w').replace('t', '')
+    fp = makers.pop(0)(temp_file, new_mode, opener=opener)
 
     if buffering > 1:
         fp = makers.pop(0)(fp, buffering)
@@ -371,19 +367,10 @@ class _Closer:
 
 
 class _FileCloser(_Closer):
-    def __init__(self, temp_file, delete_failures):
-        self.temp_file = temp_file
-        self.delete_failures = delete_failures
-
-    def _failure(self):
-        if self.delete_failures and os.path.exists(self.temp_file):
-            os.remove(self.temp_file)
-
-
-class _FileRenameCloser(_FileCloser):
     def __init__(self, name, temp_file, delete_failures):
         self.name = name
-        super().__init__(temp_file, delete_failures)
+        self.temp_file = temp_file
+        self.delete_failures = delete_failures
 
     def _success(self):
         if os.path.exists(self.name):
@@ -391,6 +378,10 @@ class _FileRenameCloser(_FileCloser):
         else:
             os.chmod(self.temp_file, 0o100644)
         os.rename(self.temp_file, self.name)
+
+    def _failure(self):
+        if self.delete_failures and os.path.exists(self.temp_file):
+            os.remove(self.temp_file)
 
 
 class _WriterCloser(_Closer):
