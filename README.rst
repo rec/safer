@@ -133,7 +133,7 @@ FUNCTIONS
 
     Because the actual writing happens when the context exits, it's possible
     to block indefinitely if the underlying socket, stream or callable does.
-    
+
     ARGUMENTS
       stream:
         A file stream, a socket, or a callable that will receive data
@@ -144,35 +144,41 @@ FUNCTIONS
         If ``is_binary`` is ``None``, deduce whether it's a binary file from
         the stream, or assume it's text otherwise.
 
+      close_on_exit: If True, the underlying stream is closed when the writer
+        closes
+    
 
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)``
 ==================================================================================================================================================================================================
 
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
-    no failure
-    
+    no failure.
+
     If a stream ``fp`` return from ``safer.open()`` is used as a context
     manager and an exception is raised, the property ``fp.safer_failed`` is
     set to ``True``.
 
     In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
-    temporary file is moved over the original file, successfully completing the
+    cached results is moved over the original file, successfully completing the
     write.
 
     If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
     temporary file is deleted.
 
-
     If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
     (update), then the original file will be copied to the temporary file
     before writing starts.
 
-    Note that ``safer`` uses an extra temporary file which is renamed over the
-    file only after the stream closes without failing.  This uses as much disk
-    space as the old and new files put together.
+    Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
+    temporary file which is renamed over the file only after the stream closes
+    without failing. This uses as much disk space as the old and new files put
+    together.
 
     ARGUMENTS
+
+    The arguments mean the same as for built-in ``open()``, except these:
+
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
@@ -183,20 +189,19 @@ FUNCTIONS
         If true, overwrite the file pointed to and not the symlink
 
       temp_file:
-        If true use a disk file and os.rename() at the end, otherwise
+        If true, use a disk file and os.rename() at the end, otherwise
         cache the writes in memory.  If it's a string, use this as the
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
 
-    The remaining arguments are the same as for built-in ``open()``.
-
+    
 
 ``safer.closer(stream, is_binary=None, close_on_exit=False)``
 =============================================================
 
     Like ``safer.writer()`` but with ``close_on_exit=True`` by default
-    
+
     ARGUMENTS
       stream:
         A file stream, a socket, or a callable that will receive data
@@ -207,37 +212,26 @@ FUNCTIONS
         If ``is_binary`` is ``None``, deduce whether it's a binary file from
         the stream, or assume it's text otherwise.
 
+      close_on_exit: If True, the underlying stream is closed when the writer
+        closes
+    
 
-``safer.printer(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)``
-=====================================================================================================================================================================================================
+``safer.printer(name, mode='w', *args, **kwargs)``
+==================================================
 
     A context manager that yields a function that prints to the opened file,
     only overwriting the original file at the exit of the context,
     and only if there was no exception thrown
-    
-    If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
-    (update), then the original file will be copied to the temporary file
-    before writing starts.
 
-    Note that ``safer`` uses an extra temporary file which is renamed over the
-    file only after the stream closes without failing.  This uses as much disk
-    space as the old and new files put together.
+    ARGUMENTS:
+      name:
+        The name of file to open for printing
 
-    ARGUMENTS
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
+      mode:
+        The mode string passed to ``safer.open()``
 
-      delete_failures:
-        If true, the temporary file is deleted if there is an exception
+      args:
+        Positional arguments ``safer.open()``
 
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
-
-      temp_file:
-        If true use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory.  If it's a string, use this as the
-        name of the temporary file, otherwise select one in the same
-        directory as the target file, or in the system tempfile for streams
-        that aren't files.
-
-    The remaining arguments are the same as for built-in ``open()``.
+      mode:
+        Keywoard arguments to ``safer.open()``
