@@ -12,11 +12,10 @@ For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
-``safer`` does not force atomic writing of files!  It is aimed at preventing
-corrupt files, streams, socket connections or similar, but from to a programmer
-error, not because of concurrent modification of files from other threads or
-processes.  See https://pypi.org/project/atomicwrites/ if you need atomic file
-writing.
+``safer`` is aimed at preventing a programmer error from causing corrupt files,
+streams, socket connections or similar.  It does not prevent concurrent
+modification of files from other threads or processes: if you need atomic file
+writing, see https://pypi.org/project/atomicwrites/
 
 * ``safer.writer()`` wraps an existing writer or socket and writes a whole
   response or nothing, by caching written data in memory
@@ -32,14 +31,21 @@ writing.
   a function that prints to the stream.  Like ``safer.open()``, it
   unfortunately does not work on Windows.
 
+By default, ``safer`` buffers the written data in memory in a ``io.StringIO``
+or ``io.BytesIO``.
+
+For very large files, ``safer.open()`` has a ``temp_file`` argument which
+writes the data to a temporary file on disk, which is moved over using
+``os.rename`` if the operation completes successfully.
+
 ------------------
 
 ``safer.open()``
 =================
 
-``safer.open()`` writes a whole file or nothing. It's a drop-in replacement for
-built-in ``open()`` except that ``safer.open()`` leaves the original file
-unchanged on failure.
+Writes a whole file or nothing. It's a drop-in replacement for built-in
+``open()`` except that ``safer.open()`` leaves the original file unchanged on
+failure.
 
 EXAMPLE
 
@@ -57,11 +63,12 @@ EXAMPLE
 
 
 ``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
-would, except that ``fp`` writes to a temporary file in the same directory.
+would, except that ``fp`` writes to memory stream or a a temporary file in the
+same directory.
 
 If ``fp`` is used as a context manager and an exception is raised, then
 ``fp.safer_failed`` is automatically set to ``True``. And when ``fp.close()``
-is called, the temporary file is moved over ``filename`` *unless*
+is called, the cached data is stored in ``filename`` *unless*
 ``fp.safer_failed`` is true.
 
 ------------------------------------
