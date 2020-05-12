@@ -245,7 +245,6 @@ def open(
     newline=None,
     closefd=True,
     opener=None,
-    follow_symlinks=True,
     make_parents=False,
     delete_failures=True,
     temp_file=False,
@@ -279,9 +278,6 @@ def open(
 
     The arguments mean the same as for built-in ``open()``, except these:
 
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
-
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
@@ -310,9 +306,7 @@ def open(
     if not isinstance(name, str):
         raise TypeError('`name` must be string, not %s' % type(name).__name__)
 
-    if follow_symlinks:
-        name = os.path.realpath(name)
-
+    name = os.path.realpath(name)
     parent = os.path.dirname(os.path.abspath(name))
     if not os.path.exists(parent):
         if not make_parents:
@@ -397,8 +391,8 @@ def printer(name, mode='w', *args, **kwargs):
 class _Closer:
     def close(self, parent_close):
         try:
-            parent_close()
-        except Exception:
+            parent_close(self.fp)
+        except Exception:  # pragma: no cover
             try:
                 self._close(True)
             except Exception:
@@ -414,7 +408,7 @@ class _Closer:
             self._success()
 
     def _success(self):
-        pass
+        raise NotImplementedError
 
     def _failure(self):
         pass
@@ -441,7 +435,7 @@ class _Closer:
 
             @functools.wraps(stream_cls.close)
             def close(self):
-                self.safer_closer.close(lambda: stream_cls.close(self))
+                self.safer_closer.close(stream_cls.close)
 
             return locals()
 

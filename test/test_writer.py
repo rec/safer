@@ -84,6 +84,13 @@ class TestWriter(helpers.TestCase):
                 raise ValueError
         assert sock.items == []
 
+    def test_socket_binary_error(self, safer_writer):
+        sock = socket()
+        with self.assertRaises(ValueError) as m:
+            safer_writer(sock, is_binary=False)
+        a = m.exception.args[0]
+        assert a == 'is_binary=False is inconsistent with a socket'
+
     def test_callable2(self, safer_writer):
         results = []
         with safer_writer(results.append) as fp:
@@ -97,7 +104,6 @@ class TestWriter(helpers.TestCase):
         results = []
 
         def callback(s):
-            print('ZZZ', s)
             results.append(s)
             return min(len(s), 2)
 
@@ -106,7 +112,6 @@ class TestWriter(helpers.TestCase):
             fp.write('two')
             fp.write('!')
 
-        print('???', results)
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
 
 
@@ -136,6 +141,26 @@ class TestCloser(helpers.TestCase):
             assert results == []
 
         assert results == ['onetwo', ('close', False)]
+
+    def test_callable_closer3(self, safer_closer):
+        class CB:
+            def __call__(self, item):
+                results.append(item)
+
+            def close(self, failed):
+                raise ValueError('closer3')
+
+        results = []
+        fp = safer_closer(CB())
+        fp.__enter__()
+        fp.write('one')
+        fp.write('two')
+
+        with self.assertRaises(ValueError) as e:
+            fp.__exit__(None, None, None)
+
+        assert e.exception.args == ('closer3',)
+        assert results == ['onetwo']
 
 
 class socket:

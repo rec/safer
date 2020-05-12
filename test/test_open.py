@@ -156,7 +156,7 @@ class TestSafer(helpers.TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    def XXX_test_symlink_file(self, safer_open):
+    def test_symlink_file(self, safer_open):
         with safer_open(self.filename, 'w') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
@@ -165,10 +165,6 @@ class TestSafer(helpers.TestCase):
         os.symlink(self.filename, sym_filename)
         with safer_open(sym_filename, 'w') as fp:
             fp.write('overwritten')
-        assert self.filename.read_text() == 'overwritten'
-
-        with safer_open(sym_filename, 'w', follow_symlinks=False) as fp:
-            fp.write('did not follow')
         assert self.filename.read_text() == 'overwritten'
 
     def test_symlink_directory(self, safer_open):
@@ -288,3 +284,28 @@ class TestSaferFiles(helpers.TestCase):
 
         arg = m.exception.args[0]
         assert arg == '`name` must be string, not int'
+
+    def _error(self, mode='w', **kwds):
+        with self.assertRaises(ValueError) as e:
+            safer.open(self.filename, mode, temp_file=True, **kwds)
+        return e.exception.args[0]
+
+    def test_errors1(self):
+        a = self._error(closefd=False)
+        assert a == 'Cannot use closefd=False with file name'
+
+    def test_errors2(self):
+        a = self._error('bt')
+        assert a == 'can\'t have text and binary mode at once'
+
+    def test_errors3(self):
+        a = self._error('wb', newline=True)
+        assert a == 'binary mode doesn\'t take a newline argument'
+
+    def test_errors4(self):
+        a = self._error('wb', encoding='utf8')
+        assert a == 'binary mode doesn\'t take an encoding argument'
+
+    def test_errors5(self):
+        a = self._error('wb', errors=True)
+        assert a == 'binary mode doesn\'t take an errors argument'

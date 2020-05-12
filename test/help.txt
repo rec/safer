@@ -39,7 +39,7 @@ wwrriitteerr(stream, is_binary=None, close_on_exit=False, temp_file=False,
         if there is an exception
 Help on function open in module safer:
 
-ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)
+ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
     no failure.
@@ -67,9 +67,6 @@ ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=N
     ARGUMENTS
     
     The arguments mean the same as for built-in ``open()``, except these:
-    
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
     
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
@@ -244,7 +241,7 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
           Same as for ``safer.writer()``
     
-    ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)
+    ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)
         A drop-in replacement for ``open()`` which returns a stream which only
         overwrites the original file when close() is called, and only if there was
         no failure.
@@ -272,9 +269,6 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
         
         The arguments mean the same as for built-in ``open()``, except these:
-        
-          follow_symlinks:
-            If true, overwrite the file pointed to and not the symlink
         
           make_parents:
             If true, create the parent directory of the file if it doesn't exist

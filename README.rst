@@ -173,8 +173,8 @@ FUNCTIONS
         if there is an exception
     
 
-``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)``
-==================================================================================================================================================================================================
+``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)``
+============================================================================================================================================================================
 
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
@@ -203,9 +203,6 @@ FUNCTIONS
     ARGUMENTS
 
     The arguments mean the same as for built-in ``open()``, except these:
-
-      follow_symlinks:
-        If true, overwrite the file pointed to and not the symlink
 
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
