@@ -7,7 +7,8 @@ any callable.
 Install ``safer`` from the command line with pip
 (https://pypi.org/project/pip): ``pip install safer``.
 
-Tested on Python 3.4 and 3.8
+Tested on Python 3.4 and 3.8.
+
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/\
@@ -196,7 +197,7 @@ def writer(
 
     if write and mode:
         if not set('w+a').intersection(mode):
-            raise ValueError('Stream mode %s is not a write mode' % mode)
+            raise ValueError('Stream mode "%s" is not a write mode' % mode)
 
         binary_mode = 'b' in mode
         if is_binary is not None and is_binary is not binary_mode:
@@ -333,9 +334,7 @@ def open(
                 fp.write(value)
 
         fp = _MemoryStreamCloser(write, True, is_binary).fp
-
-        if not hasattr(fp, 'mode'):
-            fp.mode = mode
+        fp.mode = mode
         return fp
 
     if not closefd:
@@ -365,24 +364,14 @@ def open(
     return closer._make_stream(buffering, mode, **kwargs)
 
 
-def closer(stream, is_binary=None, close_on_exit=False):
+def closer(stream, is_binary=None, close_on_exit=True, **kwds):
     """
     Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
     ARGUMENTS
-      stream:
-        A file stream, a socket, or a callable that will receive data
-
-      is_binary:
-        Is ``stream`` a binary stream?
-
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
-        the stream, or assume it's text otherwise.
-
-      close_on_exit: If True, the underlying stream is closed when the writer
-        closes
+      Same as for ``safer.writer()``
     """
-    return writer(stream, is_binary, close_on_exit)
+    return writer(stream, is_binary, close_on_exit, **kwds)
 
 
 @contextlib.contextmanager
@@ -406,10 +395,9 @@ def printer(name, mode='w', *args, **kwargs):
 
 
 class _Closer:
-    def close(self, parent_close=None):
+    def close(self, parent_close):
         try:
-            if parent_close:
-                parent_close()
+            parent_close()
         except Exception:
             try:
                 self._close(True)
@@ -470,11 +458,10 @@ class _FileCloser(_Closer):
         self.delete_failures = delete_failures
 
     def _failure(self):
-        if os.path.exists(self.temp_file):
-            if self.delete_failures:
-                os.remove(self.temp_file)
-            else:
-                print('Temp_file saved:', self.temp_file, file=sys.stderr)
+        if self.delete_failures:
+            os.remove(self.temp_file)
+        else:
+            print('Temp_file saved:', self.temp_file, file=sys.stderr)
 
     def _make_stream(self, buffering, mode, **kwargs):
         makers = [io.FileIO]
@@ -521,15 +508,20 @@ class _StreamCloser(_Closer):
         self.write = write
         self.close_on_exit = close_on_exit
 
-    def close(self, close=None):
-        super().close(close)
+    def close(self, parent_close):
+        super().close(parent_close)
 
         if self.close_on_exit:
-            if close:
-                close()
             closer = getattr(self.write, 'close', None)
             if closer:
                 closer(self.fp.safer_failed)
+
+    def _write(self, v):
+        while True:
+            written = self.write(v)
+            v = (written is not None) and v[written:]
+            if not v:
+                break
 
 
 class _MemoryStreamCloser(_StreamCloser):
@@ -542,13 +534,6 @@ class _MemoryStreamCloser(_StreamCloser):
     def close(self, parent_close=None):
         self.value = self.fp.getvalue()
         super().close(parent_close)
-
-    def _write(self, v):
-        while True:
-            written = self.write(v)
-            v = (written is not None) and v[written:]
-            if not v:
-                break
 
     def _success(self):
         self._write(self.value)
@@ -580,7 +565,7 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
                 data = fp.read(self.chunk_size)
                 if not data:
                     break
-                self.write(data)
+                self._write(data)
 
     def _failure(self):
         _FileCloser._failure(self)

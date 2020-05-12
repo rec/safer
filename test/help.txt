@@ -86,21 +86,11 @@ ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=N
         that aren't files.
 Help on function closer in module safer:
 
-cclloosseerr(stream, is_binary=None, close_on_exit=False)
+cclloosseerr(stream, is_binary=None, close_on_exit=True, **kwds)
     Like ``safer.writer()`` but with ``close_on_exit=True`` by default
     
     ARGUMENTS
-      stream:
-        A file stream, a socket, or a callable that will receive data
-    
-      is_binary:
-        Is ``stream`` a binary stream?
-    
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
-        the stream, or assume it's text otherwise.
-    
-      close_on_exit: If True, the underlying stream is closed when the writer
-        closes
+      Same as for ``safer.writer()``
 Help on function printer in module safer:
 
 pprriinntteerr(name, mode='w', *args, **kwargs)
@@ -125,7 +115,8 @@ DDEESSCCRRIIPPTTIIOONN
     Install ``safer`` from the command line with pip
     (https://pypi.org/project/pip): ``pip install safer``.
     
-    Tested on Python 3.4 and 3.8
+    Tested on Python 3.4 and 3.8.
+    
     For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
     
     See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
@@ -247,21 +238,11 @@ DDEESSCCRRIIPPTTIIOONN
             # Either the whole file is written, or nothing
 
 FFUUNNCCTTIIOONNSS
-    cclloosseerr(stream, is_binary=None, close_on_exit=False)
+    cclloosseerr(stream, is_binary=None, close_on_exit=True, **kwds)
         Like ``safer.writer()`` but with ``close_on_exit=True`` by default
         
         ARGUMENTS
-          stream:
-            A file stream, a socket, or a callable that will receive data
-        
-          is_binary:
-            Is ``stream`` a binary stream?
-        
-            If ``is_binary`` is ``None``, deduce whether it's a binary file from
-            the stream, or assume it's text otherwise.
-        
-          close_on_exit: If True, the underlying stream is closed when the writer
-            closes
+          Same as for ``safer.writer()``
     
     ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, follow_symlinks=True, make_parents=False, delete_failures=True, temp_file=False)
         A drop-in replacement for ``open()`` which returns a stream which only

@@ -156,7 +156,7 @@ class TestSafer(helpers.TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
 
-    def test_symlink_file(self, safer_open):
+    def XXX_test_symlink_file(self, safer_open):
         with safer_open(self.filename, 'w') as fp:
             fp.write('hello')
         assert self.filename.read_text() == 'hello'
@@ -165,6 +165,10 @@ class TestSafer(helpers.TestCase):
         os.symlink(self.filename, sym_filename)
         with safer_open(sym_filename, 'w') as fp:
             fp.write('overwritten')
+        assert self.filename.read_text() == 'overwritten'
+
+        with safer_open(sym_filename, 'w', follow_symlinks=False) as fp:
+            fp.write('did not follow')
         assert self.filename.read_text() == 'overwritten'
 
     def test_symlink_directory(self, safer_open):
@@ -220,6 +224,54 @@ class TestSaferFiles(helpers.TestCase):
         assert self.filename.read_text() == 'OK!'
         after = set(os.listdir(self.td))
         assert before == after
+
+    def test_temp_file1(self):
+        temp_file = self.filename.with_suffix('.temp_file')
+        with safer.open(self.filename, 'w', temp_file=temp_file) as fp:
+            assert temp_file.exists()
+            assert os.path.exists(temp_file)
+            fp.write('hello')
+
+        assert self.filename.read_text() == 'hello'
+        assert not temp_file.exists()
+
+    def test_temp_file2(self):
+        temp_file = self.filename.with_suffix('.temp_file')
+
+        with self.assertRaises(ValueError) as e:
+            with safer.open(self.filename, 'w', temp_file=temp_file) as fp:
+                assert temp_file.exists()
+                fp.write('hello')
+                raise ValueError('Expected')
+        assert e.exception.args[0] == 'Expected'
+
+        assert not self.filename.exists()
+        assert not temp_file.exists()
+
+    def test_temp_file3(self):
+        temp_file = self.filename.with_suffix('.temp_file')
+        with safer.open(
+            self.filename, 'w', temp_file=temp_file, delete_failures=False
+        ) as fp:
+            assert os.path.exists(temp_file)
+            fp.write('hello')
+
+        assert self.filename.read_text() == 'hello'
+        assert not temp_file.exists()
+
+    def test_temp_file4(self):
+        temp_file = self.filename.with_suffix('.temp_file')
+        with self.assertRaises(ValueError) as e:
+            with safer.open(
+                self.filename, 'w', temp_file=temp_file, delete_failures=False
+            ) as fp:
+                assert os.path.exists(temp_file)
+                fp.write('hello')
+                raise ValueError('Expected')
+        assert e.exception.args[0] == 'Expected'
+
+        assert not self.filename.exists()
+        assert temp_file.exists()
 
     def test_read(self):
         self.filename.write_text('hello')

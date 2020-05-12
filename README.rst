@@ -7,7 +7,8 @@ any callable.
 Install ``safer`` from the command line with pip
 (https://pypi.org/project/pip): ``pip install safer``.
 
-Tested on Python 3.4 and 3.8
+Tested on Python 3.4 and 3.8.
+
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
@@ -221,23 +222,13 @@ FUNCTIONS
         that aren't files.
     
 
-``safer.closer(stream, is_binary=None, close_on_exit=False)``
-=============================================================
+``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
+====================================================================
 
     Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
     ARGUMENTS
-      stream:
-        A file stream, a socket, or a callable that will receive data
-
-      is_binary:
-        Is ``stream`` a binary stream?
-
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
-        the stream, or assume it's text otherwise.
-
-      close_on_exit: If True, the underlying stream is closed when the writer
-        closes
+      Same as for ``safer.writer()``
     
 
 ``safer.printer(name, mode='w', *args, **kwargs)``
