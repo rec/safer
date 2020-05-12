@@ -13,6 +13,26 @@ For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
+|b1| |b2| |b3| |b4|
+
+.. |b1| image:: https://img.shields.io/travis/rec/safer
+   :alt: Travis (.org)
+   :width: 24%
+
+.. |b2| image:: https://img.shields.io/codecov/c/github/rec/safer
+   :alt: Codecov
+   :width: 24%
+
+.. |b3| image:: https://img.shields.io/github/v/release/rec/safer
+   :alt: GitHub release (latest SemVer)
+   :width: 24%
+
+.. |b4| image:: https://img.shields.io/pypi/pyversions/safer
+   :alt: PyPI - Python Version
+   :width: 24%
+
+-----
+
 ``safer`` is aimed at preventing a programmer error from causing corrupt files,
 streams, socket connections or similar.  It does not prevent concurrent
 modification of files from other threads or processes: if you need atomic file
