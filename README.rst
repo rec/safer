@@ -1,5 +1,40 @@
+-------------------------------
 ✏️safer: a safer file opener ✏️
 -------------------------------
+
+|doks_0| |doks_1| |doks_2| |doks_3| |doks_4| |doks_5| |doks_6| |doks_7|
+
+.. |doks_0| image:: https://img.shields.io/travis/rec/safer
+   :alt: Travis (.org)
+   :target: https://img.shields.io/travis/rec/safer
+
+.. |doks_1| image:: https://img.shields.io/codecov/c/github/rec/safer
+   :alt: Codecov
+   :target: https://img.shields.io/codecov/c/github/rec/safer
+
+.. |doks_2| image:: https://img.shields.io/github/v/release/rec/safer
+   :alt: GitHub release (latest SemVer including pre-releases)
+   :target: https://img.shields.io/github/v/release/rec/safer
+
+.. |doks_3| image:: https://img.shields.io/pypi/pyversions/safer
+   :alt: PyPI - Python Version
+   :target: https://img.shields.io/pypi/pyversions/safer
+
+.. |doks_4| image:: https://img.shields.io/github/languages/top/rec/safer
+   :alt: GitHub top language
+   :target: https://img.shields.io/github/languages/top/rec/safer
+
+.. |doks_5| image:: https://img.shields.io/codefactor/grade/github/rec/safer
+   :alt: CodeFactor Grade
+   :target: https://img.shields.io/codefactor/grade/github/rec/safer
+
+.. |doks_6| image:: https://img.shields.io/pypi/l/safer
+   :alt: PyPI - License
+   :target: https://img.shields.io/pypi/l/safer
+
+.. |doks_7| image:: https://img.shields.io/github/languages/code-size/rec/safer
+   :alt: GitHub code size in bytes
+   :target: https://img.shields.io/github/languages/code-size/rec/safer
 
 No more partial writes or corruption! For file streams, sockets or
 any callable.
@@ -12,24 +47,6 @@ Tested on Python 3.4 and 3.8.
 For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
-
-|b1| |b2| |b3| |b4|
-
-.. |b1| image:: https://img.shields.io/travis/rec/safer
-   :alt: Travis (.org)
-   :width: 24%
-
-.. |b2| image:: https://img.shields.io/codecov/c/github/rec/safer
-   :alt: Codecov
-   :width: 24%
-
-.. |b3| image:: https://img.shields.io/github/v/release/rec/safer
-   :alt: GitHub release (latest SemVer)
-   :width: 24%
-
-.. |b4| image:: https://img.shields.io/pypi/pyversions/safer
-   :alt: PyPI - Python Version
-   :width: 24%
 
 -----
 
@@ -149,11 +166,11 @@ EXAMPLE
             print(item)
         # Either the whole file is written, or nothing
 
-FUNCTIONS
----------
+API
+***
 
 ``safer.writer(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
-========================================================================================================================
+------------------------------------------------------------------------------------------------------------------------
 
     Write safely to file streams, sockets and callables.
 
@@ -191,10 +208,9 @@ FUNCTIONS
       delete_failures:
         If set to false, any temporary files created are not deleted
         if there is an exception
-    
 
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)``
-============================================================================================================================================================================
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
@@ -221,9 +237,6 @@ FUNCTIONS
     together.
 
     ARGUMENTS
-
-    The arguments mean the same as for built-in ``open()``, except these:
-
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
@@ -237,19 +250,19 @@ FUNCTIONS
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
-    
+
+    The remaining arguments are the same as for built-in ``open()``.
 
 ``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
-====================================================================
+--------------------------------------------------------------------
 
     Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
     ARGUMENTS
       Same as for ``safer.writer()``
-    
 
 ``safer.printer(name, mode='w', *args, **kwargs)``
-==================================================
+--------------------------------------------------
 
     A context manager that yields a function that prints to the opened file,
     only writing to the original file at the exit of the context,
@@ -257,3 +270,5 @@ FUNCTIONS
 
     ARGUMENTS
       Same as for ``safer.open()``
+
+(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-05-29T15:47:08.878526)

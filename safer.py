@@ -1,5 +1,12 @@
-"""✏️safer: a safer file opener ✏️
+"""
 -------------------------------
+✏️safer: a safer file opener ✏️
+-------------------------------
+
+.. doks-shields::
+
+   travis.org codecov github.release pypi.pyversions github.top/languages
+   codefactor pypi.l github.code-size
 
 No more partial writes or corruption! For file streams, sockets or
 any callable.
@@ -13,24 +20,6 @@ For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
 
 See the Medium article `here. <https://medium.com/@TomSwirly/\
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
-
-|b1| |b2| |b3| |b4|
-
-.. |b1| image:: https://img.shields.io/travis/rec/safer
-   :alt: Travis (.org)
-   :width: 24%
-
-.. |b2| image:: https://img.shields.io/codecov/c/github/rec/safer
-   :alt: Codecov
-   :width: 24%
-
-.. |b3| image:: https://img.shields.io/github/v/release/rec/safer
-   :alt: GitHub release (latest SemVer)
-   :width: 24%
-
-.. |b4| image:: https://img.shields.io/pypi/pyversions/safer
-   :alt: PyPI - Python Version
-   :width: 24%
 
 -----
 
@@ -149,7 +138,6 @@ EXAMPLE
         for item in items:
             print(item)
         # Either the whole file is written, or nothing
-
 """
 from pathlib import Path
 import contextlib
@@ -295,9 +283,6 @@ def open(
     together.
 
     ARGUMENTS
-
-    The arguments mean the same as for built-in ``open()``, except these:
-
       make_parents:
         If true, create the parent directory of the file if it doesn't exist
 
@@ -311,6 +296,8 @@ def open(
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
+
+    The remaining arguments are the same as for built-in ``open()``.
     """
     is_copy = '+' in mode or 'a' in mode
     is_read = 'r' in mode and not is_copy
