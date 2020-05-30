@@ -15,3 +15,7 @@ def get_help():
 def write_help():
     with safer.open(HELP_FILE, 'w') as fp:
         fp.write(get_help())
+
+
+if __name__ == '__main__':
+    write_help()

@@ -1,4 +1,3 @@
--------------------------------
 ✏️safer: a safer file opener ✏️
 -------------------------------
 
@@ -36,19 +35,18 @@
    :alt: GitHub code size in bytes
    :target: https://img.shields.io/github/languages/code-size/rec/safer
 
-No more partial writes or corruption! For file streams, sockets or
+No more partial writes or corruption! Wraps file streams, sockets or
 any callable.
 
-Install ``safer`` from the command line with pip
-(https://pypi.org/project/pip): ``pip install safer``.
+Install ``safer`` from the command line with `pip
+<https://pypi.org/project/pip>`_: ``pip install safer``.
 
-Tested on Python 3.4 and 3.8.
-
-For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
+Tested on Python 3.4 and 3.8 - Python 2.7 version
+is here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
------
+-------
 
 ``safer`` is aimed at preventing a programmer error from causing corrupt files,
 streams, socket connections or similar.  It does not prevent concurrent
@@ -76,10 +74,13 @@ For very large files, ``safer.open()`` has a ``temp_file`` argument which
 writes the data to a temporary file on disk, which is moved over using
 ``os.rename`` if the operation completes successfully.
 
-------------------
+--------
+
+EXAMPLES
+=========
 
 ``safer.writer()``
-==================
+~~~~~~~~~~~~~~~~~~~
 
 ``safer.writer()`` wraps an existing stream - a writer, socket, or callback
 in a temporary stream which is only copied to the target stream at closer() and
@@ -109,7 +110,7 @@ EXAMPLE
         write_error(sock)  # Nothing has been written
 
 ``safer.open()``
-=================
+~~~~~~~~~~~~~~~~~
 
 Writes a whole file or nothing. It's a drop-in replacement for built-in
 ``open()`` except that ``safer.open()`` leaves the original file unchanged on
@@ -142,7 +143,7 @@ is called, the cached data is stored in ``filename`` *unless*
 ------------------------------------
 
 ``safer.printer()``
-===================
+~~~~~~~~~~~~~~~~~~~
 
 ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
 that prints to the open file - it's very convenient for printing text.
@@ -166,109 +167,137 @@ EXAMPLE
             print(item)
         # Either the whole file is written, or nothing
 
-API
-***
+
+----------------------------------------
+
+
+API Documentation
+=================
 
 ``safer.writer(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
-------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Write safely to file streams, sockets and callables.
+(`safer.py, 157-246 <https://github.com/rec/safer/blob/master/safer.py#L157-L246>`_)
 
-    ``safer.writer`` yields an in-memory stream that you can write
-    to, but which is only written to the original stream if the
-    context finished without raising an exception.
+Write safely to file streams, sockets and callables.
 
-    Because the actual writing happens when the context exits, it's possible
-    to block indefinitely if the underlying socket, stream or callable does.
+``safer.writer`` yields an in-memory stream that you can write
+to, but which is only written to the original stream if the
+context finished without raising an exception.
 
-    ARGUMENTS
-      stream:
-        A file stream, a socket, or a callable that will receive data
+Because the actual writing happens when the context exits, it's possible
+to block indefinitely if the underlying socket, stream or callable does.
 
-      is_binary:
-        Is ``stream`` a binary stream?
+ARGUMENTS
+  stream:
+    A file stream, a socket, or a callable that will receive data
 
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
-        the stream, or assume it's text otherwise.
+  is_binary:
+    Is ``stream`` a binary stream?
 
-      close_on_exit: If True, the underlying stream is closed when the writer
-        closes
+    If ``is_binary`` is ``None``, deduce whether it's a binary file from
+    the stream, or assume it's text otherwise.
 
-      temp_file:
-        If not false, use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory.  If it's a string, use this as the
-        name of the temporary file, otherwise select one in the same
-        directory as the target file, or in the system tempfile for streams
-        that aren't files.
+  close_on_exit: If True, the underlying stream is closed when the writer
+    closes
 
-      chunk_size:
-        Transfer data from the temporary file to the underlying stream in
-        chunks of this byte size
+  temp_file:
+    If not false, use a disk file and os.rename() at the end, otherwise
+    cache the writes in memory.  If it's a string, use this as the
+    name of the temporary file, otherwise select one in the same
+    directory as the target file, or in the system tempfile for streams
+    that aren't files.
 
-      delete_failures:
-        If set to false, any temporary files created are not deleted
-        if there is an exception
+  chunk_size:
+    Transfer data from the temporary file to the underlying stream in
+    chunks of this byte size
+
+  delete_failures:
+    If set to false, any temporary files created are not deleted
+    if there is an exception
+
+
+----------------------------------------
+
 
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)``
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    A drop-in replacement for ``open()`` which returns a stream which only
-    overwrites the original file when close() is called, and only if there was
-    no failure.
+(`safer.py, 248-367 <https://github.com/rec/safer/blob/master/safer.py#L248-L367>`_)
 
-    If a stream ``fp`` return from ``safer.open()`` is used as a context
-    manager and an exception is raised, the property ``fp.safer_failed`` is
-    set to ``True``.
+A drop-in replacement for ``open()`` which returns a stream which only
+overwrites the original file when close() is called, and only if there was
+no failure.
 
-    In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
-    cached results replace the original file, successfully completing the
-    write.
+If a stream ``fp`` return from ``safer.open()`` is used as a context
+manager and an exception is raised, the property ``fp.safer_failed`` is
+set to ``True``.
 
-    If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
-    temporary file is deleted.
+In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+cached results replace the original file, successfully completing the
+write.
 
-    If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
-    (update), then the original file will be copied to the temporary file
-    before writing starts.
+If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+temporary file is deleted.
 
-    Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
-    temporary file which is renamed over the file only after the stream closes
-    without failing. This uses as much disk space as the old and new files put
-    together.
+If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
+(update), then the original file will be copied to the temporary file
+before writing starts.
 
-    ARGUMENTS
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
+Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
+temporary file which is renamed over the file only after the stream closes
+without failing. This uses as much disk space as the old and new files put
+together.
 
-      delete_failures:
-        If set to false, any temporary files created are not deleted
-        if there is an exception
+ARGUMENTS
+  make_parents:
+    If true, create the parent directory of the file if it doesn't exist
 
-      temp_file:
-        If true, use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory.  If it's a string, use this as the
-        name of the temporary file, otherwise select one in the same
-        directory as the target file, or in the system tempfile for streams
-        that aren't files.
+  delete_failures:
+    If set to false, any temporary files created are not deleted
+    if there is an exception
 
-    The remaining arguments are the same as for built-in ``open()``.
+  temp_file:
+    If true, use a disk file and os.rename() at the end, otherwise
+    cache the writes in memory.  If it's a string, use this as the
+    name of the temporary file, otherwise select one in the same
+    directory as the target file, or in the system tempfile for streams
+    that aren't files.
+
+The remaining arguments are the same as for built-in ``open()``.
+
+
+----------------------------------------
+
 
 ``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
---------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+(`safer.py, 369-377 <https://github.com/rec/safer/blob/master/safer.py#L369-L377>`_)
 
-    ARGUMENTS
-      Same as for ``safer.writer()``
+Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+
+ARGUMENTS
+  Same as for ``safer.writer()``
+
+
+----------------------------------------
+
 
 ``safer.printer(name, mode='w', *args, **kwargs)``
---------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    A context manager that yields a function that prints to the opened file,
-    only writing to the original file at the exit of the context,
-    and only if there was no exception thrown
+(`safer.py, 379-397 <https://github.com/rec/safer/blob/master/safer.py#L379-L397>`_)
 
-    ARGUMENTS
-      Same as for ``safer.open()``
+A context manager that yields a function that prints to the opened file,
+only writing to the original file at the exit of the context,
+and only if there was no exception thrown
 
-(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-05-29T15:47:08.878526)
+ARGUMENTS
+  Same as for ``safer.open()``
+
+
+----------------------------------------
+
+
+(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-05-30T18:16:12.507775)

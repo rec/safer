@@ -1,5 +1,4 @@
 """
--------------------------------
 ✏️safer: a safer file opener ✏️
 -------------------------------
 
@@ -8,20 +7,19 @@
    travis.org codecov github.release pypi.pyversions github.top/languages
    codefactor pypi.l github.code-size
 
-No more partial writes or corruption! For file streams, sockets or
+No more partial writes or corruption! Wraps file streams, sockets or
 any callable.
 
-Install ``safer`` from the command line with pip
-(https://pypi.org/project/pip): ``pip install safer``.
+Install ``safer`` from the command line with `pip
+<https://pypi.org/project/pip>`_: ``pip install safer``.
 
-Tested on Python 3.4 and 3.8.
-
-For Python 2.7, use https://github.com/rec/safer/tree/v2.0.5
+Tested on Python 3.4 and 3.8 - Python 2.7 version
+is here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/\
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
------
+-------
 
 ``safer`` is aimed at preventing a programmer error from causing corrupt files,
 streams, socket connections or similar.  It does not prevent concurrent
@@ -49,10 +47,13 @@ For very large files, ``safer.open()`` has a ``temp_file`` argument which
 writes the data to a temporary file on disk, which is moved over using
 ``os.rename`` if the operation completes successfully.
 
-------------------
+--------
+
+EXAMPLES
+=========
 
 ``safer.writer()``
-==================
+~~~~~~~~~~~~~~~~~~~
 
 ``safer.writer()`` wraps an existing stream - a writer, socket, or callback
 in a temporary stream which is only copied to the target stream at closer() and
@@ -82,7 +83,7 @@ EXAMPLE
         write_error(sock)  # Nothing has been written
 
 ``safer.open()``
-=================
+~~~~~~~~~~~~~~~~~
 
 Writes a whole file or nothing. It's a drop-in replacement for built-in
 ``open()`` except that ``safer.open()`` leaves the original file unchanged on
@@ -115,7 +116,7 @@ is called, the cached data is stored in ``filename`` *unless*
 ------------------------------------
 
 ``safer.printer()``
-===================
+~~~~~~~~~~~~~~~~~~~
 
 ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
 that prints to the open file - it's very convenient for printing text.
