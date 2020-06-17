@@ -155,7 +155,7 @@ __all__ = 'writer', 'open', 'closer', 'printer'
 
 
 def writer(
-    stream,
+    stream=None,
     is_binary=None,
     close_on_exit=False,
     temp_file=False,
@@ -167,14 +167,16 @@ def writer(
 
     ``safer.writer`` yields an in-memory stream that you can write
     to, but which is only written to the original stream if the
-    context finished without raising an exception.
+    context finishes without raising an exception.
 
     Because the actual writing happens when the context exits, it's possible
     to block indefinitely if the underlying socket, stream or callable does.
 
     ARGUMENTS
       stream:
-        A file stream, a socket, or a callable that will receive data
+        A file stream, a socket, or a callable that will receive data.
+        If stream is None, output is written to stdout
+        If stream is a string, this file is opened for writing.
 
       is_binary:
         Is ``stream`` a binary stream?
@@ -200,6 +202,14 @@ def writer(
         If set to false, any temporary files created are not deleted
         if there is an exception
     """
+    if isinstance(stream, (str, Path)):
+        mode = 'wb' if is_binary else 'w'
+        return open(stream, mode, delete_failures=delete_failures)
+
+    stream = stream or sys.stdout
+    if close_on_exit and stream in (sys.stdout, sys.stderr):
+        raise ValueError('You cannot close stdout or stderr')
+
     write = getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
     mode = getattr(stream, 'mode', None)

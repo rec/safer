@@ -1,18 +1,20 @@
 Help on function writer in module safer:
 
-wwrriitteerr(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
+wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
     Write safely to file streams, sockets and callables.
     
     ``safer.writer`` yields an in-memory stream that you can write
     to, but which is only written to the original stream if the
-    context finished without raising an exception.
+    context finishes without raising an exception.
     
     Because the actual writing happens when the context exits, it's possible
     to block indefinitely if the underlying socket, stream or callable does.
     
     ARGUMENTS
       stream:
-        A file stream, a socket, or a callable that will receive data
+        A file stream, a socket, or a callable that will receive data.
+        If stream is None, output is written to stdout
+        If stream is a string, this file is opened for writing.
     
       is_binary:
         Is ``stream`` a binary stream?
@@ -299,19 +301,21 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
           Same as for ``safer.open()``
     
-    wwrriitteerr(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
+    wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
         Write safely to file streams, sockets and callables.
         
         ``safer.writer`` yields an in-memory stream that you can write
         to, but which is only written to the original stream if the
-        context finished without raising an exception.
+        context finishes without raising an exception.
         
         Because the actual writing happens when the context exits, it's possible
         to block indefinitely if the underlying socket, stream or callable does.
         
         ARGUMENTS
           stream:
-            A file stream, a socket, or a callable that will receive data
+            A file stream, a socket, or a callable that will receive data.
+            If stream is None, output is written to stdout
+            If stream is a string, this file is opened for writing.
         
           is_binary:
             Is ``stream`` a binary stream?

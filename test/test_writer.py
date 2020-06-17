@@ -1,5 +1,6 @@
 from . import helpers
 import safer
+import sys
 
 
 @helpers.temps(safer.writer)
@@ -28,6 +29,14 @@ class TestWriter(helpers.TestCase):
                 fp2.write('three')
             fp1.write('four')
         assert self.filename.read_text() == 'onetwothreefour'
+
+    def test_std_error(self, safer_writer):
+        for file in (sys.stdout, sys.stderr, None):
+            with safer_writer(file) as fp:
+                fp.write('boo')
+            with self.assertRaises(ValueError) as m:
+                safer.writer(file, close_on_exit=True)
+            assert m.exception.args[0] == 'You cannot close stdout or stderr'
 
     def test_file_error(self, safer_writer):
         with safer.open(self.filename, 'w') as fp1:
@@ -64,9 +73,22 @@ class TestWriter(helpers.TestCase):
 
     def test_unknown_type(self, safer_writer):
         with self.assertRaises(ValueError) as e:
-            safer_writer(None)
+            safer_writer(3)
         a = e.exception.args[0]
         assert a == 'Stream is not a file, a socket, or callable'
+
+    def test_none(self, safer_writer):
+        with safer_writer() as fp:
+            fp.write('to stdout!\n')
+
+    def test_str(self, safer_writer):
+        for file in (self.filename, str(self.filename)):
+            with safer_writer(file) as fp:
+                fp.write('one ')
+                fp.write('two')
+            assert self.filename.read_text() == 'one two'
+            self.filename.write_text('')
+            assert self.filename.read_text() == ''
 
     def test_socket(self, safer_writer):
         sock = socket()
