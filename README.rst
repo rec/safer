@@ -48,31 +48,33 @@ See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-s
 
 -------
 
-``safer`` is aimed at preventing a programmer error from causing corrupt files,
-streams, socket connections or similar.  It does not prevent concurrent
-modification of files from other threads or processes: if you need atomic file
-writing, see https://pypi.org/project/atomicwrites/
+``safer`` helps prevent programmer error from corrupting files, socket
+connections, or generalized streams
 
-* ``safer.writer()`` wraps an existing writer or socket and writes a whole
-  response or nothing, by caching written data in memory
+It does not prevent concurrent modification of files from other threads or
+processes: if you need atomic file writing, see
+https://pypi.org/project/atomicwrites/
+
+* ``safer.writer()`` wraps an existing writer, socket or stream and writes a
+  whole response or nothing
 
 * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
-  writes a whole file or nothing by caching written data on disk.
-  Unfortunately, disk caching does not work on Windows.
+  writes a whole file or nothing
 
 * ``safer.closer()`` returns a stream like from ``safer.write()`` that also
   closes the underlying stream or callable when it closes.
 
 * ``safer.printer()`` is ``safer.open()`` except that it yields a
-  a function that prints to the stream.  Like ``safer.open()``, it
-  unfortunately does not work on Windows.
+  a function that prints to the stream.
 
 By default, ``safer`` buffers the written data in memory in a ``io.StringIO``
 or ``io.BytesIO``.
 
 For very large files, ``safer.open()`` has a ``temp_file`` argument which
 writes the data to a temporary file on disk, which is moved over using
-``os.rename`` if the operation completes successfully.
+``os.rename`` if the operation completes successfully.  This functionality
+does not work on Windows.  (In fact, it's unclear if any of this works on
+Windows, but that certainly won't.  Windows developer solicted!)
 
 --------
 
@@ -132,13 +134,13 @@ EXAMPLE
 
 
 ``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
-would, except that ``fp`` writes to memory stream or a a temporary file in the
+would, except that ``fp`` writes to memory stream or a temporary file in the
 same directory.
 
-If ``fp`` is used as a context manager and an exception is raised, then
-``fp.safer_failed`` is automatically set to ``True``. And when ``fp.close()``
-is called, the cached data is stored in ``filename`` *unless*
-``fp.safer_failed`` is true.
+If ``fp`` is used as a context manager and an exception is raised, then the
+proerty ``fp.safer_failed`` on the stream is automatically set to ``True``. And
+when ``fp.close()`` is called, the cached data is stored in ``filename`` -
+*unless* ``fp.safer_failed`` is true.
 
 ------------------------------------
 
@@ -167,30 +169,28 @@ EXAMPLE
             print(item)
         # Either the whole file is written, or nothing
 
+API
+***
 
-----------------------------------------
+``safer.writer(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-API Documentation
-=================
-
-``safer.writer(stream, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-(`safer.py, 157-246 <https://github.com/rec/safer/blob/master/safer.py#L157-L246>`_)
+(`safer.py, 159-258 <https://github.com/rec/safer/blob/master/safer.py#L159-L258>`_)
 
 Write safely to file streams, sockets and callables.
 
 ``safer.writer`` yields an in-memory stream that you can write
 to, but which is only written to the original stream if the
-context finished without raising an exception.
+context finishes without raising an exception.
 
 Because the actual writing happens when the context exits, it's possible
 to block indefinitely if the underlying socket, stream or callable does.
 
 ARGUMENTS
   stream:
-    A file stream, a socket, or a callable that will receive data
+    A file stream, a socket, or a callable that will receive data.
+    If stream is None, output is written to stdout
+    If stream is a string, this file is opened for writing.
 
   is_binary:
     Is ``stream`` a binary stream?
@@ -216,14 +216,10 @@ ARGUMENTS
     If set to false, any temporary files created are not deleted
     if there is an exception
 
-
-----------------------------------------
-
-
 ``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 248-367 <https://github.com/rec/safer/blob/master/safer.py#L248-L367>`_)
+(`safer.py, 260-379 <https://github.com/rec/safer/blob/master/safer.py#L260-L379>`_)
 
 A drop-in replacement for ``open()`` which returns a stream which only
 overwrites the original file when close() is called, and only if there was
@@ -266,28 +262,20 @@ ARGUMENTS
 
 The remaining arguments are the same as for built-in ``open()``.
 
-
-----------------------------------------
-
-
 ``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 369-377 <https://github.com/rec/safer/blob/master/safer.py#L369-L377>`_)
+(`safer.py, 381-389 <https://github.com/rec/safer/blob/master/safer.py#L381-L389>`_)
 
 Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
 ARGUMENTS
   Same as for ``safer.writer()``
 
-
-----------------------------------------
-
-
 ``safer.printer(name, mode='w', *args, **kwargs)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 379-397 <https://github.com/rec/safer/blob/master/safer.py#L379-L397>`_)
+(`../../Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/contextlib.py, 391-409 <https://github.com/rec/safer/blob/master/../../Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/contextlib.py#L391-L409>`_)
 
 A context manager that yields a function that prints to the opened file,
 only writing to the original file at the exit of the context,
@@ -296,8 +284,4 @@ and only if there was no exception thrown
 ARGUMENTS
   Same as for ``safer.open()``
 
-
-----------------------------------------
-
-
-(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-05-30T18:16:12.507775)
+(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-06-18T19:16:54.047648)
