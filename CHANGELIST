@@ -1,3 +1,11 @@
+## v4.1.0 - 20/06/18
+
+* More documentation
+* Allow writer() to take a string, or None
+* Add Shields
+* Add code coverage build
+* Fix several bugs found by increasing test coverage
+
 ## v4.0.0 - 2020-05-12
 
 * Now `safer` caches in memory by default
