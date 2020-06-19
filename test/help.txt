@@ -161,11 +161,12 @@ DDEESSCCRRIIPPTTIIOONN
     ``safer.writer()``
     ~~~~~~~~~~~~~~~~~~~
     
-    ``safer.writer()`` wraps an existing stream - a writer, socket, or callback
-    in a temporary stream which is only copied to the target stream at closer() and
-    only if no exception was raised
+    ``safer.writer()`` wraps an existing stream - a writer, socket, or callback -
+    in a temporary stream which is only copied to the target stream at close() and
+    only if no exception was raised.
     
     EXAMPLE
+    ^^^^^^^
     
     .. code-block:: python
     
@@ -196,6 +197,7 @@ DDEESSCCRRIIPPTTIIOONN
     failure.
     
     EXAMPLE
+    ^^^^^^^
     
     .. code-block:: python
     
@@ -215,8 +217,9 @@ DDEESSCCRRIIPPTTIIOONN
     same directory.
     
     If ``fp`` is used as a context manager and an exception is raised, then the
-    proerty ``fp.safer_failed`` on the stream is automatically set to ``True``. And
-    when ``fp.close()`` is called, the cached data is stored in ``filename`` -
+    property ``fp.safer_failed`` on the stream is automatically set to ``True``.
+    
+    And when ``fp.close()`` is called, the cached data is stored in ``filename`` -
     *unless* ``fp.safer_failed`` is true.
     
     ------------------------------------
@@ -231,6 +234,7 @@ DDEESSCCRRIIPPTTIIOONN
     the original file is left unchanged.
     
     EXAMPLE
+    ^^^^^^^
     
     .. code-block:: python
     
