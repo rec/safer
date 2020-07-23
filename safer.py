@@ -155,11 +155,13 @@ import shutil
 import sys
 import tempfile
 import traceback
+import xmod
 
 __version__ = '4.1.1'
 __all__ = 'writer', 'open', 'closer', 'printer'
 
 
+@xmod
 def writer(
     stream=None,
     is_binary=None,
