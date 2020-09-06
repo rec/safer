@@ -1,0 +1,11 @@
+include .coveragerc
+include CHANGELOG
+include LICENSE
+include requirements.txt
+include tox.ini
+recursive-exclude bin *
+recursive-exclude build *
+recursive-exclude dist *
+recursive-exclude htmlcov *
+recursive-exclude test *
+recursive-include test *.py
