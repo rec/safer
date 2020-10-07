@@ -1,3 +1,7 @@
+## v4.2.1 - 20/10/07
+
+* Enable Python 3.9
+
 ## v4.2.0 - 20/10/07
 
 * New dry_run parameter disables writing
