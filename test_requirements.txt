@@ -1,4 +1,5 @@
 coverage
 flake8
 pytest
+versy
 readme-renderer
