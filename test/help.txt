@@ -1,6 +1,6 @@
 Help on function writer in module safer:
 
-wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
+wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
     Write safely to file streams, sockets and callables.
     
     ``safer.writer`` yields an in-memory stream that you can write
@@ -14,7 +14,8 @@ wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=F
       stream:
         A file stream, a socket, or a callable that will receive data.
         If stream is None, output is written to stdout
-        If stream is a string, this file is opened for writing.
+        If stream is a string or Path, the file with that name is opened for
+        writing.
     
       is_binary:
         Is ``stream`` a binary stream?
@@ -39,9 +40,12 @@ wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=F
       delete_failures:
         If set to false, any temporary files created are not deleted
         if there is an exception
+    
+      dry_run:
+        If dry_run is True, the stream is not written to at all
 Help on function open in module safer:
 
-ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)
+ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
     A drop-in replacement for ``open()`` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
     no failure.
@@ -80,6 +84,9 @@ ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=N
         name of the temporary file, otherwise select one in the same
         directory as the target file, or in the system tempfile for streams
         that aren't files.
+    
+      dry_run:
+         If dry_run is True, the file is not written to at all
     
     The remaining arguments are the same as for built-in ``open()``.
 Help on function closer in module safer:
@@ -257,7 +264,7 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
           Same as for ``safer.writer()``
     
-    ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)
+    ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
         A drop-in replacement for ``open()`` which returns a stream which only
         overwrites the original file when close() is called, and only if there was
         no failure.
@@ -297,6 +304,9 @@ FFUUNNCCTTIIOONNSS
             directory as the target file, or in the system tempfile for streams
             that aren't files.
         
+          dry_run:
+             If dry_run is True, the file is not written to at all
+        
         The remaining arguments are the same as for built-in ``open()``.
     
     pprriinntteerr(name, mode='w', *args, **kwargs)
@@ -307,7 +317,7 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
           Same as for ``safer.open()``
     
-    wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)
+    wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
         Write safely to file streams, sockets and callables.
         
         ``safer.writer`` yields an in-memory stream that you can write
@@ -321,7 +331,8 @@ FFUUNNCCTTIIOONNSS
           stream:
             A file stream, a socket, or a callable that will receive data.
             If stream is None, output is written to stdout
-            If stream is a string, this file is opened for writing.
+            If stream is a string or Path, the file with that name is opened for
+            writing.
         
           is_binary:
             Is ``stream`` a binary stream?
@@ -346,6 +357,9 @@ FFUUNNCCTTIIOONNSS
           delete_failures:
             If set to false, any temporary files created are not deleted
             if there is an exception
+        
+          dry_run:
+            If dry_run is True, the stream is not written to at all
 
 DDAATTAA
     ____aallll____ = ('writer', 'open', 'closer', 'printer')

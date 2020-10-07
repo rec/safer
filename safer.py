@@ -167,6 +167,7 @@ def writer(
     temp_file=False,
     chunk_size=0x100000,
     delete_failures=True,
+    dry_run=False,
 ):
     """
     Write safely to file streams, sockets and callables.
@@ -182,7 +183,8 @@ def writer(
       stream:
         A file stream, a socket, or a callable that will receive data.
         If stream is None, output is written to stdout
-        If stream is a string, this file is opened for writing.
+        If stream is a string or Path, the file with that name is opened for
+        writing.
 
       is_binary:
         Is ``stream`` a binary stream?
@@ -207,16 +209,25 @@ def writer(
       delete_failures:
         If set to false, any temporary files created are not deleted
         if there is an exception
+
+      dry_run:
+        If dry_run is True, the stream is not written to at all
     """
     if isinstance(stream, (str, Path)):
         mode = 'wb' if is_binary else 'w'
-        return open(stream, mode, delete_failures=delete_failures)
+        return open(
+            stream, mode, delete_failures=delete_failures, dry_run=dry_run
+        )
 
     stream = stream or sys.stdout
+
+    if dry_run:
+        close_on_exit = False
+
     if close_on_exit and stream in (sys.stdout, sys.stderr):
         raise ValueError('You cannot close stdout or stderr')
 
-    write = getattr(stream, 'write', None)
+    write = len if dry_run else getattr(stream, 'write', None)
     send = getattr(stream, 'send', None)
     mode = getattr(stream, 'mode', None)
 
@@ -229,6 +240,9 @@ def writer(
             raise ValueError('is_binary is inconsistent with the file stream')
 
         is_binary = binary_mode
+
+    elif dry_run:
+        pass
 
     elif send and hasattr(stream, 'recv'):  # It looks like a socket:
         if not (is_binary is None or is_binary is True):
@@ -273,6 +287,7 @@ def open(
     make_parents=False,
     delete_failures=True,
     temp_file=False,
+    dry_run=False,
 ):
     """
     A drop-in replacement for ``open()`` which returns a stream which only
@@ -314,6 +329,9 @@ def open(
         directory as the target file, or in the system tempfile for streams
         that aren't files.
 
+      dry_run:
+         If dry_run is True, the file is not written to at all
+
     The remaining arguments are the same as for built-in ``open()``.
     """
     is_copy = '+' in mode or 'a' in mode
@@ -340,6 +358,10 @@ def open(
     def simple_open():
         return __builtins__['open'](name, mode, buffering, **kwargs)
 
+    def simple_write(value):
+        with simple_open() as fp:
+            fp.write(value)
+
     if is_read:
         return simple_open()
 
@@ -347,10 +369,7 @@ def open(
         if '+' in mode:
             raise ValueError('+ mode requires a temp_file argument')
 
-        def write(value):
-            with simple_open() as fp:
-                fp.write(value)
-
+        write = len if dry_run else simple_write
         fp = _MemoryStreamCloser(write, True, is_binary).fp
         fp.mode = mode
         return fp
@@ -374,7 +393,9 @@ def open(
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
-    closer = _FileRenameCloser(name, temp_file, delete_failures, parent)
+    closer = _FileRenameCloser(
+        name, temp_file, delete_failures, parent, dry_run
+    )
 
     if is_copy and os.path.exists(name):
         shutil.copy2(name, closer.temp_file)
@@ -509,16 +530,24 @@ class _FileCloser(_Closer):
 
 
 class _FileRenameCloser(_FileCloser):
-    def __init__(self, target_file, temp_file, delete_failures, parent=None):
+    def __init__(
+            self,
+            target_file,
+            temp_file,
+            delete_failures,
+            parent=None,
+            dry_run=False):
         self.target_file = target_file
+        self.dry_run = dry_run
         super().__init__(temp_file, delete_failures, parent)
 
     def _success(self):
-        if os.path.exists(self.target_file):
-            shutil.copymode(self.target_file, self.temp_file)
-        else:
-            os.chmod(self.temp_file, 0o100644)
-        os.rename(self.temp_file, self.target_file)
+        if not self.dry_run:
+            if os.path.exists(self.target_file):
+                shutil.copymode(self.target_file, self.temp_file)
+            else:
+                os.chmod(self.temp_file, 0o100644)
+            os.rename(self.temp_file, self.target_file)
 
 
 class _StreamCloser(_Closer):

@@ -12,6 +12,13 @@ class TestWriter(helpers.TestCase):
             fp.write('d')
         assert results == ['abcd']
 
+    def test_callable_dry_run(self, safer_writer):
+        results = []
+        with safer_writer(results.append, dry_run=True) as fp:
+            fp.write('abc')
+            fp.write('d')
+        assert results == []
+
     def test_callable_error(self, safer_writer):
         results = []
         with self.assertRaises(ValueError):
@@ -29,6 +36,27 @@ class TestWriter(helpers.TestCase):
                 fp2.write('three')
             fp1.write('four')
         assert self.filename.read_text() == 'onetwothreefour'
+
+    def test_nested_writers_dry_run(self, safer_writer):
+        assert not self.filename.exists()
+        with safer.open(self.filename, 'w', dry_run=True) as fp1:
+            assert not self.filename.exists()
+            fp1.write('one')
+            with safer_writer(fp1, dry_run=True) as fp2:
+                assert not self.filename.exists()
+                fp2.write('two')
+                fp2.write('three')
+            assert not self.filename.exists()
+            fp1.write('four')
+        assert not self.filename.exists()
+
+    def test_dry_run(self, safer_writer):
+        assert not self.filename.exists()
+        with safer.open(self.filename, 'w', dry_run=True) as fp1:
+            assert not self.filename.exists()
+            fp1.write('one')
+            assert not self.filename.exists()
+        assert not self.filename.exists()
 
     def test_std_error(self, safer_writer):
         for file in (sys.stdout, sys.stderr, None):
