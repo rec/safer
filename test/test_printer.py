@@ -29,6 +29,16 @@ class TestPrinter(TestCase):
             print('hello')
         assert not self.filename.exists()
 
+    def test_printer_dry_run_callable(self):
+        results = []
+
+        assert not self.filename.exists()
+        with safer.printer(self.filename, dry_run=results.append) as print:
+            assert not self.filename.exists()
+            print('hello')
+        assert not self.filename.exists()
+        assert results == ['hello\n']
+
     def test_printer_errors(self):
         with safer.printer(self.filename):
             pass

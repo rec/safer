@@ -42,7 +42,10 @@ wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=F
         if there is an exception
     
       dry_run:
-        If dry_run is True, the stream is not written to at all
+        If dry_run is truthy, the stream is not written to at all at the end.
+    
+        If dry_run is callable, the results of the stream are called with that
+        function rather than writing it to the underlying stream.
 Help on function open in module safer:
 
 ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
@@ -133,11 +136,14 @@ DDEESSCCRRIIPPTTIIOONN
     -------
     
     ``safer`` helps prevent programmer error from corrupting files, socket
-    connections, or generalized streams
+    connections, or generalized streams by writing a whole file or nothing.
     
     It does not prevent concurrent modification of files from other threads or
     processes: if you need atomic file writing, see
     https://pypi.org/project/atomicwrites/
+    
+    It also has a useful `dry_run` setting to let you test your code without
+    actually overwriting the target file.
     
     * ``safer.writer()`` wraps an existing writer, socket or stream and writes a
       whole response or nothing
@@ -359,7 +365,10 @@ FFUUNNCCTTIIOONNSS
             if there is an exception
         
           dry_run:
-            If dry_run is True, the stream is not written to at all
+            If dry_run is truthy, the stream is not written to at all at the end.
+        
+            If dry_run is callable, the results of the stream are called with that
+            function rather than writing it to the underlying stream.
 
 DDAATTAA
     ____aallll____ = ('writer', 'open', 'closer', 'printer')

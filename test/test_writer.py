@@ -58,6 +58,14 @@ class TestWriter(helpers.TestCase):
             assert not self.filename.exists()
         assert not self.filename.exists()
 
+    def test_dry_run_callable(self, safer_writer):
+        results = []
+        assert not self.filename.exists()
+
+        with safer_writer(dry_run=results.append) as fp:
+            fp.write('one')
+        assert results == ['one']
+
     def test_std_error(self, safer_writer):
         for file in (sys.stdout, sys.stderr, None):
             with safer_writer(file) as fp:

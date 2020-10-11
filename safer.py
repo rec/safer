@@ -22,11 +22,14 @@ See the Medium article `here. <https://medium.com/@TomSwirly/\
 -------
 
 ``safer`` helps prevent programmer error from corrupting files, socket
-connections, or generalized streams
+connections, or generalized streams by writing a whole file or nothing.
 
 It does not prevent concurrent modification of files from other threads or
 processes: if you need atomic file writing, see
 https://pypi.org/project/atomicwrites/
+
+It also has a useful `dry_run` setting to let you test your code without
+actually overwriting the target file.
 
 * ``safer.writer()`` wraps an existing writer, socket or stream and writes a
   whole response or nothing
@@ -211,7 +214,10 @@ def writer(
         if there is an exception
 
       dry_run:
-        If dry_run is True, the stream is not written to at all
+        If dry_run is truthy, the stream is not written to at all at the end.
+
+        If dry_run is callable, the results of the stream are called with that
+        function rather than writing it to the underlying stream.
     """
     if isinstance(stream, (str, Path)):
         mode = 'wb' if is_binary else 'w'
@@ -221,15 +227,21 @@ def writer(
 
     stream = stream or sys.stdout
 
+    if callable(dry_run):
+        write, dry_run = dry_run, True
+    elif dry_run:
+        write = len
+    else:
+        write = getattr(stream, 'write', None)
+
+    send = getattr(stream, 'send', None)
+    mode = getattr(stream, 'mode', None)
+
     if dry_run:
         close_on_exit = False
 
     if close_on_exit and stream in (sys.stdout, sys.stderr):
         raise ValueError('You cannot close stdout or stderr')
-
-    write = len if dry_run else getattr(stream, 'write', None)
-    send = getattr(stream, 'send', None)
-    mode = getattr(stream, 'mode', None)
 
     if write and mode:
         if not set('w+a').intersection(mode):
@@ -369,7 +381,11 @@ def open(
         if '+' in mode:
             raise ValueError('+ mode requires a temp_file argument')
 
-        write = len if dry_run else simple_write
+        if callable(dry_run):
+            write = dry_run
+        else:
+            write = len if dry_run else simple_write
+
         fp = _MemoryStreamCloser(write, True, is_binary).fp
         fp.mode = mode
         return fp

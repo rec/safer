@@ -22,6 +22,24 @@ class TestSafer(helpers.TestCase):
             fp.write('hello')
         assert self.filename.read_text() == 'chello'
 
+    def test_open_dry(self, safer_open):
+        results = []
+        with safer.open(self.filename, 'w', dry_run=results.append) as fp:
+            fp.write('hello')
+        assert not self.filename.exists()
+        assert results == ['hello']
+
+    def test_no_copy_dry(self, safer_open):
+        with safer_open(self.filename, 'a', dry_run=True) as fp:
+            fp.write('hello')
+        assert not self.filename.exists()
+
+    def test_copy_dry(self, safer_open):
+        self.filename.write_text('c')
+        with safer_open(self.filename, 'a', dry_run=True) as fp:
+            fp.write('hello')
+        assert self.filename.read_text() == 'c'
+
     def test_error(self, safer_open):
         self.filename.write_text('hello')
 
