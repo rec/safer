@@ -1,3 +1,7 @@
+## v4.3.0 - 20/10/11
+
+* Now dry_run can be a callable
+
 ## v4.2.1 - 20/10/07
 
 * Enable Python 3.9
