@@ -2,6 +2,9 @@
 ✏️safer: a safer file opener ✏️
 -------------------------------
 
+.. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
+   :alt: safer logo
+
 .. doks-shields::
 
    travis.org codecov github.release pypi.pyversions github.top/languages
@@ -10,8 +13,8 @@
 No more partial writes or corruption! Wraps file streams, sockets or
 any callable.
 
-Install ``safer`` from the command line with `pip
-<https://pypi.org/project/pip>`_: ``pip install safer``.
+Use `pip <https://pypi.org/project/pip>`_ to install `safer` from the command
+line: `pip install safer`.
 
 Tested on Python 3.4 and 3.8 - Python 2.7 version
 is here <https://github.com/rec/safer/tree/v2.0.5>`_.
@@ -21,7 +24,7 @@ See the Medium article `here. <https://medium.com/@TomSwirly/\
 
 -------
 
-``safer`` helps prevent programmer error from corrupting files, socket
+`safer` helps prevent programmer error from corrupting files, socket
 connections, or generalized streams by writing a whole file or nothing.
 
 It does not prevent concurrent modification of files from other threads or
@@ -31,24 +34,24 @@ https://pypi.org/project/atomicwrites/
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
-* ``safer.writer()`` wraps an existing writer, socket or stream and writes a
+* `safer.writer()` wraps an existing writer, socket or stream and writes a
   whole response or nothing
 
-* ``safer.open()`` is a drop-in replacement for built-in ``open`` that
+* `safer.open()` is a drop-in replacement for built-in `open` that
   writes a whole file or nothing
 
-* ``safer.closer()`` returns a stream like from ``safer.write()`` that also
+* `safer.closer()` returns a stream like from `safer.write()` that also
   closes the underlying stream or callable when it closes.
 
-* ``safer.printer()`` is ``safer.open()`` except that it yields a
+* `safer.printer()` is `safer.open()` except that it yields a
   a function that prints to the stream.
 
-By default, ``safer`` buffers the written data in memory in a ``io.StringIO``
-or ``io.BytesIO``.
+By default, `safer` buffers the written data in memory in a `io.StringIO`
+or `io.BytesIO`.
 
-For very large files, ``safer.open()`` has a ``temp_file`` argument which
+For very large files, `safer.open()` has a `temp_file` argument which
 writes the data to a temporary file on disk, which is moved over using
-``os.rename`` if the operation completes successfully.  This functionality
+`os.rename` if the operation completes successfully.  This functionality
 does not work on Windows.  (In fact, it's unclear if any of this works on
 Windows, but that certainly won't.  Windows developer solicted!)
 
@@ -57,10 +60,10 @@ Windows, but that certainly won't.  Windows developer solicted!)
 EXAMPLES
 =========
 
-``safer.writer()``
+`safer.writer()`
 ~~~~~~~~~~~~~~~~~~~
 
-``safer.writer()`` wraps an existing stream - a writer, socket, or callback -
+`safer.writer()` wraps an existing stream - a writer, socket, or callback -
 in a temporary stream which is only copied to the target stream at close() and
 only if no exception was raised.
 
@@ -88,11 +91,11 @@ EXAMPLE
      except:
         write_error(sock)  # Nothing has been written
 
-``safer.open()``
+`safer.open()`
 ~~~~~~~~~~~~~~~~~
 
 Writes a whole file or nothing. It's a drop-in replacement for built-in
-``open()`` except that ``safer.open()`` leaves the original file unchanged on
+`open()` except that `safer.open()` leaves the original file unchanged on
 failure.
 
 EXAMPLE
@@ -111,25 +114,25 @@ EXAMPLE
         # If an exception is raised, the file is unchanged.
 
 
-``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
-would, except that ``fp`` writes to memory stream or a temporary file in the
+`safer.open(filename)` returns a file stream `fp` like `open(filename)`
+would, except that `fp` writes to memory stream or a temporary file in the
 same directory.
 
-If ``fp`` is used as a context manager and an exception is raised, then the
-property ``fp.safer_failed`` on the stream is automatically set to ``True``.
+If `fp` is used as a context manager and an exception is raised, then the
+property `fp.safer_failed` on the stream is automatically set to `True`.
 
-And when ``fp.close()`` is called, the cached data is stored in ``filename`` -
-*unless* ``fp.safer_failed`` is true.
+And when `fp.close()` is called, the cached data is stored in `filename` -
+*unless* `fp.safer_failed` is true.
 
 ------------------------------------
 
-``safer.printer()``
+`safer.printer()`
 ~~~~~~~~~~~~~~~~~~~
 
-``safer.printer()`` is similar to ``safer.open()`` except it yields a function
+`safer.printer()` is similar to `safer.open()` except it yields a function
 that prints to the open file - it's very convenient for printing text.
 
-Like ``safer.open()``, if an exception is raised within its context manager,
+Like `safer.open()`, if an exception is raised within its context manager,
 the original file is left unchanged.
 
 EXAMPLE
@@ -175,12 +178,13 @@ def writer(
     """
     Write safely to file streams, sockets and callables.
 
-    ``safer.writer`` yields an in-memory stream that you can write
+    `safer.writer` yields an in-memory stream that you can write
     to, but which is only written to the original stream if the
     context finishes without raising an exception.
 
-    Because the actual writing happens when the context exits, it's possible
-    to block indefinitely if the underlying socket, stream or callable does.
+    Because the actual writing happens at the end, it's possible to block
+    indefinitely when the context exits if the underlying socket, stream or
+    callable does!
 
     ARGUMENTS
       stream:
@@ -190,9 +194,9 @@ def writer(
         writing.
 
       is_binary:
-        Is ``stream`` a binary stream?
+        Is `stream` a binary stream?
 
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
+        If `is_binary` is `None`, deduce whether it's a binary file from
         the stream, or assume it's text otherwise.
 
       close_on_exit: If True, the underlying stream is closed when the writer
@@ -302,26 +306,26 @@ def open(
     dry_run=False,
 ):
     """
-    A drop-in replacement for ``open()`` which returns a stream which only
+    A drop-in replacement for `open()` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
     no failure.
 
-    If a stream ``fp`` return from ``safer.open()`` is used as a context
-    manager and an exception is raised, the property ``fp.safer_failed`` is
-    set to ``True``.
+    If a stream `fp` return from `safer.open()` is used as a context
+    manager and an exception is raised, the property `fp.safer_failed` is
+    set to `True`.
 
-    In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+    In the method `fp.close()`, if `fp.safer_failed` is *not* set, then the
     cached results replace the original file, successfully completing the
     write.
 
-    If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+    If `fp.safer_failed` is true, then if `delete_failures` is true, the
     temporary file is deleted.
 
-    If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
+    If the `mode` argument contains either `'a'` (append), or `'+'`
     (update), then the original file will be copied to the temporary file
     before writing starts.
 
-    Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
+    Note that if the `temp_file` argument is set, `safer` uses an extra
     temporary file which is renamed over the file only after the stream closes
     without failing. This uses as much disk space as the old and new files put
     together.
@@ -344,7 +348,7 @@ def open(
       dry_run:
          If dry_run is True, the file is not written to at all
 
-    The remaining arguments are the same as for built-in ``open()``.
+    The remaining arguments are the same as for built-in `open()`.
     """
     is_copy = '+' in mode or 'a' in mode
     is_read = 'r' in mode and not is_copy
@@ -421,10 +425,10 @@ def open(
 
 def closer(stream, is_binary=None, close_on_exit=True, **kwds):
     """
-    Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+    Like `safer.writer()` but with `close_on_exit=True` by default
 
     ARGUMENTS
-      Same as for ``safer.writer()``
+      Same as for `safer.writer()`
     """
     return writer(stream, is_binary, close_on_exit, **kwds)
 
@@ -437,7 +441,7 @@ def printer(name, mode='w', *args, **kwargs):
     and only if there was no exception thrown
 
     ARGUMENTS
-      Same as for ``safer.open()``
+      Same as for `safer.open()`
     """
     if 'r' in mode and '+' not in mode:
         raise IOError('File not open for writing')
@@ -459,7 +463,6 @@ class _Closer:
             except Exception:
                 traceback.print_exc()
             raise
-
         self._close(self.fp.safer_failed)
 
     def _close(self, failed):
@@ -477,7 +480,7 @@ class _Closer:
     def _wrap(self, stream_cls):
         @functools.wraps(stream_cls)
         def wrapped(*args, **kwargs):
-            wrapped_cls = self._wrap_class(stream_cls)
+            wrapped_cls = _wrap_class(stream_cls)
             self.fp = wrapped_cls(*args, **kwargs)
             self.fp.safer_closer = self
             self.fp.safer_failed = False
@@ -485,22 +488,21 @@ class _Closer:
 
         return wrapped
 
-    @staticmethod
-    @functools.lru_cache()
-    def _wrap_class(stream_cls):
-        def members():
-            @functools.wraps(stream_cls.__exit__)
-            def __exit__(self, *args):
-                self.safer_failed = bool(args[0])
-                return stream_cls.__exit__(self, *args)
 
-            @functools.wraps(stream_cls.close)
-            def close(self):
-                self.safer_closer.close(stream_cls.close)
+# Wrap an existing IO class so that it calls safer at the end
+@functools.lru_cache()
+def _wrap_class(stream_cls):
+    @functools.wraps(stream_cls.__exit__)
+    def exit(self, *args):
+        self.safer_failed = bool(args[0])
+        return stream_cls.__exit__(self, *args)
 
-            return locals()
+    @functools.wraps(stream_cls.close)
+    def close(self):
+        self.safer_closer.close(stream_cls.close)
 
-        return type('Safer' + stream_cls.__name__, (stream_cls,), members())
+    members = {'__exit__': exit, 'close': close}
+    return type('Safer' + stream_cls.__name__, (stream_cls,), members)
 
 
 class _FileCloser(_Closer):
@@ -547,12 +549,13 @@ class _FileCloser(_Closer):
 
 class _FileRenameCloser(_FileCloser):
     def __init__(
-            self,
-            target_file,
-            temp_file,
-            delete_failures,
-            parent=None,
-            dry_run=False):
+        self,
+        target_file,
+        temp_file,
+        delete_failures,
+        parent=None,
+        dry_run=False,
+    ):
         self.target_file = target_file
         self.dry_run = dry_run
         super().__init__(temp_file, delete_failures, parent)

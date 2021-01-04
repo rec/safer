@@ -1,6 +1,10 @@
 ✏️safer: a safer file opener ✏️
 -------------------------------
 
+.. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
+   :alt: safer logo
+
+
 |doks_0| |doks_1| |doks_2| |doks_3| |doks_4| |doks_5| |doks_6| |doks_7|
 
 .. |doks_0| image:: https://img.shields.io/travis/rec/safer
@@ -38,8 +42,8 @@
 No more partial writes or corruption! Wraps file streams, sockets or
 any callable.
 
-Install ``safer`` from the command line with `pip
-<https://pypi.org/project/pip>`_: ``pip install safer``.
+Use `pip <https://pypi.org/project/pip>`_ to install ``safer`` from the command
+line: ``pip install safer`.
 
 Tested on Python 3.4 and 3.8 - Python 2.7 version
 is here <https://github.com/rec/safer/tree/v2.0.5>`_.
@@ -49,11 +53,14 @@ See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-s
 -------
 
 ``safer`` helps prevent programmer error from corrupting files, socket
-connections, or generalized streams
+connections, or generalized streams by writing a whole file or nothing.
 
 It does not prevent concurrent modification of files from other threads or
 processes: if you need atomic file writing, see
 https://pypi.org/project/atomicwrites/
+
+It also has a useful ``dry_run`` setting to let you test your code without
+actually overwriting the target file.
 
 * ``safer.writer()`` wraps an existing writer, socket or stream and writes a
   whole response or nothing
@@ -176,10 +183,22 @@ EXAMPLE
 API
 ===
 
-``safer.writer(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``safer.writer()``
+~~~~~~~~~~~~~~~~~~
 
-(`safer/bin/safer.py, 163-262 <https://github.com/rec/safer/blob/master/safer/bin/safer.py#L163-L262>`_)
+.. code-block:: python
+
+  safer.writer(
+       stream=None,
+       is_binary=None,
+       close_on_exit=False,
+       temp_file=False,
+       chunk_size=1048576,
+       delete_failures=True,
+       dry_run=False,
+  )
+
+(`safer.py, 166-289 <https://github.com/rec/safer/blob/master/safer.py#L166-L289>`_)
 
 Write safely to file streams, sockets and callables.
 
@@ -187,14 +206,16 @@ Write safely to file streams, sockets and callables.
 to, but which is only written to the original stream if the
 context finishes without raising an exception.
 
-Because the actual writing happens when the context exits, it's possible
-to block indefinitely if the underlying socket, stream or callable does.
+Because the actual writing happens at the end, it's possible to block
+indefinitely when the context exits if the underlying socket, stream or
+callable does!
 
 ARGUMENTS
   stream:
     A file stream, a socket, or a callable that will receive data.
     If stream is None, output is written to stdout
-    If stream is a string, this file is opened for writing.
+    If stream is a string or Path, the file with that name is opened for
+    writing.
 
   is_binary:
     Is ``stream`` a binary stream?
@@ -220,10 +241,33 @@ ARGUMENTS
     If set to false, any temporary files created are not deleted
     if there is an exception
 
-``safer.open(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  dry_run:
+    If dry_run is truthy, the stream is not written to at all at the end.
 
-(`safer/bin/safer.py, 264-383 <https://github.com/rec/safer/blob/master/safer/bin/safer.py#L264-L383>`_)
+    If dry_run is callable, the results of the stream are called with that
+    function rather than writing it to the underlying stream.
+
+``safer.open()``
+~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+  safer.open(
+       name,
+       mode='r',
+       buffering=-1,
+       encoding=None,
+       errors=None,
+       newline=None,
+       closefd=True,
+       opener=None,
+       make_parents=False,
+       delete_failures=True,
+       temp_file=False,
+       dry_run=False,
+  )
+
+(`safer.py, 291-421 <https://github.com/rec/safer/blob/master/safer.py#L291-L421>`_)
 
 A drop-in replacement for ``open()`` which returns a stream which only
 overwrites the original file when close() is called, and only if there was
@@ -264,12 +308,15 @@ ARGUMENTS
     directory as the target file, or in the system tempfile for streams
     that aren't files.
 
+  dry_run:
+     If dry_run is True, the file is not written to at all
+
 The remaining arguments are the same as for built-in ``open()``.
 
 ``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer/bin/safer.py, 385-393 <https://github.com/rec/safer/blob/master/safer/bin/safer.py#L385-L393>`_)
+(`safer.py, 423-431 <https://github.com/rec/safer/blob/master/safer.py#L423-L431>`_)
 
 Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
@@ -279,7 +326,7 @@ ARGUMENTS
 ``safer.printer(name, mode='w', *args, **kwargs)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer/bin/safer.py, 395-413 <https://github.com/rec/safer/blob/master/safer/bin/safer.py#L395-L413>`_)
+(`safer.py, 433-451 <https://github.com/rec/safer/blob/master/safer.py#L433-L451>`_)
 
 A context manager that yields a function that prints to the opened file,
 only writing to the original file at the exit of the context,
@@ -288,4 +335,4 @@ and only if there was no exception thrown
 ARGUMENTS
   Same as for ``safer.open()``
 
-(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-10-11T10:27:38.477406)
+(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2020-12-08T12:40:48.441798)
