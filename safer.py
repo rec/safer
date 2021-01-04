@@ -16,7 +16,7 @@ any callable.
 Use `pip <https://pypi.org/project/pip>`_ to install `safer` from the command
 line: `pip install safer`.
 
-Tested on Python 3.4 and 3.8 - Python 2.7 version
+Tested on Python 3.4 - 3.9.  An old Python 2.7 version
 is here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/\

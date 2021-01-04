@@ -4,7 +4,6 @@
 .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
    :alt: safer logo
 
-
 |doks_0| |doks_1| |doks_2| |doks_3| |doks_4| |doks_5| |doks_6| |doks_7|
 
 .. |doks_0| image:: https://img.shields.io/travis/rec/safer
@@ -45,7 +44,7 @@ any callable.
 Use `pip <https://pypi.org/project/pip>`_ to install ``safer`` from the command
 line: ``pip install safer`.
 
-Tested on Python 3.4 and 3.8 - Python 2.7 version
+Tested on Python 3.4 - 3.9.  An old Python 2.7 version
 is here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
