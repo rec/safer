@@ -156,6 +156,7 @@ from pathlib import Path
 import contextlib
 import functools
 import io
+import json
 import os
 import shutil
 import sys
@@ -431,6 +432,79 @@ def closer(stream, is_binary=None, close_on_exit=True, **kwds):
       Same as for `safer.writer()`
     """
     return writer(stream, is_binary, close_on_exit, **kwds)
+
+
+def dump(obj, stream, dump=json.dump, **kwargs):
+    """
+    Safely serialize `obj` as a formatted stream to `fp`` (a
+    `.write()`-supporting file-like object, or a filename),
+    using `json.dump` by default
+
+    ARGUMENTS
+      obj:
+        The object to be serialized
+
+      stream:
+        A file stream, a socket, or a callable that will receive data.
+        If stream is None, output is written to stdout.
+        If stream is a string or Path, the file with that name is opened for
+        writing.
+
+      dump:
+        A function or module or the name of a function or module to dump data.
+        If None, default to `json.dump``.
+
+      kwargs:
+        Arguments that are passed to the dump function
+    """
+
+    return _dump(_to_callable(dump), obj, stream, **kwargs)
+
+
+def dumper(dump):
+    """
+    Wrap a serialization "dump" function so it runs safely.
+
+    ARGUMENTS
+      dump:
+        A function or module or the name of a function or module to dump data.
+        If None, default to `json.dump``.
+
+    EXAMPLE
+
+    .. code-block:: python
+
+        yaml_dump = safe.dumper('yaml')
+
+        def do_stuff(filename):
+            data = {'Response': 'hello'}
+            yaml_dump(data, filename)
+
+    """
+    return functools.partial(_dump, _to_callable(dump))
+
+
+def _dump(dump, obj, stream, **kwargs):
+    with writer(stream) as fp:
+        return dump(obj, fp)
+
+
+def _to_callable(d):
+    if isinstance(d, str):
+        try:
+            d = __import__(d)
+        except ImportError:
+            if '.' not in d:
+                raise
+            mod, name = d.rsplit('.', maxsplit=1)
+            d = getattr(__import__(mod), name)
+
+    if callable(d):
+        return d
+    try:
+        return d.safe_dump
+    except AttributeError:
+        return d.dump
 
 
 @contextlib.contextmanager

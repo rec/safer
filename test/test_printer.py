@@ -1,21 +1,16 @@
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from unittest import TestCase
 import functools
 import safer
+import tdir
 
 topen = functools.partial(safer.open, temp_file=True)
 copen = functools.partial(safer.open, mode='w')
 
 
+@tdir
 class TestPrinter(TestCase):
-    def setUp(self):
-        self.td_context = TemporaryDirectory()
-        self.td = Path(self.td_context.__enter__())
-        self.filename = self.td / 'test.txt'
-
-    def tearDown(self):
-        self.td_context.__exit__(None, None, None)
+    filename = Path('test.txt')
 
     def test_printer(self):
         with safer.printer(self.filename) as print:
