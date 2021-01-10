@@ -164,7 +164,7 @@ import tempfile
 import traceback
 
 __version__ = '4.3.0'
-__all__ = 'writer', 'open', 'closer', 'printer'
+__all__ = 'writer', 'open', 'closer', 'printer', 'dump', 'dumper'
 
 
 def writer(
@@ -467,8 +467,8 @@ def dumper(dump):
 
     ARGUMENTS
       dump:
-        A function or module or the name of a function or module to dump data.
-        If None, default to `json.dump``.
+        A function or module, or the name of a function or module, that dumps
+        data.
 
     EXAMPLE
 
