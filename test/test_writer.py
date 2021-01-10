@@ -1,10 +1,16 @@
 from . import helpers
+from pathlib import Path
 import safer
 import sys
+import tdir
+import unittest
+
+FILENAME = Path('one')
 
 
 @helpers.temps(safer.writer)
-class TestWriter(helpers.TestCase):
+@tdir
+class TestWriter(unittest.TestCase):
     def test_callable(self, safer_writer):
         results = []
         with safer_writer(results.append) as fp:
@@ -29,38 +35,38 @@ class TestWriter(helpers.TestCase):
         assert results == []
 
     def test_nested_writers(self, safer_writer):
-        with safer.open(self.filename, 'w') as fp1:
+        with safer.open(FILENAME, 'w') as fp1:
             fp1.write('one')
             with safer_writer(fp1) as fp2:
                 fp2.write('two')
                 fp2.write('three')
             fp1.write('four')
-        assert self.filename.read_text() == 'onetwothreefour'
+        assert FILENAME.read_text() == 'onetwothreefour'
 
     def test_nested_writers_dry_run(self, safer_writer):
-        assert not self.filename.exists()
-        with safer.open(self.filename, 'w', dry_run=True) as fp1:
-            assert not self.filename.exists()
+        assert not FILENAME.exists()
+        with safer.open(FILENAME, 'w', dry_run=True) as fp1:
+            assert not FILENAME.exists()
             fp1.write('one')
             with safer_writer(fp1, dry_run=True) as fp2:
-                assert not self.filename.exists()
+                assert not FILENAME.exists()
                 fp2.write('two')
                 fp2.write('three')
-            assert not self.filename.exists()
+            assert not FILENAME.exists()
             fp1.write('four')
-        assert not self.filename.exists()
+        assert not FILENAME.exists()
 
     def test_dry_run(self, safer_writer):
-        assert not self.filename.exists()
-        with safer.open(self.filename, 'w', dry_run=True) as fp1:
-            assert not self.filename.exists()
+        assert not FILENAME.exists()
+        with safer.open(FILENAME, 'w', dry_run=True) as fp1:
+            assert not FILENAME.exists()
             fp1.write('one')
-            assert not self.filename.exists()
-        assert not self.filename.exists()
+            assert not FILENAME.exists()
+        assert not FILENAME.exists()
 
     def test_dry_run_callable(self, safer_writer):
         results = []
-        assert not self.filename.exists()
+        assert not FILENAME.exists()
 
         with safer_writer(dry_run=results.append) as fp:
             fp.write('one')
@@ -75,7 +81,7 @@ class TestWriter(helpers.TestCase):
             assert m.exception.args[0] == 'You cannot close stdout or stderr'
 
     def test_file_error(self, safer_writer):
-        with safer.open(self.filename, 'w') as fp1:
+        with safer.open(FILENAME, 'w') as fp1:
             fp1.write('one')
             with self.assertRaises(ValueError):
                 with safer_writer(fp1) as fp2:
@@ -83,25 +89,25 @@ class TestWriter(helpers.TestCase):
                     fp2.write('three')
                     raise ValueError
             fp1.write('four')
-        assert self.filename.read_text() == 'onefour'
+        assert FILENAME.read_text() == 'onefour'
 
     def test_mode_error1(self, safer_writer):
-        with safer.open(self.filename, 'w') as fp:
+        with safer.open(FILENAME, 'w') as fp:
             pass
-        with open(self.filename) as fp:
+        with open(FILENAME) as fp:
             with self.assertRaises(ValueError) as e:
                 safer_writer(fp)
             assert e.exception.args[0] == 'Stream mode "r" is not a write mode'
 
     def test_mode_error2(self, safer_writer):
-        with open(self.filename, 'w') as fp:
+        with open(FILENAME, 'w') as fp:
             with self.assertRaises(ValueError) as e:
                 safer_writer(fp, is_binary=True)
             a = e.exception.args[0]
             assert a == 'is_binary is inconsistent with the file stream'
 
     def test_mode_error3(self, safer_writer):
-        with open(self.filename, 'wb') as fp:
+        with open(FILENAME, 'wb') as fp:
             with self.assertRaises(ValueError) as e:
                 safer_writer(fp, is_binary=False)
             a = e.exception.args[0]
@@ -118,13 +124,13 @@ class TestWriter(helpers.TestCase):
             fp.write('to stdout!\n')
 
     def test_str(self, safer_writer):
-        for file in (self.filename, str(self.filename)):
+        for file in (FILENAME, str(FILENAME)):
             with safer_writer(file) as fp:
                 fp.write('one ')
                 fp.write('two')
-            assert self.filename.read_text() == 'one two'
-            self.filename.write_text('')
-            assert self.filename.read_text() == ''
+            assert FILENAME.read_text() == 'one two'
+            FILENAME.write_text('')
+            assert FILENAME.read_text() == ''
 
     def test_socket(self, safer_writer):
         sock = socket()
@@ -174,7 +180,7 @@ class TestWriter(helpers.TestCase):
 
 
 @helpers.temps(safer.closer)
-class TestCloser(helpers.TestCase):
+class TestCloser(unittest.TestCase):
     def test_callable_closer(self, safer_closer):
         results = []
         with safer_closer(results.append) as fp:

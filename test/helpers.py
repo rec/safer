@@ -1,7 +1,4 @@
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import functools
-import unittest
 
 
 def temps(opener):
@@ -22,13 +19,3 @@ def temps(opener):
         return cls
 
     return temps_class
-
-
-class TestCase(unittest.TestCase):
-    def setUp(self):
-        self.td_context = TemporaryDirectory()
-        self.td = Path(self.td_context.__enter__())
-        self.filename = self.td / 'test.txt'
-
-    def tearDown(self):
-        self.td_context.__exit__(None, None, None)

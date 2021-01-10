@@ -1,93 +1,98 @@
-from . import helpers
+from pathlib import Path
 import os
 import safer
+import tdir
+import unittest
+
+FILENAME = Path('one')
 
 
-class TestSaferFiles(helpers.TestCase):
+@tdir
+class TestSaferFiles(unittest.TestCase):
     def test_all_modes(self):
         modes = 'w', 'r', 'a', 'r+', 'w+', 'a', 'a+'
 
         for m in modes:
-            with safer.open(self.filename, m, temp_file=True):
+            with safer.open(FILENAME, m, temp_file=True):
                 pass
-            with safer.open(self.filename, m + 'b', temp_file=True):
+            with safer.open(FILENAME, m + 'b', temp_file=True):
                 pass
 
     def test_explicit_close(self):
-        self.filename.write_text('hello')
-        assert self.filename.read_text() == 'hello'
-        before = set(os.listdir(self.td))
+        FILENAME.write_text('hello')
+        assert FILENAME.read_text() == 'hello'
+        before = set(os.listdir('.'))
 
-        fp = safer.open(self.filename, 'w', temp_file=True)
+        fp = safer.open(FILENAME, 'w', temp_file=True)
         fp.write('OK!')
-        assert self.filename.read_text() == 'hello'
+        assert FILENAME.read_text() == 'hello'
 
-        after = set(os.listdir(self.td))
+        after = set(os.listdir('.'))
         assert len(before) + 1 == len(after)
         assert len(after.difference(before)) == 1
 
         fp.close()
 
-        self.assertEqual(self.filename.read_text(), 'OK!')
-        assert self.filename.read_text() == 'OK!'
-        after = set(os.listdir(self.td))
+        self.assertEqual(FILENAME.read_text(), 'OK!')
+        assert FILENAME.read_text() == 'OK!'
+        after = set(os.listdir('.'))
         assert before == after
 
     def test_temp_file1(self):
-        temp_file = self.filename.with_suffix('.temp_file')
-        with safer.open(self.filename, 'w', temp_file=temp_file) as fp:
+        temp_file = FILENAME.with_suffix('.temp_file')
+        with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
             assert temp_file.exists()
             assert os.path.exists(temp_file)
             fp.write('hello')
 
-        assert self.filename.read_text() == 'hello'
+        assert FILENAME.read_text() == 'hello'
         assert not temp_file.exists()
 
     def test_temp_file2(self):
-        temp_file = self.filename.with_suffix('.temp_file')
+        temp_file = FILENAME.with_suffix('.temp_file')
 
         with self.assertRaises(ValueError) as e:
-            with safer.open(self.filename, 'w', temp_file=temp_file) as fp:
+            with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
                 assert temp_file.exists()
                 fp.write('hello')
                 raise ValueError('Expected')
         assert e.exception.args[0] == 'Expected'
 
-        assert not self.filename.exists()
+        assert not FILENAME.exists()
         assert not temp_file.exists()
 
     def test_temp_file3(self):
-        temp_file = self.filename.with_suffix('.temp_file')
+        temp_file = FILENAME.with_suffix('.temp_file')
         with safer.open(
-            self.filename, 'w', temp_file=temp_file, delete_failures=False
+            FILENAME, 'w', temp_file=temp_file, delete_failures=False
         ) as fp:
             assert os.path.exists(temp_file)
             fp.write('hello')
 
-        assert self.filename.read_text() == 'hello'
+        assert FILENAME.read_text() == 'hello'
         assert not temp_file.exists()
 
     def test_temp_file4(self):
-        temp_file = self.filename.with_suffix('.temp_file')
+        temp_file = FILENAME.with_suffix('.temp_file')
         with self.assertRaises(ValueError) as e:
             with safer.open(
-                self.filename, 'w', temp_file=temp_file, delete_failures=False
+                FILENAME, 'w', temp_file=temp_file, delete_failures=False
             ) as fp:
                 assert os.path.exists(temp_file)
                 fp.write('hello')
                 raise ValueError('Expected')
         assert e.exception.args[0] == 'Expected'
 
-        assert not self.filename.exists()
+        assert not FILENAME.exists()
         assert temp_file.exists()
 
     def test_read(self):
-        self.filename.write_text('hello')
-        with safer.open(self.filename, 'r+', temp_file=True) as fp:
+        FILENAME.write_text('hello')
+        with safer.open(FILENAME, 'r+', temp_file=True) as fp:
             assert fp.read() == 'hello'
 
         with self.assertRaises(ValueError):
-            safer.open(self.filename, 'r+')
+            safer.open(FILENAME, 'r+')
 
     def test_int_filename(self):
         with self.assertRaises(TypeError) as m:
@@ -99,7 +104,7 @@ class TestSaferFiles(helpers.TestCase):
 
     def _error(self, mode='w', **kwds):
         with self.assertRaises(ValueError) as e:
-            safer.open(self.filename, mode, temp_file=True, **kwds)
+            safer.open(FILENAME, mode, temp_file=True, **kwds)
         return e.exception.args[0]
 
     def test_errors1(self):
