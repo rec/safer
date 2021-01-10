@@ -19,3 +19,14 @@ def temps(opener):
         return cls
 
     return temps_class
+
+
+class socket:
+    def __init__(self):
+        self.items = []
+
+    def send(self, item):
+        self.items.append(item)
+
+    def recv(self):
+        pass

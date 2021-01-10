@@ -1,6 +1,6 @@
 """
-✏️safer: a safer file opener ✏️
--------------------------------
+🧿 safer: safer writing in Python 🧿
+--------------------------------------
 
 .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
    :alt: safer logo
@@ -42,6 +42,10 @@ actually overwriting the target file.
 
 * `safer.closer()` returns a stream like from `safer.write()` that also
   closes the underlying stream or callable when it closes.
+
+* `safer.dump()` is like a safer `json.dump()` which can be used for any
+  serialization protocol, including Yaml and Toml, and also allows you to
+  write to file streams or any other callable.
 
 * `safer.printer()` is `safer.open()` except that it yields a
   a function that prints to the stream.
@@ -126,6 +130,44 @@ And when `fp.close()` is called, the cached data is stored in `filename` -
 
 ------------------------------------
 
+`safer.dump()`
+~~~~~~~~~~~~~~~~~
+
+Serializes a whole file or nothing. It's a drop-in replacement for
+`json.dump()` except:
+
+* `safer.dump()` leaves the original file unchanged on
+* It takes a filename in preference to an open file stream
+* But it handles files, socket streams, or any callable
+
+EXAMPLE
+^^^^^^^
+
+.. code-block:: python
+
+    # dangerous
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is empty or partly written
+
+    # safer
+    with safer.open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is unchanged.
+
+
+`safer.open(filename)` returns a file stream `fp` like `open(filename)`
+would, except that `fp` writes to memory stream or a temporary file in the
+same directory.
+
+If `fp` is used as a context manager and an exception is raised, then the
+property `fp.safer_failed` on the stream is automatically set to `True`.
+
+And when `fp.close()` is called, the cached data is stored in `filename` -
+*unless* `fp.safer_failed` is true.
+
+------------------------------------
+
 `safer.printer()`
 ~~~~~~~~~~~~~~~~~~~
 
@@ -164,7 +206,7 @@ import tempfile
 import traceback
 
 __version__ = '4.3.0'
-__all__ = 'writer', 'open', 'closer', 'printer', 'dump', 'dumper'
+__all__ = 'writer', 'open', 'closer', 'dump', 'printer'
 
 
 def writer(
@@ -190,14 +232,14 @@ def writer(
     ARGUMENTS
       stream:
         A file stream, a socket, or a callable that will receive data.
-        If stream is None, output is written to stdout
-        If stream is a string or Path, the file with that name is opened for
+        If stream is `None`, output is written to `sys.stdout`
+        If stream is a string or `Path`, the file with that name is opened for
         writing.
 
       is_binary:
         Is `stream` a binary stream?
 
-        If `is_binary` is `None`, deduce whether it's a binary file from
+        If `is_binary` is ``None``, deduce whether it's a binary file from
         the stream, or assume it's text otherwise.
 
       close_on_exit: If True, the underlying stream is closed when the writer
@@ -434,7 +476,7 @@ def closer(stream, is_binary=None, close_on_exit=True, **kwds):
     return writer(stream, is_binary, close_on_exit, **kwds)
 
 
-def dump(obj, stream, dump=json.dump, **kwargs):
+def dump(obj, stream=None, dump=None, **kwargs):
     """
     Safely serialize `obj` as a formatted stream to `fp`` (a
     `.write()`-supporting file-like object, or a filename),
@@ -446,65 +488,56 @@ def dump(obj, stream, dump=json.dump, **kwargs):
 
       stream:
         A file stream, a socket, or a callable that will receive data.
-        If stream is None, output is written to stdout.
-        If stream is a string or Path, the file with that name is opened for
+        If stream is `None`, output is written to `sys.stdout`.
+        If stream is a string or `Path`, the file with that name is opened for
         writing.
 
       dump:
         A function or module or the name of a function or module to dump data.
-        If None, default to `json.dump``.
+        If `None`, default to `json.dump``.
 
       kwargs:
-        Arguments that are passed to the dump function
+        Additional arguments to `dump`.
     """
+    if isinstance(stream, str):
+        name = stream
+        is_binary = False
+    else:
+        name = getattr(stream, 'name', None)
+        mode = getattr(stream, 'mode', None)
+        if name and mode:
+            is_binary = 'b' in mode
+        else:
+            is_binary = hasattr(stream, 'recv') and hasattr(stream, 'send')
 
-    return _dump(_to_callable(dump), obj, stream, **kwargs)
+    if name and not dump:
+        dump = Path(name).suffix[1:] or None
+        if dump == 'yml':
+            dump = 'yaml'
 
-
-def dumper(dump):
-    """
-    Wrap a serialization "dump" function so it runs safely.
-
-    ARGUMENTS
-      dump:
-        A function or module, or the name of a function or module, that dumps
-        data.
-
-    EXAMPLE
-
-    .. code-block:: python
-
-        yaml_dump = safe.dumper('yaml')
-
-        def do_stuff(filename):
-            data = {'Response': 'hello'}
-            yaml_dump(data, filename)
-
-    """
-    return functools.partial(_dump, _to_callable(dump))
-
-
-def _dump(dump, obj, stream, **kwargs):
-    with writer(stream) as fp:
-        return dump(obj, fp)
-
-
-def _to_callable(d):
-    if isinstance(d, str):
+    if isinstance(dump, str):
         try:
-            d = __import__(d)
+            dump = __import__(dump)
         except ImportError:
-            if '.' not in d:
+            if '.' not in dump:
                 raise
-            mod, name = d.rsplit('.', maxsplit=1)
-            d = getattr(__import__(mod), name)
+            mod, name = dump.rsplit('.', maxsplit=1)
+            dump = getattr(__import__(mod), name)
 
-    if callable(d):
-        return d
-    try:
-        return d.safe_dump
-    except AttributeError:
-        return d.dump
+    if dump is None:
+        dump = json.dump
+
+    elif not callable(dump):
+        try:
+            dump = dump.safe_dump
+        except AttributeError:
+            dump = dump.dump
+
+    with writer(stream) as fp:
+        if is_binary:
+            write = fp.write
+            fp.write = lambda s: write(s.encode('utf-8'))
+        return dump(obj, fp)
 
 
 @contextlib.contextmanager

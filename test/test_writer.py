@@ -133,14 +133,14 @@ class TestWriter(unittest.TestCase):
             assert FILENAME.read_text() == ''
 
     def test_socket(self, safer_writer):
-        sock = socket()
+        sock = helpers.socket()
         with safer_writer(sock) as fp:
             fp.write(b'one')
             fp.write(b'two')
         assert sock.items == [b'onetwo']
 
     def test_socket_error(self, safer_writer):
-        sock = socket()
+        sock = helpers.socket()
         with self.assertRaises(ValueError):
             with safer_writer(sock) as fp:
                 fp.write(b'one')
@@ -149,7 +149,7 @@ class TestWriter(unittest.TestCase):
         assert sock.items == []
 
     def test_socket_binary_error(self, safer_writer):
-        sock = socket()
+        sock = helpers.socket()
         with self.assertRaises(ValueError) as m:
             safer_writer(sock, is_binary=False)
         a = m.exception.args[0]
@@ -225,14 +225,3 @@ class TestCloser(unittest.TestCase):
 
         assert e.exception.args == ('closer3',)
         assert results == ['onetwo']
-
-
-class socket:
-    def __init__(self):
-        self.items = []
-
-    def send(self, item):
-        self.items.append(item)
-
-    def recv(self):
-        pass

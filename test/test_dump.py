@@ -1,13 +1,20 @@
+from . import helpers
 from pathlib import Path
 from unittest import TestCase
+import functools
 import json
 import safer
 import tdir
 import toml
 import yaml
 
+
+def dumper(dump):
+    return functools.partial(safer.dump, dump=dump)
+
+
 TESTS = None, 3, 'a', {}, [], {'a': 1}, [1, 2, 3], {'a': [1, 2]}
-DUMPS = safer.dump, safer.dumper('json'), safer.dumper('json.dump')
+DUMPS = safer.dump, dumper('json'), dumper('json.dump')
 
 
 @tdir
@@ -17,13 +24,13 @@ class TestDump(TestCase):
 
     def test_yaml(self):
         dumps = yaml, yaml.dump, 'yaml', 'yaml.dump'
-        dumps = (safer.dumper(i) for i in dumps)
+        dumps = (dumper(i) for i in dumps)
 
         _test(yaml.safe_load, dumps)
 
     def test_toml(self):
         dumps = toml, toml.dump, 'toml', 'toml.dump'
-        dumps = (safer.dumper(i) for i in dumps)
+        dumps = (dumper(i) for i in dumps)
         tests = ({}, {'a': 1}, {'a': [1, 2]})
 
         _test(toml.load, dumps, tests)
@@ -44,12 +51,25 @@ class TestDump(TestCase):
 
     def test_error2(self):
         with self.assertRaises(ModuleNotFoundError) as m:
-            safer.dumper('yoghurt')
+            safer.dump({}, dump='yoghurt')
         assert m.exception.args[0] == "No module named 'yoghurt'"
 
         with self.assertRaises(ModuleNotFoundError) as m:
-            safer.dumper('yoghurt.frogs')
+            safer.dump({}, dump='yoghurt.frogs')
         assert m.exception.args[0] == "No module named 'yoghurt'"
+
+    def test_socket(self):
+        sock = helpers.socket()
+        safer.dump({'hello': 'world!'}, sock)
+        assert b''.join(sock.items) == b'{"hello": "world!"}'
+
+    def test_binary(self):
+        data = {'hello': 'world! 🧿'}
+        with open('one.yml', 'wb') as fp:
+            safer.dump(data, fp)
+        with open('one.yml') as fp:
+            actual = yaml.safe_load(fp)
+        assert data == actual
 
 
 def _test(load=json.load, dumps=DUMPS, tests=TESTS):
