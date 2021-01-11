@@ -17,7 +17,7 @@ Use `pip <https://pypi.org/project/pip>`_ to install `safer` from the command
 line: `pip install safer`.
 
 Tested on Python 3.4 - 3.9.  An old Python 2.7 version
-is here <https://github.com/rec/safer/tree/v2.0.5>`_.
+is `here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/\
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_

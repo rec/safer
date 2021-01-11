@@ -1,5 +1,5 @@
-✏️safer: a safer file opener ✏️
--------------------------------
+🧿 safer: safer writing in Python 🧿
+--------------------------------------
 
 .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
    :alt: safer logo
@@ -41,11 +41,11 @@
 No more partial writes or corruption! Wraps file streams, sockets or
 any callable.
 
-Use ``pip <https://pypi.org/project/pip>``_ to install ``safer`` from the command
+Use `pip <https://pypi.org/project/pip>`_ to install ``safer`` from the command
 line: ``pip install safer``.
 
 Tested on Python 3.4 - 3.9.  An old Python 2.7 version
-is `here <https://github.com/rec/safer/tree/v2.0.5>``.
+is `here <https://github.com/rec/safer/tree/v2.0.5>`_.
 
 See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
 
@@ -69,6 +69,10 @@ actually overwriting the target file.
 
 * ``safer.closer()`` returns a stream like from ``safer.write()`` that also
   closes the underlying stream or callable when it closes.
+
+* ``safer.dump()`` is like a safer ``json.dump()`` which can be used for any
+  serialization protocol, including Yaml and Toml, and also allows you to
+  write to file streams or any other callable.
 
 * ``safer.printer()`` is ``safer.open()`` except that it yields a
   a function that prints to the stream.
@@ -153,6 +157,44 @@ And when ``fp.close()`` is called, the cached data is stored in ``filename`` -
 
 ------------------------------------
 
+``safer.dump()``
+~~~~~~~~~~~~~~~~~
+
+Serializes a whole file or nothing. It's a drop-in replacement for
+``json.dump()`` except:
+
+* ``safer.dump()`` leaves the original file unchanged on
+* It takes a filename in preference to an open file stream
+* But it handles files, socket streams, or any callable
+
+EXAMPLE
+^^^^^^^
+
+.. code-block:: python
+
+    # dangerous
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is empty or partly written
+
+    # safer
+    with safer.open(filename, 'w') as fp:
+        json.dump(data, fp)
+        # If an exception is raised, the file is unchanged.
+
+
+``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
+would, except that ``fp`` writes to memory stream or a temporary file in the
+same directory.
+
+If ``fp`` is used as a context manager and an exception is raised, then the
+property ``fp.safer_failed`` on the stream is automatically set to ``True``.
+
+And when ``fp.close()`` is called, the cached data is stored in ``filename`` -
+*unless* ``fp.safer_failed`` is true.
+
+------------------------------------
+
 ``safer.printer()``
 ~~~~~~~~~~~~~~~~~~~
 
@@ -197,7 +239,7 @@ API
        dry_run=False,
   )
 
-(`safer.py, 170-293 <https://github.com/rec/safer/blob/master/safer.py#L170-L293>`_)
+(`safer.py, 212-335 <https://github.com/rec/safer/blob/master/safer.py#L212-L335>`_)
 
 Write safely to file streams, sockets and callables.
 
@@ -212,8 +254,8 @@ callable does!
 ARGUMENTS
   stream:
     A file stream, a socket, or a callable that will receive data.
-    If stream is None, output is written to stdout
-    If stream is a string or Path, the file with that name is opened for
+    If stream is ``None``, output is written to ``sys.stdout``
+    If stream is a string or ``Path``, the file with that name is opened for
     writing.
 
   is_binary:
@@ -266,7 +308,7 @@ ARGUMENTS
        dry_run=False,
   )
 
-(`safer.py, 295-425 <https://github.com/rec/safer/blob/master/safer.py#L295-L425>`_)
+(`safer.py, 337-467 <https://github.com/rec/safer/blob/master/safer.py#L337-L467>`_)
 
 A drop-in replacement for ``open()`` which returns a stream which only
 overwrites the original file when close() is called, and only if there was
@@ -315,29 +357,17 @@ The remaining arguments are the same as for built-in ``open()``.
 ``safer.closer(stream, is_binary=None, close_on_exit=True, **kwds)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 427-435 <https://github.com/rec/safer/blob/master/safer.py#L427-L435>`_)
+(`safer.py, 469-477 <https://github.com/rec/safer/blob/master/safer.py#L469-L477>`_)
 
 Like ``safer.writer()`` but with ``close_on_exit=True`` by default
 
 ARGUMENTS
   Same as for ``safer.writer()``
 
-``safer.printer(name, mode='w', *args, **kwargs)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``safer.dump(obj, stream=None, dump=None, **kwargs)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 510-528 <https://github.com/rec/safer/blob/master/safer.py#L510-L528>`_)
-
-A context manager that yields a function that prints to the opened file,
-only writing to the original file at the exit of the context,
-and only if there was no exception thrown
-
-ARGUMENTS
-  Same as for ``safer.open()``
-
-``safer.dump(obj, stream, dump=<function dump at 0x109bfa510>, **kwargs)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-(`safer.py, 437-462 <https://github.com/rec/safer/blob/master/safer.py#L437-L462>`_)
+(`safer.py, 479-541 <https://github.com/rec/safer/blob/master/safer.py#L479-L541>`_)
 
 Safely serialize ``obj`` as a formatted stream to ``fp`` (a
 ``.write()``-supporting file-like object, or a filename),
@@ -349,37 +379,27 @@ ARGUMENTS
 
   stream:
     A file stream, a socket, or a callable that will receive data.
-    If stream is None, output is written to stdout.
-    If stream is a string or Path, the file with that name is opened for
+    If stream is ``None``, output is written to ``sys.stdout``.
+    If stream is a string or ``Path``, the file with that name is opened for
     writing.
 
   dump:
     A function or module or the name of a function or module to dump data.
-    If None, default to ``json.dump``.
+    If ``None``, default to ``json.dump``.
 
   kwargs:
-    Arguments that are passed to the dump function
+    Additional arguments to ``dump``.
 
-``safer.dumper(dump)``
-~~~~~~~~~~~~~~~~~~~~~~
+``safer.printer(name, mode='w', *args, **kwargs)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(`safer.py, 464-485 <https://github.com/rec/safer/blob/master/safer.py#L464-L485>`_)
+(`safer.py, 543-561 <https://github.com/rec/safer/blob/master/safer.py#L543-L561>`_)
 
-Wrap a serialization "dump" function so it runs safely.
+A context manager that yields a function that prints to the opened file,
+only writing to the original file at the exit of the context,
+and only if there was no exception thrown
 
 ARGUMENTS
-  dump:
-    A function or module, or the name of a function or module, that dumps
-    data.
+  Same as for ``safer.open()``
 
-EXAMPLE
-
-.. code-block:: python
-
-    yaml_dump = safe.dumper('yaml')
-
-    def do_stuff(filename):
-        data = {'Response': 'hello'}
-        yaml_dump(data, filename)
-
-(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2021-01-10T14:25:21.221422)
+(automatically generated by `doks <https://github.com/rec/doks/>`_ on 2021-01-11T12:09:06.975430)
