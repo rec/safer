@@ -1,3 +1,9 @@
+## v4.4.0 - 21/01/11
+
+* Use tdir everywhere
+* New safer.dump
+* Add safer logo
+
 ## v4.3.0 - 20/10/11
 
 * Now dry_run can be a callable
