@@ -8,7 +8,7 @@ README_TEXT = (Path(__file__).parents[1] / 'README.rst').read_text()
 
 
 class TestDoc(TestCase):
-    def NO_test_rendering(self):
+    def test_rendering(self):
         out = io.StringIO()
         actual = rst.render(README_TEXT, out)
         if actual is None:
@@ -16,7 +16,7 @@ class TestDoc(TestCase):
             print(out.getvalue())
             assert False
 
-    def NO_test_help(self):
+    def test_help(self):
         with open(get_help.HELP_FILE) as fp:
             actual = fp.read()
 

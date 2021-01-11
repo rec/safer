@@ -3,24 +3,25 @@ Help on function writer in module safer:
 wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
     Write safely to file streams, sockets and callables.
     
-    ``safer.writer`` yields an in-memory stream that you can write
+    `safer.writer` yields an in-memory stream that you can write
     to, but which is only written to the original stream if the
     context finishes without raising an exception.
     
-    Because the actual writing happens when the context exits, it's possible
-    to block indefinitely if the underlying socket, stream or callable does.
+    Because the actual writing happens at the end, it's possible to block
+    indefinitely when the context exits if the underlying socket, stream or
+    callable does!
     
     ARGUMENTS
       stream:
         A file stream, a socket, or a callable that will receive data.
-        If stream is None, output is written to stdout
-        If stream is a string or Path, the file with that name is opened for
+        If stream is `None`, output is written to `sys.stdout`
+        If stream is a string or `Path`, the file with that name is opened for
         writing.
     
       is_binary:
-        Is ``stream`` a binary stream?
+        Is `stream` a binary stream?
     
-        If ``is_binary`` is ``None``, deduce whether it's a binary file from
+        If `is_binary` is ``None``, deduce whether it's a binary file from
         the stream, or assume it's text otherwise.
     
       close_on_exit: If True, the underlying stream is closed when the writer
@@ -49,26 +50,26 @@ wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=F
 Help on function open in module safer:
 
 ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
-    A drop-in replacement for ``open()`` which returns a stream which only
+    A drop-in replacement for `open()` which returns a stream which only
     overwrites the original file when close() is called, and only if there was
     no failure.
     
-    If a stream ``fp`` return from ``safer.open()`` is used as a context
-    manager and an exception is raised, the property ``fp.safer_failed`` is
-    set to ``True``.
+    If a stream `fp` return from `safer.open()` is used as a context
+    manager and an exception is raised, the property `fp.safer_failed` is
+    set to `True`.
     
-    In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+    In the method `fp.close()`, if `fp.safer_failed` is *not* set, then the
     cached results replace the original file, successfully completing the
     write.
     
-    If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+    If `fp.safer_failed` is true, then if `delete_failures` is true, the
     temporary file is deleted.
     
-    If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
+    If the `mode` argument contains either `'a'` (append), or `'+'`
     (update), then the original file will be copied to the temporary file
     before writing starts.
     
-    Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
+    Note that if the `temp_file` argument is set, `safer` uses an extra
     temporary file which is renamed over the file only after the stream closes
     without failing. This uses as much disk space as the old and new files put
     together.
@@ -91,14 +92,37 @@ ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=N
       dry_run:
          If dry_run is True, the file is not written to at all
     
-    The remaining arguments are the same as for built-in ``open()``.
+    The remaining arguments are the same as for built-in `open()`.
 Help on function closer in module safer:
 
 cclloosseerr(stream, is_binary=None, close_on_exit=True, **kwds)
-    Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+    Like `safer.writer()` but with `close_on_exit=True` by default
     
     ARGUMENTS
-      Same as for ``safer.writer()``
+      Same as for `safer.writer()`
+Help on function dump in module safer:
+
+dduummpp(obj, stream=None, dump=None, **kwargs)
+    Safely serialize `obj` as a formatted stream to `fp`` (a
+    `.write()`-supporting file-like object, or a filename),
+    using `json.dump` by default
+    
+    ARGUMENTS
+      obj:
+        The object to be serialized
+    
+      stream:
+        A file stream, a socket, or a callable that will receive data.
+        If stream is `None`, output is written to `sys.stdout`.
+        If stream is a string or `Path`, the file with that name is opened for
+        writing.
+    
+      dump:
+        A function or module or the name of a function or module to dump data.
+        If `None`, default to `json.dump``.
+    
+      kwargs:
+        Additional arguments to `dump`.
 Help on function printer in module safer:
 
 pprriinntteerr(name, mode='w', *args, **kwargs)
@@ -107,15 +131,18 @@ pprriinntteerr(name, mode='w', *args, **kwargs)
     and only if there was no exception thrown
     
     ARGUMENTS
-      Same as for ``safer.open()``
+      Same as for `safer.open()`
 Help on module safer:
 
 NNAAMMEE
     safer
 
 DDEESSCCRRIIPPTTIIOONN
-    ✏️safer: a safer file opener ✏️
-    -------------------------------
+    🧿 safer: safer writing in Python 🧿
+    --------------------------------------
+    
+    .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
+       :alt: safer logo
     
     .. doks-shields::
     
@@ -125,17 +152,17 @@ DDEESSCCRRIIPPTTIIOONN
     No more partial writes or corruption! Wraps file streams, sockets or
     any callable.
     
-    Install ``safer`` from the command line with `pip
-    <https://pypi.org/project/pip>`_: ``pip install safer``.
+    Use `pip <https://pypi.org/project/pip>`_ to install `safer` from the command
+    line: `pip install safer`.
     
-    Tested on Python 3.4 and 3.8 - Python 2.7 version
-    is here <https://github.com/rec/safer/tree/v2.0.5>`_.
+    Tested on Python 3.4 - 3.9.  An old Python 2.7 version
+    is `here <https://github.com/rec/safer/tree/v2.0.5>`_.
     
     See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
     
     -------
     
-    ``safer`` helps prevent programmer error from corrupting files, socket
+    `safer` helps prevent programmer error from corrupting files, socket
     connections, or generalized streams by writing a whole file or nothing.
     
     It does not prevent concurrent modification of files from other threads or
@@ -145,24 +172,28 @@ DDEESSCCRRIIPPTTIIOONN
     It also has a useful `dry_run` setting to let you test your code without
     actually overwriting the target file.
     
-    * ``safer.writer()`` wraps an existing writer, socket or stream and writes a
+    * `safer.writer()` wraps an existing writer, socket or stream and writes a
       whole response or nothing
     
-    * ``safer.open()`` is a drop-in replacement for built-in ``open`` that
+    * `safer.open()` is a drop-in replacement for built-in `open` that
       writes a whole file or nothing
     
-    * ``safer.closer()`` returns a stream like from ``safer.write()`` that also
+    * `safer.closer()` returns a stream like from `safer.write()` that also
       closes the underlying stream or callable when it closes.
     
-    * ``safer.printer()`` is ``safer.open()`` except that it yields a
+    * `safer.dump()` is like a safer `json.dump()` which can be used for any
+      serialization protocol, including Yaml and Toml, and also allows you to
+      write to file streams or any other callable.
+    
+    * `safer.printer()` is `safer.open()` except that it yields a
       a function that prints to the stream.
     
-    By default, ``safer`` buffers the written data in memory in a ``io.StringIO``
-    or ``io.BytesIO``.
+    By default, `safer` buffers the written data in memory in a `io.StringIO`
+    or `io.BytesIO`.
     
-    For very large files, ``safer.open()`` has a ``temp_file`` argument which
+    For very large files, `safer.open()` has a `temp_file` argument which
     writes the data to a temporary file on disk, which is moved over using
-    ``os.rename`` if the operation completes successfully.  This functionality
+    `os.rename` if the operation completes successfully.  This functionality
     does not work on Windows.  (In fact, it's unclear if any of this works on
     Windows, but that certainly won't.  Windows developer solicted!)
     
@@ -171,10 +202,10 @@ DDEESSCCRRIIPPTTIIOONN
     EXAMPLES
     =========
     
-    ``safer.writer()``
+    `safer.writer()`
     ~~~~~~~~~~~~~~~~~~~
     
-    ``safer.writer()`` wraps an existing stream - a writer, socket, or callback -
+    `safer.writer()` wraps an existing stream - a writer, socket, or callback -
     in a temporary stream which is only copied to the target stream at close() and
     only if no exception was raised.
     
@@ -202,11 +233,11 @@ DDEESSCCRRIIPPTTIIOONN
          except:
             write_error(sock)  # Nothing has been written
     
-    ``safer.open()``
+    `safer.open()`
     ~~~~~~~~~~~~~~~~~
     
     Writes a whole file or nothing. It's a drop-in replacement for built-in
-    ``open()`` except that ``safer.open()`` leaves the original file unchanged on
+    `open()` except that `safer.open()` leaves the original file unchanged on
     failure.
     
     EXAMPLE
@@ -225,25 +256,63 @@ DDEESSCCRRIIPPTTIIOONN
             # If an exception is raised, the file is unchanged.
     
     
-    ``safer.open(filename)`` returns a file stream ``fp`` like ``open(filename)``
-    would, except that ``fp`` writes to memory stream or a temporary file in the
+    `safer.open(filename)` returns a file stream `fp` like `open(filename)`
+    would, except that `fp` writes to memory stream or a temporary file in the
     same directory.
     
-    If ``fp`` is used as a context manager and an exception is raised, then the
-    property ``fp.safer_failed`` on the stream is automatically set to ``True``.
+    If `fp` is used as a context manager and an exception is raised, then the
+    property `fp.safer_failed` on the stream is automatically set to `True`.
     
-    And when ``fp.close()`` is called, the cached data is stored in ``filename`` -
-    *unless* ``fp.safer_failed`` is true.
+    And when `fp.close()` is called, the cached data is stored in `filename` -
+    *unless* `fp.safer_failed` is true.
     
     ------------------------------------
     
-    ``safer.printer()``
+    `safer.dump()`
+    ~~~~~~~~~~~~~~~~~
+    
+    Serializes a whole file or nothing. It's a drop-in replacement for
+    `json.dump()` except:
+    
+    * `safer.dump()` leaves the original file unchanged on
+    * It takes a filename in preference to an open file stream
+    * But it handles files, socket streams, or any callable
+    
+    EXAMPLE
+    ^^^^^^^
+    
+    .. code-block:: python
+    
+        # dangerous
+        with open(filename, 'w') as fp:
+            json.dump(data, fp)
+            # If an exception is raised, the file is empty or partly written
+    
+        # safer
+        with safer.open(filename, 'w') as fp:
+            json.dump(data, fp)
+            # If an exception is raised, the file is unchanged.
+    
+    
+    `safer.open(filename)` returns a file stream `fp` like `open(filename)`
+    would, except that `fp` writes to memory stream or a temporary file in the
+    same directory.
+    
+    If `fp` is used as a context manager and an exception is raised, then the
+    property `fp.safer_failed` on the stream is automatically set to `True`.
+    
+    And when `fp.close()` is called, the cached data is stored in `filename` -
+    *unless* `fp.safer_failed` is true.
+    
+    ------------------------------------
+    
+    `safer.printer()`
     ~~~~~~~~~~~~~~~~~~~
     
-    ``safer.printer()`` is similar to ``safer.open()`` except it yields a function
+    `safer.printer()` is similar to `safer.open()` except it yields a function
     that prints to the open file - it's very convenient for printing text.
     
-    Like ``safer.open()``, if an exception is raised within its context manager,
+    Like `safer.open()`, if an exception is raised within its context manager,
     the original file is left unchanged.
     
     EXAMPLE
@@ -265,32 +334,54 @@ DDEESSCCRRIIPPTTIIOONN
 
 FFUUNNCCTTIIOONNSS
     cclloosseerr(stream, is_binary=None, close_on_exit=True, **kwds)
-        Like ``safer.writer()`` but with ``close_on_exit=True`` by default
+        Like `safer.writer()` but with `close_on_exit=True` by default
         
         ARGUMENTS
-          Same as for ``safer.writer()``
+          Same as for `safer.writer()`
+    
+    dduummpp(obj, stream=None, dump=None, **kwargs)
+        Safely serialize `obj` as a formatted stream to `fp`` (a
+        `.write()`-supporting file-like object, or a filename),
+        using `json.dump` by default
+        
+        ARGUMENTS
+          obj:
+            The object to be serialized
+        
+          stream:
+            A file stream, a socket, or a callable that will receive data.
+            If stream is `None`, output is written to `sys.stdout`.
+            If stream is a string or `Path`, the file with that name is opened for
+            writing.
+        
+          dump:
+            A function or module or the name of a function or module to dump data.
+            If `None`, default to `json.dump``.
+        
+          kwargs:
+            Additional arguments to `dump`.
     
     ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
-        A drop-in replacement for ``open()`` which returns a stream which only
+        A drop-in replacement for `open()` which returns a stream which only
         overwrites the original file when close() is called, and only if there was
         no failure.
         
-        If a stream ``fp`` return from ``safer.open()`` is used as a context
-        manager and an exception is raised, the property ``fp.safer_failed`` is
-        set to ``True``.
+        If a stream `fp` return from `safer.open()` is used as a context
+        manager and an exception is raised, the property `fp.safer_failed` is
+        set to `True`.
         
-        In the method ``fp.close()``, if ``fp.safer_failed`` is *not* set, then the
+        In the method `fp.close()`, if `fp.safer_failed` is *not* set, then the
         cached results replace the original file, successfully completing the
         write.
         
-        If ``fp.safer_failed`` is true, then if ``delete_failures`` is true, the
+        If `fp.safer_failed` is true, then if `delete_failures` is true, the
         temporary file is deleted.
         
-        If the ``mode`` argument contains either ``'a'`` (append), or ``'+'``
+        If the `mode` argument contains either `'a'` (append), or `'+'`
         (update), then the original file will be copied to the temporary file
         before writing starts.
         
-        Note that if the ``temp_file`` argument is set, ``safer`` uses an extra
+        Note that if the `temp_file` argument is set, `safer` uses an extra
         temporary file which is renamed over the file only after the stream closes
         without failing. This uses as much disk space as the old and new files put
         together.
@@ -313,7 +404,7 @@ FFUUNNCCTTIIOONNSS
           dry_run:
              If dry_run is True, the file is not written to at all
         
-        The remaining arguments are the same as for built-in ``open()``.
+        The remaining arguments are the same as for built-in `open()`.
     
     pprriinntteerr(name, mode='w', *args, **kwargs)
         A context manager that yields a function that prints to the opened file,
@@ -321,29 +412,30 @@ FFUUNNCCTTIIOONNSS
         and only if there was no exception thrown
         
         ARGUMENTS
-          Same as for ``safer.open()``
+          Same as for `safer.open()`
     
     wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
         Write safely to file streams, sockets and callables.
         
-        ``safer.writer`` yields an in-memory stream that you can write
+        `safer.writer` yields an in-memory stream that you can write
         to, but which is only written to the original stream if the
         context finishes without raising an exception.
         
-        Because the actual writing happens when the context exits, it's possible
-        to block indefinitely if the underlying socket, stream or callable does.
+        Because the actual writing happens at the end, it's possible to block
+        indefinitely when the context exits if the underlying socket, stream or
+        callable does!
         
         ARGUMENTS
           stream:
             A file stream, a socket, or a callable that will receive data.
-            If stream is None, output is written to stdout
-            If stream is a string or Path, the file with that name is opened for
+            If stream is `None`, output is written to `sys.stdout`
+            If stream is a string or `Path`, the file with that name is opened for
             writing.
         
           is_binary:
-            Is ``stream`` a binary stream?
+            Is `stream` a binary stream?
         
-            If ``is_binary`` is ``None``, deduce whether it's a binary file from
+            If `is_binary` is ``None``, deduce whether it's a binary file from
             the stream, or assume it's text otherwise.
         
           close_on_exit: If True, the underlying stream is closed when the writer
@@ -371,6 +463,6 @@ FFUUNNCCTTIIOONNSS
             function rather than writing it to the underlying stream.
 
 DDAATTAA
-    ____aallll____ = ('writer', 'open', 'closer', 'printer')
+    ____aallll____ = ('writer', 'open', 'closer', 'dump', 'printer')
 
 VVEERRSSIIOONN
