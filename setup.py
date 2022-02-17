@@ -29,5 +29,4 @@ if __name__ == '__main__':
         license='MIT',
         classifiers=_classifiers,
         keywords=['testing', 'modules'],
-        scripts=['safer.py'],
     )
