@@ -24,7 +24,7 @@ if __name__ == '__main__':
         tests_require=['pytest'],
         py_modules=['safer'],
         description='A safer file opener',
-        long_description=open('README.rst').read(),
+        long_description=open('README.rst', encoding='utf-8').read(),
         license='MIT',
         classifiers=_classifiers,
         keywords=['testing', 'modules'],
