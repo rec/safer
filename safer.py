@@ -307,7 +307,7 @@ def writer(
         pass
 
     elif send and hasattr(stream, 'recv'):  # It looks like a socket:
-        if not (is_binary is None or is_binary is True):
+        if is_binary is not None and is_binary is not True:
             raise ValueError('is_binary=False is inconsistent with a socket')
 
         write = send
@@ -619,7 +619,7 @@ def _wrap_class(stream_cls):
         self.safer_closer.close(stream_cls.close)
 
     members = {'__exit__': exit, 'close': close}
-    return type('Safer' + stream_cls.__name__, (stream_cls,), members)
+    return type(f'Safer{stream_cls.__name__}', (stream_cls,), members)
 
 
 class _FileCloser(_Closer):
@@ -695,8 +695,7 @@ class _StreamCloser(_Closer):
         super().close(parent_close)
 
         if self.close_on_exit:
-            closer = getattr(self.write, 'close', None)
-            if closer:
+            if closer := getattr(self.write, 'close', None):
                 closer(self.fp.safer_failed)
 
     def _write(self, v):
@@ -745,10 +744,10 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
         mode = 'rb' if self.is_binary else 'r'
         with open(self.temp_file, mode) as fp:
             while True:
-                data = fp.read(self.chunk_size)
-                if not data:
+                if data := fp.read(self.chunk_size):
+                    self._write(data)
+                else:
                     break
-                self._write(data)
 
     def _failure(self):
         _FileCloser._failure(self)

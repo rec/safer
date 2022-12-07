@@ -18,8 +18,6 @@ class TestDoc(TestCase):
             assert False
 
     def test_help(self):
-        with open(get_help.HELP_FILE) as fp:
-            actual = fp.read()
-
+        actual = Path(get_help.HELP_FILE).read_text()
         expected = get_help.get_help()
         assert expected == actual

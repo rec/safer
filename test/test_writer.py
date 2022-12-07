@@ -26,7 +26,7 @@ class TestWriter(unittest.TestCase):
         with safer_writer(results.append, dry_run=True) as fp:
             fp.write('abc')
             fp.write('d')
-        assert results == []
+        assert not results
 
     def test_callable_error(self, safer_writer):
         results = []
@@ -35,7 +35,7 @@ class TestWriter(unittest.TestCase):
                 fp.write('abc')
                 fp.write('d')
                 raise ValueError
-        assert results == []
+        assert not results
 
     def test_nested_writers(self, safer_writer):
         with safer.open(FILENAME, 'w') as fp1:
@@ -163,7 +163,7 @@ class TestWriter(unittest.TestCase):
         with safer_writer(results.append) as fp:
             fp.write('one')
             fp.write('two')
-            assert results == []
+            assert not results
 
         assert results == ['onetwo']
 
@@ -189,11 +189,12 @@ class TestCloser(unittest.TestCase):
         with safer_closer(results.append) as fp:
             fp.write('one')
             fp.write('two')
-            assert results == []
+            assert not results
 
         assert results == ['onetwo']
 
     def test_callable_closer2(self, safer_closer):
+
         class CB:
             def __call__(self, item):
                 results.append(item)
@@ -205,7 +206,7 @@ class TestCloser(unittest.TestCase):
         with safer_closer(CB()) as fp:
             fp.write('one')
             fp.write('two')
-            assert results == []
+            assert not results
 
         assert results == ['onetwo', ('close', False)]
 

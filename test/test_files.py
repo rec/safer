@@ -17,7 +17,7 @@ class TestSaferFiles(unittest.TestCase):
         for m in modes:
             with safer.open(FILENAME, m, temp_file=True):
                 pass
-            with safer.open(FILENAME, m + 'b', temp_file=True):
+            with safer.open(FILENAME, f'{m}b', temp_file=True):
                 pass
 
     def test_explicit_close(self):
