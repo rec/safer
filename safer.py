@@ -194,7 +194,6 @@ EXAMPLE
             print(item)
         # Either the whole file is written, or nothing
 """
-from pathlib import Path
 import contextlib
 import functools
 import io
@@ -204,6 +203,7 @@ import shutil
 import sys
 import tempfile
 import traceback
+from pathlib import Path
 
 __version__ = '4.4.1'
 __all__ = 'writer', 'open', 'closer', 'dump', 'printer'
@@ -269,7 +269,10 @@ def writer(
     if isinstance(stream, (str, Path)):
         mode = 'wb' if is_binary else 'w'
         return open(
-            stream, mode, delete_failures=delete_failures, dry_run=dry_run
+            stream,
+            mode,
+            delete_failures=delete_failures,
+            dry_run=dry_run,
         )
 
     stream = stream or sys.stdout
@@ -292,7 +295,7 @@ def writer(
 
     if write and mode:
         if not set('w+a').intersection(mode):
-            raise ValueError('Stream mode "%s" is not a write mode' % mode)
+            raise ValueError(f'Stream mode "{mode}" is not a write mode')
 
         binary_mode = 'b' in mode
         if is_binary is not None and is_binary is not binary_mode:
@@ -398,14 +401,17 @@ def open(
     is_binary = 'b' in mode
 
     kwargs = dict(
-        encoding=encoding, errors=errors, newline=newline, opener=opener
+        encoding=encoding,
+        errors=errors,
+        newline=newline,
+        opener=opener,
     )
 
     if isinstance(name, Path):
         name = str(name)
 
     if not isinstance(name, str):
-        raise TypeError('`name` must be string, not %s' % type(name).__name__)
+        raise TypeError(f'`name` must be string, not {type(name).__name__}')
 
     name = os.path.realpath(name)
     parent = os.path.dirname(os.path.abspath(name))
@@ -451,13 +457,17 @@ def open(
             raise ValueError('binary mode doesn\'t take an errors argument')
 
     if 'x' in mode and os.path.exists(name):
-        raise FileExistsError("File exists: '%s'" % name)
+        raise FileExistsError(f"File exists: '{name}'")
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
     closer = _FileRenameCloser(
-        name, temp_file, delete_failures, parent, dry_run
+        name,
+        temp_file,
+        delete_failures,
+        parent,
+        dry_run,
     )
 
     if is_copy and os.path.exists(name):

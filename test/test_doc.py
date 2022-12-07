@@ -1,8 +1,9 @@
+import io
 from pathlib import Path
-from readme_renderer import rst
 from test import get_help
 from unittest import TestCase
-import io
+
+from readme_renderer import rst
 
 README_TEXT = (Path(__file__).parents[1] / 'README.rst').read_text()
 

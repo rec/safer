@@ -1,12 +1,15 @@
-from . import helpers
-from pathlib import Path
-from unittest import TestCase
 import functools
 import json
-import safer
+from pathlib import Path
+from unittest import TestCase
+
 import tdir
 import toml
 import yaml
+
+import safer
+
+from . import helpers
 
 
 def dumper(dump):

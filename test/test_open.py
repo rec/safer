@@ -1,10 +1,13 @@
-from . import helpers
-from pathlib import Path
 import os
-import safer
 import stat
-import tdir
 import unittest
+from pathlib import Path
+
+import tdir
+
+import safer
+
+from . import helpers
 
 FILENAME = Path('one')
 

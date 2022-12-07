@@ -1,8 +1,10 @@
-from pathlib import Path
 import os
-import safer
-import tdir
 import unittest
+from pathlib import Path
+
+import tdir
+
+import safer
 
 FILENAME = Path('one')
 
@@ -64,7 +66,10 @@ class TestSaferFiles(unittest.TestCase):
     def test_temp_file3(self):
         temp_file = FILENAME.with_suffix('.temp_file')
         with safer.open(
-            FILENAME, 'w', temp_file=temp_file, delete_failures=False
+            FILENAME,
+            'w',
+            temp_file=temp_file,
+            delete_failures=False,
         ) as fp:
             assert os.path.exists(temp_file)
             fp.write('hello')
@@ -76,7 +81,10 @@ class TestSaferFiles(unittest.TestCase):
         temp_file = FILENAME.with_suffix('.temp_file')
         with self.assertRaises(ValueError) as e:
             with safer.open(
-                FILENAME, 'w', temp_file=temp_file, delete_failures=False
+                FILENAME,
+                'w',
+                temp_file=temp_file,
+                delete_failures=False,
             ) as fp:
                 assert os.path.exists(temp_file)
                 fp.write('hello')

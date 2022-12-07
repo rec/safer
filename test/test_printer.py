@@ -1,8 +1,10 @@
+import functools
 from pathlib import Path
 from unittest import TestCase
-import functools
-import safer
+
 import tdir
+
+import safer
 
 topen = functools.partial(safer.open, temp_file=True)
 copen = functools.partial(safer.open, mode='w')
