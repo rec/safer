@@ -5,3 +5,18 @@ target-version = ['py37']
 
 [tool.doks]
 auto = true
+
+[tool.poetry]
+name = "safer"
+version = "4.4.1"
+description = "🧿 A safer file opener 🧿"
+authors = ["Tom Ritchford <tom@swirly.com>"]
+license = "MIT"
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
