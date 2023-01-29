@@ -23,7 +23,7 @@ if __name__ == '__main__':
         url='https://github.com/rec/safer',
         tests_require=['pytest'],
         py_modules=['safer'],
-        description='A safer file opener',
+        description='🧿 A safer file opener 🧿',
         long_description=open('README.rst', encoding='utf-8').read(),
         license='MIT',
         classifiers=_classifiers,
