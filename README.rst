@@ -1,4 +1,4 @@
-🧿 safer: safer writing in Python 🧿
+🧷 safer: safer writing in Python 🧷
 --------------------------------------
 
 .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
