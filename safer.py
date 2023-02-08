@@ -74,7 +74,6 @@ only if no exception was raised.
 EXAMPLE
 ^^^^^^^
 
-.. code-block:: python
 
     sock = socket.socket(*args)
 
@@ -105,7 +104,6 @@ failure.
 EXAMPLE
 ^^^^^^^
 
-.. code-block:: python
 
     # dangerous
     with open(filename, 'w') as fp:
@@ -143,7 +141,6 @@ Serializes a whole file or nothing. It's a drop-in replacement for
 EXAMPLE
 ^^^^^^^
 
-.. code-block:: python
 
     # dangerous
     with open(filename, 'w') as fp:
@@ -180,7 +177,6 @@ the original file is left unchanged.
 EXAMPLE
 ^^^^^^^
 
-.. code-block:: python
 
     # dangerous
     with open(file, 'w') as fp:
