@@ -1,6 +1,6 @@
 Help on function writer in module safer:
 
-wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
+wwrriitteerr(stream: Union[Callable, NoneType, IO, pathlib.Path, str] = None, is_binary: Union[bool, NoneType] = None, close_on_exit: bool = False, temp_file: bool = False, chunk_size: int = 1048576, delete_failures: bool = True, dry_run: Union[bool, Callable] = False) -> Union[Callable, IO]
     Write safely to file streams, sockets and callables.
     
     `safer.writer` yields an in-memory stream that you can write
@@ -11,48 +11,65 @@ wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=F
     indefinitely when the context exits if the underlying socket, stream or
     callable does!
     
-    ARGUMENTS
-      stream:
-        A file stream, a socket, or a callable that will receive data.
-        If stream is `None`, output is written to `sys.stdout`
-        If stream is a string or `Path`, the file with that name is opened for
-        writing.
+    Args:
+      stream: A file stream, a socket, or a callable that will receive data.
     
-      is_binary:
-        Is `stream` a binary stream?
+          If stream is `None`, output is written to `sys.stdout`
     
-        If `is_binary` is ``None``, deduce whether it's a binary file from
-        the stream, or assume it's text otherwise.
+          If stream is a string or `Path`, the file with that name is
+          opened for writing.
+    
+      is_binary: Is `stream` a binary stream?
+    
+          If `is_binary` is ``None``, deduce whether it's a binary file from
+          the stream, or assume it's text otherwise.
     
       close_on_exit: If True, the underlying stream is closed when the writer
         closes
     
-      temp_file:
-        If not false, use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory.  If it's a string, use this as the
-        name of the temporary file, otherwise select one in the same
-        directory as the target file, or in the system tempfile for streams
-        that aren't files.
+      temp_file: If `temp_file` is truthy, write to a disk file and use
+          os.rename() at the end, otherwise cache the writes in memory.
     
-      chunk_size:
-        Transfer data from the temporary file to the underlying stream in
-        chunks of this byte size
+          If `temp_file` is a string, use it as the name of the temporary
+          file, otherwise select one in the same directory as the target
+          file, or in the system tempfile for streams that aren't files.
     
-      delete_failures:
-        If set to false, any temporary files created are not deleted
-        if there is an exception
+      chunk_size: Chunk size, in bytes for transfer data from the temporary
+          file to the underlying stream.
     
-      dry_run:
-        If dry_run is truthy, the stream is not written to at all at the end.
+      delete_failures: If false, any temporary files created are not deleted
+        if there is an exception.
     
-        If dry_run is callable, the results of the stream are called with that
-        function rather than writing it to the underlying stream.
+      dry_run: If `dry_run` is truthy, the stream or file is left unchanged.
+    
+        If `dry_run` is also callable, the results of the stream are passed to
+        `dry_run()` rather than being written to the stream.
 Help on function open in module safer:
 
 ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
-    A drop-in replacement for `open()` which returns a stream which only
-    overwrites the original file when close() is called, and only if there was
-    no failure.
+    Args:
+      make_parents: If true, create the parent directory of the file if needed
+    
+      delete_failures: If false, any temporary files created are not deleted
+        if there is an exception.
+    
+      temp_file: If `temp_file` is truthy, write to a disk file and use
+          os.rename() at the end, otherwise cache the writes in memory.
+    
+          If `temp_file` is a string, use it as the name of the temporary
+          file, otherwise select one in the same directory as the target
+          file, or in the system tempfile for streams that aren't files.
+    
+      dry_run:
+         If dry_run is True, the file is not written to at all
+    
+    The remaining arguments are the same as for built-in `open()`.
+    
+    `safer.open() is a drop-in replacement for built-in`open()`. It returns a
+    stream which only overwrites the original file when close() is called, and
+    only if there was no failure.
+    
+    It works as follows:
     
     If a stream `fp` return from `safer.open()` is used as a context
     manager and an exception is raised, the property `fp.safer_failed` is
@@ -73,26 +90,6 @@ ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=N
     temporary file which is renamed over the file only after the stream closes
     without failing. This uses as much disk space as the old and new files put
     together.
-    
-    ARGUMENTS
-      make_parents:
-        If true, create the parent directory of the file if it doesn't exist
-    
-      delete_failures:
-        If set to false, any temporary files created are not deleted
-        if there is an exception
-    
-      temp_file:
-        If true, use a disk file and os.rename() at the end, otherwise
-        cache the writes in memory.  If it's a string, use this as the
-        name of the temporary file, otherwise select one in the same
-        directory as the target file, or in the system tempfile for streams
-        that aren't files.
-    
-      dry_run:
-         If dry_run is True, the file is not written to at all
-    
-    The remaining arguments are the same as for built-in `open()`.
 Help on function closer in module safer:
 
 cclloosseerr(stream, is_binary=None, close_on_exit=True, **kwds)
@@ -135,32 +132,40 @@ pprriinntteerr(name, mode='w', *args, **kwargs)
 Help on module safer:
 
 NNAAMMEE
-    safer
+    safer - 🧿 safer: a safer writer for files and streams 🧿
 
 DDEESSCCRRIIPPTTIIOONN
-    🧿 safer: safer writing in Python 🧿
-    --------------------------------------
+    ![safer logo](https://raw.githubusercontent.com/rec/safer/master/safer.png)
     
-    .. image:: https://raw.githubusercontent.com/rec/safer/master/safer.png
-       :alt: safer logo
+    Avoid partial writes or corruption!
     
-    .. doks-shields::
+    `safer` wraps file streams, sockets, or a callable, and offers a drop-in
+    replacement for regular old `open()`.
     
-       travis.org codecov github.release pypi.pyversions github.top/languages
-       codefactor pypi.l github.code-size
+    ## Quick summary
     
-    No more partial writes or corruption! Wraps file streams, sockets or
-    any callable.
+    ### A tiny example
     
-    Use `pip <https://pypi.org/project/pip>`_ to install `safer` from the command
+        import safer
+    
+        with safer.open(filename, 'w') as fp:
+            fp.write('one')
+            print('two', file=fp)
+            raise ValueError
+            # filename was not written.
+    
+    
+    ### How to use
+    
+    Use [pip](https://pypi.org/project/pip) to install `safer` from the command
     line: `pip install safer`.
     
-    Tested on Python 3.4 - 3.9.  An old Python 2.7 version
-    is `here <https://github.com/rec/safer/tree/v2.0.5>`_.
+    Tested on Python 3.4 - 3.11.  An old Python 2.7 version
+    is [here](https://github.com/rec/safer/tree/v2.0.5).
     
-    See the Medium article `here. <https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5>`_
+    See the Medium article [here](https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5)
     
-    -------
+    ### The details
     
     `safer` helps prevent programmer error from corrupting files, socket
     connections, or generalized streams by writing a whole file or nothing.
@@ -197,22 +202,13 @@ DDEESSCCRRIIPPTTIIOONN
     does not work on Windows.  (In fact, it's unclear if any of this works on
     Windows, but that certainly won't.  Windows developer solicted!)
     
-    --------
     
-    EXAMPLES
-    =========
-    
-    `safer.writer()`
-    ~~~~~~~~~~~~~~~~~~~
+    ### Example: `safer.writer()`
     
     `safer.writer()` wraps an existing stream - a writer, socket, or callback -
-    in a temporary stream which is only copied to the target stream at close() and
+    in a temporary stream which is only copied to the target stream at close(), and
     only if no exception was raised.
     
-    EXAMPLE
-    ^^^^^^^
-    
-    .. code-block:: python
     
         sock = socket.socket(*args)
     
@@ -233,17 +229,11 @@ DDEESSCCRRIIPPTTIIOONN
          except:
             write_error(sock)  # Nothing has been written
     
-    `safer.open()`
-    ~~~~~~~~~~~~~~~~~
+    ### Example: `safer.open()`
     
     Writes a whole file or nothing. It's a drop-in replacement for built-in
     `open()` except that `safer.open()` leaves the original file unchanged on
     failure.
-    
-    EXAMPLE
-    ^^^^^^^
-    
-    .. code-block:: python
     
         # dangerous
         with open(filename, 'w') as fp:
@@ -266,10 +256,8 @@ DDEESSCCRRIIPPTTIIOONN
     And when `fp.close()` is called, the cached data is stored in `filename` -
     *unless* `fp.safer_failed` is true.
     
-    ------------------------------------
     
-    `safer.dump()`
-    ~~~~~~~~~~~~~~~~~
+    ### Example: `safer.dump()`
     
     Serializes a whole file or nothing. It's a drop-in replacement for
     `json.dump()` except:
@@ -278,11 +266,6 @@ DDEESSCCRRIIPPTTIIOONN
     * It takes a filename in preference to an open file stream
     * But it handles files, socket streams, or any callable
     
-    EXAMPLE
-    ^^^^^^^
-    
-    .. code-block:: python
-    
         # dangerous
         with open(filename, 'w') as fp:
             json.dump(data, fp)
@@ -306,19 +289,13 @@ DDEESSCCRRIIPPTTIIOONN
     
     ------------------------------------
     
-    `safer.printer()`
-    ~~~~~~~~~~~~~~~~~~~
+    ### Example: `safer.printer()`
     
     `safer.printer()` is similar to `safer.open()` except it yields a function
     that prints to the open file - it's very convenient for printing text.
     
     Like `safer.open()`, if an exception is raised within its context manager,
     the original file is left unchanged.
-    
-    EXAMPLE
-    ^^^^^^^
-    
-    .. code-block:: python
     
         # dangerous
         with open(file, 'w') as fp:
@@ -362,9 +339,29 @@ FFUUNNCCTTIIOONNSS
             Additional arguments to `dump`.
     
     ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
-        A drop-in replacement for `open()` which returns a stream which only
-        overwrites the original file when close() is called, and only if there was
-        no failure.
+        Args:
+          make_parents: If true, create the parent directory of the file if needed
+        
+          delete_failures: If false, any temporary files created are not deleted
+            if there is an exception.
+        
+          temp_file: If `temp_file` is truthy, write to a disk file and use
+              os.rename() at the end, otherwise cache the writes in memory.
+        
+              If `temp_file` is a string, use it as the name of the temporary
+              file, otherwise select one in the same directory as the target
+              file, or in the system tempfile for streams that aren't files.
+        
+          dry_run:
+             If dry_run is True, the file is not written to at all
+        
+        The remaining arguments are the same as for built-in `open()`.
+        
+        `safer.open() is a drop-in replacement for built-in`open()`. It returns a
+        stream which only overwrites the original file when close() is called, and
+        only if there was no failure.
+        
+        It works as follows:
         
         If a stream `fp` return from `safer.open()` is used as a context
         manager and an exception is raised, the property `fp.safer_failed` is
@@ -385,26 +382,6 @@ FFUUNNCCTTIIOONNSS
         temporary file which is renamed over the file only after the stream closes
         without failing. This uses as much disk space as the old and new files put
         together.
-        
-        ARGUMENTS
-          make_parents:
-            If true, create the parent directory of the file if it doesn't exist
-        
-          delete_failures:
-            If set to false, any temporary files created are not deleted
-            if there is an exception
-        
-          temp_file:
-            If true, use a disk file and os.rename() at the end, otherwise
-            cache the writes in memory.  If it's a string, use this as the
-            name of the temporary file, otherwise select one in the same
-            directory as the target file, or in the system tempfile for streams
-            that aren't files.
-        
-          dry_run:
-             If dry_run is True, the file is not written to at all
-        
-        The remaining arguments are the same as for built-in `open()`.
     
     pprriinntteerr(name, mode='w', *args, **kwargs)
         A context manager that yields a function that prints to the opened file,
@@ -414,7 +391,7 @@ FFUUNNCCTTIIOONNSS
         ARGUMENTS
           Same as for `safer.open()`
     
-    wwrriitteerr(stream=None, is_binary=None, close_on_exit=False, temp_file=False, chunk_size=1048576, delete_failures=True, dry_run=False)
+    wwrriitteerr(stream: Union[Callable, NoneType, IO, pathlib.Path, str] = None, is_binary: Union[bool, NoneType] = None, close_on_exit: bool = False, temp_file: bool = False, chunk_size: int = 1048576, delete_failures: bool = True, dry_run: Union[bool, Callable] = False) -> Union[Callable, IO]
         Write safely to file streams, sockets and callables.
         
         `safer.writer` yields an in-memory stream that you can write
@@ -425,44 +402,38 @@ FFUUNNCCTTIIOONNSS
         indefinitely when the context exits if the underlying socket, stream or
         callable does!
         
-        ARGUMENTS
-          stream:
-            A file stream, a socket, or a callable that will receive data.
-            If stream is `None`, output is written to `sys.stdout`
-            If stream is a string or `Path`, the file with that name is opened for
-            writing.
+        Args:
+          stream: A file stream, a socket, or a callable that will receive data.
         
-          is_binary:
-            Is `stream` a binary stream?
+              If stream is `None`, output is written to `sys.stdout`
         
-            If `is_binary` is ``None``, deduce whether it's a binary file from
-            the stream, or assume it's text otherwise.
+              If stream is a string or `Path`, the file with that name is
+              opened for writing.
+        
+          is_binary: Is `stream` a binary stream?
+        
+              If `is_binary` is ``None``, deduce whether it's a binary file from
+              the stream, or assume it's text otherwise.
         
           close_on_exit: If True, the underlying stream is closed when the writer
             closes
         
-          temp_file:
-            If not false, use a disk file and os.rename() at the end, otherwise
-            cache the writes in memory.  If it's a string, use this as the
-            name of the temporary file, otherwise select one in the same
-            directory as the target file, or in the system tempfile for streams
-            that aren't files.
+          temp_file: If `temp_file` is truthy, write to a disk file and use
+              os.rename() at the end, otherwise cache the writes in memory.
         
-          chunk_size:
-            Transfer data from the temporary file to the underlying stream in
-            chunks of this byte size
+              If `temp_file` is a string, use it as the name of the temporary
+              file, otherwise select one in the same directory as the target
+              file, or in the system tempfile for streams that aren't files.
         
-          delete_failures:
-            If set to false, any temporary files created are not deleted
-            if there is an exception
+          chunk_size: Chunk size, in bytes for transfer data from the temporary
+              file to the underlying stream.
         
-          dry_run:
-            If dry_run is truthy, the stream is not written to at all at the end.
+          delete_failures: If false, any temporary files created are not deleted
+            if there is an exception.
         
-            If dry_run is callable, the results of the stream are called with that
-            function rather than writing it to the underlying stream.
+          dry_run: If `dry_run` is truthy, the stream or file is left unchanged.
+        
+            If `dry_run` is also callable, the results of the stream are passed to
+            `dry_run()` rather than being written to the stream.
 
 DDAATTAA
-    ____aallll____ = ('writer', 'open', 'closer', 'dump', 'printer')
-
-VVEERRSSIIOONN
