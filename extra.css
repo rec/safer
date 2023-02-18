@@ -1,3 +1,11 @@
 .md-typeset h1 {
     font-size: 28px;
 }
+
+main {
+    margin-top: -35px;
+}
+
+div .doc-children {
+    margin-top: -20px;
+}
