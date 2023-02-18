@@ -314,19 +314,19 @@ def writer(
 
 
 def open(
-    name,
-    mode='r',
-    buffering=-1,
-    encoding=None,
-    errors=None,
-    newline=None,
-    closefd=True,
-    opener=None,
-    make_parents=False,
-    delete_failures=True,
-    temp_file=False,
-    dry_run=False,
-):
+    name: Union[Path, str],
+    mode: str = 'r',
+    buffering: bool = -1,
+    encoding: Optional[str] = None,
+    errors: Optional[str] = None,
+    newline: Optional[str] = None,
+    closefd: bool = True,
+    opener: Optional[Callable] = None,
+    make_parents: bool = False,
+    delete_failures: bool = True,
+    temp_file: bool = False,
+    dry_run: bool = False,
+) -> IO:
     """
     Args:
       make_parents: If true, create the parent directory of the file if needed
