@@ -46,7 +46,7 @@ wwrriitteerr(stream: Union[Callable, NoneType, IO, pathlib.Path, str] = No
         `dry_run()` rather than being written to the stream.
 Help on function open in module safer:
 
-ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
+ooppeenn(name: Union[pathlib.Path, str], mode: str = 'r', buffering: bool = -1, encoding: Union[str, NoneType] = None, errors: Union[str, NoneType] = None, newline: Union[str, NoneType] = None, closefd: bool = True, opener: Union[Callable, NoneType] = None, make_parents: bool = False, delete_failures: bool = True, temp_file: bool = False, dry_run: bool = False) -> <class 'IO'>
     Args:
       make_parents: If true, create the parent directory of the file if needed
     
@@ -135,11 +135,10 @@ NNAAMMEE
     safer - 🧿 safer: a safer writer for files and streams 🧿
 
 DDEESSCCRRIIPPTTIIOONN
-    ![safer logo](https://raw.githubusercontent.com/rec/safer/master/safer.png)
-    
     Avoid partial writes or corruption!
     
-    `safer` wraps file streams, sockets, or a callable, and offers a drop-in
+    `safer` wraps file streams and sockets so the data is written or sent only at
+    the successful completion of an entire computation, and offers a drop-in
     replacement for regular old `open()`.
     
     ## Quick summary
@@ -150,10 +149,14 @@ DDEESSCCRRIIPPTTIIOONN
     
         with safer.open(filename, 'w') as fp:
             fp.write('one')
-            print('two', file=fp)
-            raise ValueError
-            # filename was not written.
     
+            if something_bad_happened():
+                raise ValueError
+                # The file is not changed
+    
+            print('two', file=fp)
+    
+         # The file only gets overwritten here.
     
     ### How to use
     
@@ -177,21 +180,21 @@ DDEESSCCRRIIPPTTIIOONN
     It also has a useful `dry_run` setting to let you test your code without
     actually overwriting the target file.
     
-    * `safer.writer()` wraps an existing writer, socket or stream and writes a
-      whole response or nothing
+    * `safer.writer()` wraps an existing stream and writes a
+      whole response or nothing, but does not close anything.
+    
+    * `safer.closer()` is a `safer.writer()` that also closes the underlying
+      stream.
     
     * `safer.open()` is a drop-in replacement for built-in `open` that
-      writes a whole file or nothing
-    
-    * `safer.closer()` returns a stream like from `safer.write()` that also
-      closes the underlying stream or callable when it closes.
+      writes either a whole file or nothing on close of the file stream.
     
     * `safer.dump()` is like a safer `json.dump()` which can be used for any
       serialization protocol, including Yaml and Toml, and also allows you to
       write to file streams or any other callable.
     
     * `safer.printer()` is `safer.open()` except that it yields a
-      a function that prints to the stream.
+      a function that looks like `print`, but writers to the stream.
     
     By default, `safer` buffers the written data in memory in a `io.StringIO`
     or `io.BytesIO`.
@@ -266,12 +269,14 @@ DDEESSCCRRIIPPTTIIOONN
     * It takes a filename in preference to an open file stream
     * But it handles files, socket streams, or any callable
     
-        # dangerous
+    Dangerous.
+    
         with open(filename, 'w') as fp:
             json.dump(data, fp)
             # If an exception is raised, the file is empty or partly written
     
-        # safer
+    Safer.
+    
         with safer.open(filename, 'w') as fp:
             json.dump(data, fp)
             # If an exception is raised, the file is unchanged.
@@ -338,7 +343,7 @@ FFUUNNCCTTIIOONNSS
           kwargs:
             Additional arguments to `dump`.
     
-    ooppeenn(name, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, make_parents=False, delete_failures=True, temp_file=False, dry_run=False)
+    ooppeenn(name: Union[pathlib.Path, str], mode: str = 'r', buffering: bool = -1, encoding: Union[str, NoneType] = None, errors: Union[str, NoneType] = None, newline: Union[str, NoneType] = None, closefd: bool = True, opener: Union[Callable, NoneType] = None, make_parents: bool = False, delete_failures: bool = True, temp_file: bool = False, dry_run: bool = False) -> <class 'IO'>
         Args:
           make_parents: If true, create the parent directory of the file if needed
         
