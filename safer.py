@@ -1,11 +1,10 @@
 """
 🧿 safer: a safer writer for files and streams 🧿
 
-![safer logo](https://raw.githubusercontent.com/rec/safer/master/safer.png)
-
 Avoid partial writes or corruption!
 
-`safer` wraps file streams, sockets, or a callable, and offers a drop-in
+`safer` wraps file streams and sockets so the data is written or sent only at
+the successful completion of an entire computation, and offers a drop-in
 replacement for regular old `open()`.
 
 ## Quick summary
@@ -16,10 +15,14 @@ replacement for regular old `open()`.
 
     with safer.open(filename, 'w') as fp:
         fp.write('one')
-        print('two', file=fp)
-        raise ValueError
-        # filename was not written.
 
+        if something_bad_happened():
+            raise ValueError
+            # The file is not changed
+
+        print('two', file=fp)
+
+     # The file only gets overwritten here.
 
 ### How to use
 
@@ -44,21 +47,21 @@ https://pypi.org/project/atomicwrites/
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
-* `safer.writer()` wraps an existing writer, socket or stream and writes a
-  whole response or nothing
+* `safer.writer()` wraps an existing stream and writes a
+  whole response or nothing, but does not close anything.
+
+* `safer.closer()` is a `safer.writer()` that also closes the underlying
+  stream.
 
 * `safer.open()` is a drop-in replacement for built-in `open` that
-  writes a whole file or nothing
-
-* `safer.closer()` returns a stream like from `safer.write()` that also
-  closes the underlying stream or callable when it closes.
+  writes either a whole file or nothing on close of the file stream.
 
 * `safer.dump()` is like a safer `json.dump()` which can be used for any
   serialization protocol, including Yaml and Toml, and also allows you to
   write to file streams or any other callable.
 
 * `safer.printer()` is `safer.open()` except that it yields a
-  a function that prints to the stream.
+  a function that looks like `print`, but writers to the stream.
 
 By default, `safer` buffers the written data in memory in a `io.StringIO`
 or `io.BytesIO`.
@@ -133,12 +136,14 @@ Serializes a whole file or nothing. It's a drop-in replacement for
 * It takes a filename in preference to an open file stream
 * But it handles files, socket streams, or any callable
 
-    # dangerous
+Dangerous.
+
     with open(filename, 'w') as fp:
         json.dump(data, fp)
         # If an exception is raised, the file is empty or partly written
 
-    # safer
+Safer.
+
     with safer.open(filename, 'w') as fp:
         json.dump(data, fp)
         # If an exception is raised, the file is unchanged.
