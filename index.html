@@ -65,7 +65,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#safer-a-safer-writer" class="md-skip">
+        <a href="#safer-a-safer-writer-for-files-and-streams" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              &#129527;: `safer`: A safer writer &#129527;
+              &#129535; `safer`: A safer writer for files and streams
             
           </span>
         </div>
@@ -161,17 +161,11 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          &#129527;: `safer`: A safer writer &#129527;
+          &#129535; `safer`: A safer writer for files and streams
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="." class="md-nav__link md-nav__link--active">
-        &#129527;: `safer`: A safer writer &#129527;
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+      <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
   
@@ -669,7 +663,7 @@ with safer.printer(file) as print:
 
   <hr>
 <p></p>
-<h1>API Documentation</h1>
+<h1 id="safer--api-documentation">API Documentation</h1>
 <div class="doc doc-children">
 
 
@@ -911,6 +905,7 @@ using</code>json.dump` by default</p>
         <tr>
           <td><code>make_parents</code></td>
           <td>
+                <code>bool</code>
           </td>
           <td><p>If true, create the parent directory of the file if needed</p></td>
           <td>
@@ -920,6 +915,7 @@ using</code>json.dump` by default</p>
         <tr>
           <td><code>delete_failures</code></td>
           <td>
+                <code>bool</code>
           </td>
           <td><p>If false, any temporary files created are not deleted
 if there is an exception.</p></td>
@@ -930,6 +926,7 @@ if there is an exception.</p></td>
         <tr>
           <td><code>temp_file</code></td>
           <td>
+                <code>bool</code>
           </td>
           <td>
 <p>If <code>temp_file</code> is truthy, write to a disk file and use
@@ -945,6 +942,7 @@ if there is an exception.</p></td>
         <tr>
           <td><code>dry_run</code></td>
           <td>
+                <code>bool</code>
           </td>
           <td><p>If dry_run is True, the file is not written to at all</p></td>
           <td>
@@ -1108,19 +1106,19 @@ together.</p>
 <span class="normal">444</span>
 <span class="normal">445</span></pre></div></td>
 <td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span>
-    <span class="n">name</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s1">'r'</span><span class="p">,</span>
-    <span class="n">buffering</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">opener</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">make_parents</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">delete_failures</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">temp_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">,</span>
+    <span class="n">buffering</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">errors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">newline</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">closefd</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">opener</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">make_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">delete_failures</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">temp_file</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Args:</span>
 <span class="sd">      make_parents: If true, create the parent directory of the file if needed</span>
