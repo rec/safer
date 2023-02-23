@@ -12,7 +12,7 @@ version = "4.4.2"
 description = "🧿 A safer writer for files and streams 🧿"
 authors = ["Tom Ritchford <tom@swirly.com>"]
 license = "MIT"
-readme = "README.me"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
