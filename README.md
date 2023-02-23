@@ -70,42 +70,43 @@ Windows, but that certainly won't.  Windows developer solicted!)
 in a temporary stream which is only copied to the target stream at close(), and
 only if no exception was raised.
 
+Suppose `sock = socket.socket(*args)`.
 
-    sock = socket.socket(*args)
+The old, dangerous way goes like this.
 
-    # dangerous
     try:
         write_header(sock)
         write_body(sock)   # Exception is thrown here
         write_footer(sock)
-     except:
+     except Exception:
         write_error(sock)  # Oops, the header was already written
 
-    # safer
+With `safer` you write all or nothing:
+
     try:
         with safer.writer(sock) as s:
             write_header(s)
             write_body(s)  # Exception is thrown here
             write_footer(s)
-     except:
+     except Exception:
         write_error(sock)  # Nothing has been written
 
-### Example: `safer.open()`
+### Example: `safer.open()` and json
 
-Writes a whole file or nothing. It's a drop-in replacement for built-in
-`open()` except that `safer.open()` leaves the original file unchanged on
-failure.
+`safer.open()` is a a drop-in replacement for built-in `open()` except that when
+used as a context, it leaves the original file unchanged on failure.
 
-    # dangerous
+It's easy to write broken JSON if something within it doesn't serialize.
+
     with open(filename, 'w') as fp:
         json.dump(data, fp)
         # If an exception is raised, the file is empty or partly written
 
-    # safer
+`safer` prevents this:
+
     with safer.open(filename, 'w') as fp:
         json.dump(data, fp)
         # If an exception is raised, the file is unchanged.
-
 
 `safer.open(filename)` returns a file stream `fp` like `open(filename)`
 would, except that `fp` writes to memory stream or a temporary file in the
@@ -116,39 +117,6 @@ property `fp.safer_failed` on the stream is automatically set to `True`.
 
 And when `fp.close()` is called, the cached data is stored in `filename` -
 *unless* `fp.safer_failed` is true.
-
-
-### Example: `safer.dump()`
-
-Serializes a whole file or nothing. It's a drop-in replacement for
-`json.dump()` except:
-
-* `safer.dump()` leaves the original file unchanged on
-* It takes a filename in preference to an open file stream
-* But it handles files, socket streams, or any callable
-
-    # dangerous
-    with open(filename, 'w') as fp:
-        json.dump(data, fp)
-        # If an exception is raised, the file is empty or partly written
-
-    # safer
-    with safer.open(filename, 'w') as fp:
-        json.dump(data, fp)
-        # If an exception is raised, the file is unchanged.
-
-
-`safer.open(filename)` returns a file stream `fp` like `open(filename)`
-would, except that `fp` writes to memory stream or a temporary file in the
-same directory.
-
-If `fp` is used as a context manager and an exception is raised, then the
-property `fp.safer_failed` on the stream is automatically set to `True`.
-
-And when `fp.close()` is called, the cached data is stored in `filename` -
-*unless* `fp.safer_failed` is true.
-
-------------------------------------
 
 ### Example: `safer.printer()`
 
@@ -158,13 +126,15 @@ that prints to the open file - it's very convenient for printing text.
 Like `safer.open()`, if an exception is raised within its context manager,
 the original file is left unchanged.
 
-    # dangerous
+Before.
+
     with open(file, 'w') as fp:
         for item in items:
             print(item, file=fp)
         # Prints lines until the first exception
 
-    # safer
+With `safer`
+
     with safer.printer(file) as print:
         for item in items:
             print(item)
