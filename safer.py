@@ -1,8 +1,6 @@
 """
 🧿 safer: a safer writer for files and streams 🧿
 
-![safer logo](https://raw.githubusercontent.com/rec/safer/master/safer.png)
-
 Avoid partial writes or corruption!
 
 `safer` wraps file streams, sockets, or a callable, and offers a drop-in
