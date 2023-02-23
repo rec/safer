@@ -1,4 +1,4 @@
-# 🧿 `safer`: A safer writer for files and streams
+# 🧿: `safer`: A safer writer for files and streams 🧿
 
 ::: safer
 
