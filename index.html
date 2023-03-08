@@ -183,7 +183,14 @@
     safer
   </a>
   
-    <nav class="md-nav" aria-label="safer">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safer--safer-a-safer-writer" class="md-nav__link">
+    &#129535; safer: A safer writer &#129535;
+  </a>
+  
+    <nav class="md-nav" aria-label="&#129535; safer: A safer writer &#129535;">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -327,7 +334,14 @@
     safer
   </a>
   
-    <nav class="md-nav" aria-label="safer">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safer--safer-a-safer-writer" class="md-nav__link">
+    &#129535; safer: A safer writer &#129535;
+  </a>
+  
+    <nav class="md-nav" aria-label="&#129535; safer: A safer writer &#129535;">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -454,7 +468,7 @@
 <a id="safer"></a>
   <div class="doc doc-contents first">
   
-      <p>Avoid partial writes or corruption!</p>
+      <h2 id="safer--safer-a-safer-writer">&#129535; safer: A safer writer &#129535;</h2>
 <p><code>safer</code> wraps file streams, sockets, or a callable, and offers a drop-in
 replacement for regular old <code>open()</code>.</p>
 <h3 id="safer--quick-summary">Quick summary</h3>
@@ -535,8 +549,8 @@ only if no exception was raised.</p>
     write_error(sock)  # Nothing has been written
 </code></pre>
 <h4 id="safer--example-saferopen-and-json">Example: <code>safer.open()</code> and json</h4>
-<p><code>safer.open()</code> is a a drop-in replacement for built-in <code>open()</code> except that when
-used as a context, it leaves the original file unchanged on failure.</p>
+<p><code>safer.open()</code> is a a drop-in replacement for built-in <code>open()</code> except that
+when used as a context, it leaves the original file unchanged on failure.</p>
 <p>It's easy to write broken JSON if something within it doesn't serialize.</p>
 <pre><code>with open(filename, 'w') as fp:
     json.dump(data, fp)
