@@ -1,3 +1,5 @@
+# 🧿 safer: A safer writer 🧿
+
 Avoid partial writes or corruption!
 
 `safer` wraps file streams, sockets, or a callable, and offers a drop-in
@@ -93,8 +95,8 @@ With `safer` you write all or nothing:
 
 ### Example: `safer.open()` and json
 
-`safer.open()` is a a drop-in replacement for built-in `open()` except that when
-used as a context, it leaves the original file unchanged on failure.
+`safer.open()` is a a drop-in replacement for built-in `open()` except that
+when used as a context, it leaves the original file unchanged on failure.
 
 It's easy to write broken JSON if something within it doesn't serialize.
 
