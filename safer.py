@@ -1,5 +1,5 @@
 """
-# 🧿 safer: A safer writer 🧿
+# 🧿 `safer`: A safer writer 🧿
 
 Avoid partial writes or corruption!
 
