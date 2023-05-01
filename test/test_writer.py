@@ -1,5 +1,6 @@
 from . import helpers
 from pathlib import Path
+import json
 import safer
 import sys
 import tdir
@@ -177,6 +178,16 @@ class TestWriter(unittest.TestCase):
             fp.write('!')
 
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
+
+    def test_wrapper_bug(self, safer_writer):
+        with safer_writer(FILENAME) as fp:
+            fp.write('hello, world')
+        assert FILENAME.read_text() == 'hello, world'  # OK!
+
+        fp = open(FILENAME, 'w')
+        with safer_writer(fp) as writer:
+            fp.write('hello, world')
+        assert FILENAME.read_text() == ''  # Fails!
 
 
 @helpers.temps(safer.closer)
