@@ -227,6 +227,7 @@ def writer(
         write = len
     else:
         write = getattr(stream, 'write', None)
+        print('stream.write', write, stream)
 
     send = getattr(stream, 'send', None)
     mode = getattr(stream, 'mode', None)
@@ -546,6 +547,8 @@ class _Closer:
 # Wrap an existing IO class so that it calls safer at the end
 @functools.lru_cache()
 def _wrap_class(stream_cls):
+    typename = 'Safer' + stream_cls.__name__
+
     @functools.wraps(stream_cls.__exit__)
     def exit(self, *args):
         self.safer_failed = bool(args[0])
@@ -553,10 +556,15 @@ def _wrap_class(stream_cls):
 
     @functools.wraps(stream_cls.close)
     def close(self):
+        print(f'{typename}.close')
         self.safer_closer.close(stream_cls.close)
 
-    members = {'__exit__': exit, 'close': close}
-    return type('Safer' + stream_cls.__name__, (stream_cls,), members)
+    def write(self, v):
+        print(f'{typename}.write', v)
+        return stream_cls.write(self, v)
+
+    members = {'__exit__': exit, 'close': close, 'write': write}
+    return type(typename, (stream_cls,), members)
 
 
 class _FileCloser(_Closer):
@@ -625,6 +633,7 @@ class _FileRenameCloser(_FileCloser):
 
 class _StreamCloser(_Closer):
     def __init__(self, write, close_on_exit):
+        print('_StreamCloser', write)
         self.write = write
         self.close_on_exit = close_on_exit
 
@@ -636,8 +645,9 @@ class _StreamCloser(_Closer):
             if closer:
                 closer(self.fp.safer_failed)
 
-    def _write(self, v):
+    def _write_on_success(self, v):
         while True:
+            print('_StreamCloser._write_on_success', v, 'to', self.write)
             written = self.write(v)
             v = (written is not None) and v[written:]
             if not v:
@@ -653,10 +663,28 @@ class _MemoryStreamCloser(_StreamCloser):
 
     def close(self, parent_close=None):
         self.value = self.fp.getvalue()
+        print('_MemoryStreamCloser.close', self.value)
         super().close(parent_close)
 
     def _success(self):
-        self._write(self.value)
+        print('_MemoryStreamCloser._success', self.value, self._write_on_success)
+        self._write_on_success(self.value)
+
+    def XXXwrite(self, *a, **ka):
+        print('_MemoryStreamCloser.write', a, ka)
+        return super().write(*a, **ka)
+
+    def _write_on_success(self, *a, **ka):
+        print('_MemoryStreamCloser._write_on_success', a, ka)
+        return super()._write_on_success(*a, **ka)
+
+    def _failure(self, *a, **ka):
+        print('_failure', a, ka)
+        return super()._failure(*a, **ka)
+
+    def _make_stream(self, *a, **ka):
+        print('_make_stream', a, ka)
+        return super()._make_stream(*a, **ka)
 
 
 class _FileStreamCloser(_StreamCloser, _FileCloser):
@@ -685,7 +713,7 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
                 data = fp.read(self.chunk_size)
                 if not data:
                     break
-                self._write(data)
+                self._write_on_success(data)
 
     def _failure(self):
         _FileCloser._failure(self)

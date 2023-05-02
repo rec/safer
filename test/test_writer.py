@@ -180,14 +180,10 @@ class TestWriter(unittest.TestCase):
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
 
     def test_wrapper_bug(self, safer_writer):
-        with safer_writer(FILENAME) as fp:
-            fp.write('hello, world')
-        assert FILENAME.read_text() == 'hello, world'  # OK!
-
         fp = open(FILENAME, 'w')
         with safer_writer(fp) as writer:
             fp.write('hello, world')
-        assert FILENAME.read_text() == ''  # Fails!
+        assert FILENAME.read_text() == 'hello, world'
 
 
 @helpers.temps(safer.closer)
