@@ -223,8 +223,14 @@ def writer(
 
     if callable(dry_run):
         write, dry_run = dry_run, True
+
     elif dry_run:
         write = len
+
+    elif close_on_exit and hasattr(stream, 'write'):
+        def write(v):
+            with stream:
+                stream.write(v)
     else:
         write = getattr(stream, 'write', None)
 

@@ -179,15 +179,27 @@ class TestWriter(unittest.TestCase):
 
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
 
-    def test_wrapper_bug(self, safer_writer):
-        with safer_writer(FILENAME) as fp:
-            fp.write('hello, world')
-        assert FILENAME.read_text() == 'hello, world'  # OK!
 
-        fp = open(FILENAME, 'w')
-        with safer_writer(fp) as writer:
-            fp.write('hello, world')
-        assert FILENAME.read_text() == ''  # Fails!
+def test_wrapper_bug():
+    with safer.writer(FILENAME) as fp:
+        fp.write('hello, world')
+    assert FILENAME.read_text() == 'hello, world'  # OK!
+
+    fp = open(FILENAME, 'w')
+    with safer.writer(fp, close_on_exit=True) as writer:
+        fp.write('hello, world')
+    assert FILENAME.read_text() == 'hello, world'  # Fails!
+
+
+def test_wrapper_bug2():
+    with safer.writer(FILENAME) as fp:
+        fp.write('hello, world')
+    assert FILENAME.read_text() == 'hello, world'  # OK!
+
+    fp = open(FILENAME, 'w')
+    with safer.writer(fp, close_on_exit=True, temp_file=True) as writer:
+        fp.write('hello, world')
+    assert FILENAME.read_text() == ''  # Fails!
 
 
 @helpers.temps(safer.closer)
