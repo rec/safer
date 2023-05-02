@@ -171,6 +171,7 @@ def writer(
     chunk_size: int = 0x100000,
     delete_failures: bool = True,
     dry_run: Union[bool, Callable] = False,
+    enabled: bool = True,
 ) -> Union[Callable, IO]:
     """
     Write safely to file streams, sockets and callables.
@@ -216,14 +217,19 @@ def writer(
 
         If `dry_run` is also callable, the results of the stream are passed to
         `dry_run()` rather than being written to the stream.
+
+      enabled: If `enabled` is falsey, the stream is returned unchanged
     """
     if isinstance(stream, (str, Path)):
         mode = 'wb' if is_binary else 'w'
         return open(
-            stream, mode, delete_failures=delete_failures, dry_run=dry_run
+            stream, mode,
+            delete_failures=delete_failures, dry_run=dry_run, enabled=enabled
         )
 
     stream = stream or sys.stdout
+    if not enabled:
+        return stream
 
     if callable(dry_run):
         write, dry_run = dry_run, True
@@ -307,6 +313,7 @@ def open(
     delete_failures: bool = True,
     temp_file: bool = False,
     dry_run: bool = False,
+    enabled: bool = True,
 ) -> IO:
     """
     Args:
@@ -324,6 +331,9 @@ def open(
 
       dry_run:
          If dry_run is True, the file is not written to at all
+
+      enabled:
+         If `enabled` is falsey, the file is opened as normal
 
     The remaining arguments are the same as for built-in `open()`.
 
@@ -385,7 +395,7 @@ def open(
         print('simple_write done')
         print(__builtins__['open'](name).read())
 
-    if is_read:
+    if is_read or not enabled:
         return simple_open()
 
     if not temp_file:
