@@ -156,6 +156,10 @@ import sys
 import tempfile
 import traceback
 
+# There's an edge case in #23 I can't yet fix, so I fail
+# deliberately
+BUG_MESSAGE = 'Sorry, safer.writer fails if temp_file (#23)'
+
 __all__ = 'writer', 'open', 'closer', 'dump', 'printer'
 
 
@@ -228,6 +232,9 @@ def writer(
         write = len
 
     elif close_on_exit and hasattr(stream, 'write'):
+        if temp_file and BUG_MESSAGE:
+            raise NotImplementedError(BUG_MESSAGE)
+
         def write(v):
             with stream:
                 stream.write(v)
@@ -368,11 +375,15 @@ def open(
         os.makedirs(parent)
 
     def simple_open():
+        print('simple_open', name, mode)
         return __builtins__['open'](name, mode, buffering, **kwargs)
 
     def simple_write(value):
+        print('simple_write', name, value)
         with simple_open() as fp:
             fp.write(value)
+        print('simple_write done')
+        print(__builtins__['open'](name).read())
 
     if is_read:
         return simple_open()
@@ -642,7 +653,8 @@ class _StreamCloser(_Closer):
             if closer:
                 closer(self.fp.safer_failed)
 
-    def _write(self, v):
+    def _write_on_success(self, v):
+        print('_StreamCloser._write_on_success', v, self.write)
         while True:
             written = self.write(v)
             v = (written is not None) and v[written:]
@@ -662,7 +674,7 @@ class _MemoryStreamCloser(_StreamCloser):
         super().close(parent_close)
 
     def _success(self):
-        self._write(self.value)
+        self._write_on_success(self.value)
 
 
 class _FileStreamCloser(_StreamCloser, _FileCloser):
@@ -691,7 +703,7 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
                 data = fp.read(self.chunk_size)
                 if not data:
                     break
-                self._write(data)
+                self._write_on_success(data)
 
     def _failure(self):
         _FileCloser._failure(self)

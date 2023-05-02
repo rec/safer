@@ -1,6 +1,7 @@
 from . import helpers
 from pathlib import Path
 import json
+import pytest
 import safer
 import sys
 import tdir
@@ -180,6 +181,7 @@ class TestWriter(unittest.TestCase):
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
 
 
+@tdir
 def test_wrapper_bug():
     with safer.writer(FILENAME) as fp:
         fp.write('hello, world')
@@ -192,14 +194,25 @@ def test_wrapper_bug():
 
 
 def test_wrapper_bug2():
-    with safer.writer(FILENAME) as fp:
-        fp.write('hello, world')
-    assert FILENAME.read_text() == 'hello, world'  # OK!
+    with pytest.raises(NotImplementedError) as e:
+        fp = open(FILENAME, 'w')
+        safer.writer(fp, close_on_exit=True, temp_file=True)
+    assert e.value.args == (safer.BUG_MESSAGE,)
 
-    fp = open(FILENAME, 'w')
-    with safer.writer(fp, close_on_exit=True, temp_file=True) as writer:
-        fp.write('hello, world')
-    assert FILENAME.read_text() == ''  # Fails!
+
+def test_wrapper_bug3():
+    try:
+        bug, safer.BUG_MESSAGE = safer.BUG_MESSAGE, None
+        with safer.writer(FILENAME) as fp:
+            fp.write('hello, world')
+        assert FILENAME.read_text() == 'hello, world'  # OK!
+
+        fp = open(FILENAME, 'w')
+        with safer.writer(fp, close_on_exit=True, temp_file=True) as writer:
+            fp.write('hello, world')
+        assert FILENAME.read_text() == ''  # Fails!
+    finally:
+        safer.BUG_MESSAGE = bug
 
 
 @helpers.temps(safer.closer)
