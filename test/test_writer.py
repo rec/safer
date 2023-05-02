@@ -1,6 +1,5 @@
 from . import helpers
 from pathlib import Path
-import json
 import pytest
 import safer
 import sys
@@ -185,12 +184,12 @@ class TestWriter(unittest.TestCase):
 def test_wrapper_bug():
     with safer.writer(FILENAME) as fp:
         fp.write('hello, world')
-    assert FILENAME.read_text() == 'hello, world'  # OK!
+    assert FILENAME.read_text() == 'hello, world'
 
     fp = open(FILENAME, 'w')
-    with safer.writer(fp, close_on_exit=True) as writer:
+    with safer.writer(fp, close_on_exit=True):
         fp.write('hello, world')
-    assert FILENAME.read_text() == 'hello, world'  # Fails!
+    assert FILENAME.read_text() == 'hello, world'
 
 
 def test_wrapper_bug2():
@@ -208,7 +207,7 @@ def test_wrapper_bug3():
         assert FILENAME.read_text() == 'hello, world'  # OK!
 
         fp = open(FILENAME, 'w')
-        with safer.writer(fp, close_on_exit=True, temp_file=True) as writer:
+        with safer.writer(fp, close_on_exit=True, temp_file=True):
             fp.write('hello, world')
         assert FILENAME.read_text() == ''  # Fails!
     finally:

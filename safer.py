@@ -385,15 +385,11 @@ def open(
         os.makedirs(parent)
 
     def simple_open():
-        print('simple_open', name, mode)
         return __builtins__['open'](name, mode, buffering, **kwargs)
 
     def simple_write(value):
-        print('simple_write', name, value)
         with simple_open() as fp:
             fp.write(value)
-        print('simple_write done')
-        print(__builtins__['open'](name).read())
 
     if is_read or not enabled:
         return simple_open()
@@ -664,7 +660,6 @@ class _StreamCloser(_Closer):
                 closer(self.fp.safer_failed)
 
     def _write_on_success(self, v):
-        print('_StreamCloser._write_on_success', v, self.write)
         while True:
             written = self.write(v)
             v = (written is not None) and v[written:]
