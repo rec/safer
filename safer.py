@@ -63,7 +63,7 @@ or `io.BytesIO`.
 
 For very large files, `safer.open()` has a `temp_file` argument which
 writes the data to a temporary file on disk, which is moved over using
-`os.rename` if the operation completes successfully.  This functionality
+`os.replace` if the operation completes successfully.  This functionality
 does not work on Windows.  (In fact, it's unclear if any of this works on
 Windows, but that certainly won't.  Windows developer solicted!)
 
@@ -201,7 +201,7 @@ def writer(
         closes
 
       temp_file: If `temp_file` is truthy, write to a disk file and use
-          os.rename() at the end, otherwise cache the writes in memory.
+          os.replace() at the end, otherwise cache the writes in memory.
 
           If `temp_file` is a string, use it as the name of the temporary
           file, otherwise select one in the same directory as the target
@@ -323,7 +323,7 @@ def open(
         if there is an exception.
 
       temp_file: If `temp_file` is truthy, write to a disk file and use
-          os.rename() at the end, otherwise cache the writes in memory.
+          os.replace() at the end, otherwise cache the writes in memory.
 
           If `temp_file` is a string, use it as the name of the temporary
           file, otherwise select one in the same directory as the target
@@ -643,7 +643,7 @@ class _FileRenameCloser(_FileCloser):
                 shutil.copymode(self.target_file, self.temp_file)
             else:
                 os.chmod(self.temp_file, 0o100644)
-            os.rename(self.temp_file, self.target_file)
+            os.replace(self.temp_file, self.target_file)
 
 
 class _StreamCloser(_Closer):
