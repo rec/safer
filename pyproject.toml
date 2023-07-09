@@ -15,16 +15,16 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7"
 
 [tool.poetry.group.dev.dependencies]
-coverage = "^7.1.0"
-flake8 = "5.0.4"
-pytest = "^7.2.1"
-readme-renderer = "^37.3"
-tdir = "^1.4.1"
-toml = "^0.10.2"
-pyyaml = "^6.0"
+coverage = "*"
+flake8 = "*"
+pytest = "*"
+readme-renderer = "*"
+tdir = "*"
+toml = "*"
+pyyaml = "*"
 
 [build-system]
 requires = ["poetry-core"]
