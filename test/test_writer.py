@@ -1,10 +1,13 @@
-from . import helpers
-from pathlib import Path
-import pytest
-import safer
 import sys
-import tdir
 import unittest
+from pathlib import Path
+
+import pytest
+import tdir
+
+import safer
+
+from . import helpers
 
 FILENAME = Path('one')
 
@@ -192,6 +195,7 @@ def test_wrapper_bug():
     assert FILENAME.read_text() == 'hello, world'
 
 
+@tdir
 def test_wrapper_bug2():
     with pytest.raises(NotImplementedError) as e:
         fp = open(FILENAME, 'w')
@@ -199,6 +203,7 @@ def test_wrapper_bug2():
     assert e.value.args == (safer.BUG_MESSAGE,)
 
 
+@tdir
 def test_wrapper_bug3():
     try:
         bug, safer.BUG_MESSAGE = safer.BUG_MESSAGE, None

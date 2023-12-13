@@ -1,5 +1,6 @@
 import os
 import pydoc
+
 import safer
 
 HELP_FILE = os.path.join(os.path.dirname(__file__), 'help.txt')

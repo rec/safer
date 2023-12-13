@@ -1,8 +1,10 @@
-from pathlib import Path
 import os
-import safer
-import tdir
 import unittest
+from pathlib import Path
+
+import tdir
+
+import safer
 
 FILENAME = Path('one')
 

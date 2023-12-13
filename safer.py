@@ -144,8 +144,6 @@ With `safer`
             print(item)
         # Either the whole file is written, or nothing
 """
-from pathlib import Path
-from typing import Callable, IO, Optional, Union
 import contextlib
 import functools
 import io
@@ -155,6 +153,8 @@ import shutil
 import sys
 import tempfile
 import traceback
+from pathlib import Path
+from typing import IO, Callable, Optional, Union
 
 # There's an edge case in #23 I can't yet fix, so I fail
 # deliberately
@@ -221,15 +221,19 @@ def writer(
       enabled: If `enabled` is falsey, the stream is returned unchanged
     """
     if isinstance(stream, (str, Path)):
-        mode = 'wb' if is_binary else 'w'
         return open(
-            stream, mode,
-            delete_failures=delete_failures, dry_run=dry_run, enabled=enabled
+            stream,
+            'wb' if is_binary else 'w',
+            delete_failures=delete_failures,
+            dry_run=dry_run,
+            enabled=enabled,
         )
 
     stream = stream or sys.stdout
     if not enabled:
         return stream
+
+    write: Optional[Callable]
 
     if callable(dry_run):
         write, dry_run = dry_run, True
@@ -244,6 +248,7 @@ def writer(
         def write(v):
             with stream:
                 stream.write(v)
+
     else:
         write = getattr(stream, 'write', None)
 
@@ -282,6 +287,8 @@ def writer(
     else:
         raise ValueError('Stream is not a file, a socket, or callable')
 
+    closer: _StreamCloser
+
     if temp_file:
         closer = _FileStreamCloser(
             write,
@@ -303,7 +310,7 @@ def writer(
 def open(
     name: Union[Path, str],
     mode: str = 'r',
-    buffering: bool = -1,
+    buffering: int = -1,
     encoding: Optional[str] = None,
     errors: Optional[str] = None,
     newline: Optional[str] = None,
@@ -312,7 +319,7 @@ def open(
     make_parents: bool = False,
     delete_failures: bool = True,
     temp_file: bool = False,
-    dry_run: bool = False,
+    dry_run: Union[bool, Callable] = False,
     enabled: bool = True,
 ) -> IO:
     """
@@ -323,17 +330,19 @@ def open(
         if there is an exception.
 
       temp_file: If `temp_file` is truthy, write to a disk file and use
-          os.replace() at the end, otherwise cache the writes in memory.
+         os.replace() at the end, otherwise cache the writes in memory.
 
-          If `temp_file` is a string, use it as the name of the temporary
-          file, otherwise select one in the same directory as the target
-          file, or in the system tempfile for streams that aren't files.
+         If `temp_file` is a string, use it as the name of the temporary
+         file, otherwise select one in the same directory as the target
+         file, or in the system tempfile for streams that aren't files.
 
-      dry_run:
-         If dry_run is True, the file is not written to at all
+      dry_run: If `dry_run` is truthy, the file is not written at all
+         If `dry_run` is also callable, the results are passed to `dry_run()`
+         rather than being written.
 
       enabled:
-         If `enabled` is falsey, the file is opened as normal
+         If `enabled` is falsey, safer is entirely bypassed, and
+         built-in `open()` is used instead.
 
     The remaining arguments are the same as for built-in `open()`.
 
@@ -367,9 +376,7 @@ def open(
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode
 
-    kwargs = dict(
-        encoding=encoding, errors=errors, newline=newline, opener=opener
-    )
+    kwargs = dict(encoding=encoding, errors=errors, newline=newline, opener=opener)
 
     if isinstance(name, Path):
         name = str(name)
@@ -427,7 +434,7 @@ def open(
         buffering = io.DEFAULT_BUFFER_SIZE
 
     closer = _FileRenameCloser(
-        name, temp_file, delete_failures, parent, dry_run
+        name, temp_file, delete_failures, parent, dry_run, is_binary
     )
 
     if is_copy and os.path.exists(name):
@@ -630,11 +637,13 @@ class _FileRenameCloser(_FileCloser):
         target_file,
         temp_file,
         delete_failures,
-        parent=None,
-        dry_run=False,
+        parent,
+        dry_run,
+        is_binary,
     ):
         self.target_file = target_file
         self.dry_run = dry_run
+        self.is_binary = is_binary
         super().__init__(temp_file, delete_failures, parent)
 
     def _success(self):
@@ -644,6 +653,10 @@ class _FileRenameCloser(_FileCloser):
             else:
                 os.chmod(self.temp_file, 0o100644)
             os.replace(self.temp_file, self.target_file)
+
+        elif callable(self.dry_run):
+            with open(self.temp_file, 'rb' if self.is_binary else 'r') as fp:
+                self.dry_run(fp.read())
 
 
 class _StreamCloser(_Closer):
