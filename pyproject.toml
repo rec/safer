@@ -8,7 +8,7 @@ auto = true
 
 [tool.poetry]
 name = "safer"
-version = "4.11.0"
+version = "4.12.0"
 description = "🧿 A safer writer for files and streams 🧿"
 authors = ["Tom Ritchford <tom@swirly.com>"]
 license = "MIT"
