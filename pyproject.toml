@@ -13,6 +13,9 @@ description = "🧿 A safer writer for files and streams 🧿"
 authors = ["Tom Ritchford <tom@swirly.com>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/rec/safer"
+homepage = "https://github.com/rec/safer"
+documentation = "https://rec.github.io/safer"
 
 [tool.poetry.dependencies]
 python = ">=3.8"
