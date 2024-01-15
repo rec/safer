@@ -50,5 +50,6 @@ jobs:
     - run: poetry install --no-interaction
 
     - run: poetry run mypy safer
-    - run: poetry run ruff check safer test/
+    - run: poetry run ruff check --select I --fix safer test/
+    - run: poetry run ruff format
     - run: poetry run pytest

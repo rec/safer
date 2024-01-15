@@ -419,13 +419,13 @@ def open(
 
     if is_binary:
         if 't' in mode:
-            raise ValueError('can\'t have text and binary mode at once')
+            raise ValueError("can't have text and binary mode at once")
         if newline:
-            raise ValueError('binary mode doesn\'t take a newline argument')
+            raise ValueError("binary mode doesn't take a newline argument")
         if encoding:
-            raise ValueError('binary mode doesn\'t take an encoding argument')
+            raise ValueError("binary mode doesn't take an encoding argument")
         if errors:
-            raise ValueError('binary mode doesn\'t take an errors argument')
+            raise ValueError("binary mode doesn't take an errors argument")
 
     if 'x' in mode and os.path.exists(name):
         raise FileExistsError("File exists: '%s'" % name)

@@ -115,16 +115,16 @@ class TestSaferFiles(unittest.TestCase):
 
     def test_errors2(self):
         a = self._error('bt')
-        assert a == 'can\'t have text and binary mode at once'
+        assert a == "can't have text and binary mode at once"
 
     def test_errors3(self):
         a = self._error('wb', newline=True)
-        assert a == 'binary mode doesn\'t take a newline argument'
+        assert a == "binary mode doesn't take a newline argument"
 
     def test_errors4(self):
         a = self._error('wb', encoding='utf8')
-        assert a == 'binary mode doesn\'t take an encoding argument'
+        assert a == "binary mode doesn't take an encoding argument"
 
     def test_errors5(self):
         a = self._error('wb', errors=True)
-        assert a == 'binary mode doesn\'t take an errors argument'
+        assert a == "binary mode doesn't take an errors argument"
