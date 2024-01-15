@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "safer"
-version = "4.12.2"
+version = "4.12.3"
 description = "🧿 A safer writer for files and streams 🧿"
 authors = ["Tom Ritchford <tom@swirly.com>"]
 license = "MIT"
