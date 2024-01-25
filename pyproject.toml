@@ -42,6 +42,8 @@ line-length = 88
 [tool.ruff.format]
 quote-style = "single"
 
+
+[tool.mypy]
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
