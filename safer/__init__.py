@@ -1,5 +1,4 @@
-"""
-# 🧿 `safer`: A safer writer 🧿
+"""# 🧿 `safer`: A safer writer 🧿
 
 Avoid partial writes or corruption!
 
@@ -42,6 +41,10 @@ https://pypi.org/project/atomicwrites/
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
+NOTE: Just like plain old `open`, if a file that is already opened for writing
+is opened again before the first write has completed, the results are
+unpredictable: so don't do it!
+
 * `safer.writer()` wraps an existing writer, socket or stream and writes a
   whole response or nothing
 
@@ -66,7 +69,6 @@ writes the data to a temporary file on disk, which is moved over using
 `os.replace` if the operation completes successfully.  This functionality
 does not work on Windows.  (In fact, it's unclear if any of this works on
 Windows, but that certainly won't.  Windows developer solicted!)
-
 
 ### Example: `safer.writer()`
 
@@ -143,6 +145,7 @@ With `safer`
         for item in items:
             print(item)
         # Either the whole file is written, or nothing
+
 """
 import contextlib
 import functools
@@ -657,14 +660,16 @@ class _FileRenameCloser(_FileCloser):
         self.target_file = target_file
         self.dry_run = dry_run
         self.is_binary = is_binary
+        if temp_file is True:
+            parent, file = os.path.split(target_file)
+            temp_file = os.path.join(parent, f'.{file}.tmp-safer')
+
         super().__init__(temp_file, delete_failures, parent)
 
     def _success(self):
         if not self.dry_run:
             if os.path.exists(self.target_file):
                 shutil.copymode(self.target_file, self.temp_file)
-            else:
-                os.chmod(self.temp_file, 0o100644)
             os.replace(self.temp_file, self.target_file)
 
         elif callable(self.dry_run):

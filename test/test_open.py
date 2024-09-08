@@ -102,15 +102,15 @@ class TestSafer(unittest.TestCase):
             fp.write('OK!')
             if uses_files:
                 after = set(os.listdir('.'))
-                assert len(before) + 2 == len(after)
-                assert len(after.difference(before)) == 2
+                assert len(before) + 1 == len(after)
+                assert len(after.difference(before)) == 1
 
         assert FILENAME.read_text() == 'OK!'
 
         if uses_files:
             after = set(os.listdir('.'))
-            assert len(before) + 1 == len(after)
-            assert len(after.difference(before)) == 1
+            assert len(before) == len(after)
+            assert len(after.difference(before)) == 0
 
     def test_error_with_copy(self, safer_open):
         FILENAME.write_text('hello')
@@ -214,3 +214,17 @@ class TestSafer(unittest.TestCase):
         with safer_open(FILENAME, 'wt') as fp:
             fp.write('goodbye')
         assert FILENAME.read_text() == 'goodbye'
+
+    def test_tempfile_perms(self, safer_open):
+        temp_files = False, True, 'three'
+        perms = []
+        for temp_file in temp_files:
+            filename = str(temp_file)
+            if isinstance(temp_file, str):
+                temp_file += '.tmpfile'
+            with safer_open(filename, 'w', temp_file=temp_file):
+                pass
+            perms.append(os.stat(filename).st_mode)
+
+        assert perms == [perms[0]] * len(perms)
+        assert perms[0] in (0o100644, 0o100664)
