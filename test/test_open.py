@@ -131,11 +131,11 @@ class TestSafer(unittest.TestCase):
         mode = os.stat(FILENAME).st_mode
 
         # UNIX systems view and manipulate file permissions as bits
-        if os.name is 'posix':
+        if os.name == 'posix':
             assert mode in (0o100664, 0o100644), stat.filemode(mode)
             new_mode = mode & 0o100770
         # disparity in Windows file handling
-        elif os.name is 'nt':
+        elif os.name == 'nt':
             # instead, just check if its a regular file without permission bit specifics
             new_mode = mode
 
