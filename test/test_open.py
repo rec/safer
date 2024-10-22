@@ -1,3 +1,4 @@
+import ctypes
 import os
 import stat
 import unittest
@@ -10,6 +11,16 @@ import safer
 from . import helpers
 
 FILENAME = Path('one')
+
+
+# Windows OS helper for checking admin privileges
+def is_windows_admin():
+    """Check if the script is running in a terminal with admin privileges on Windows"""
+    if os.name == 'nt':
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            return False
 
 
 @helpers.temps(safer.open)
@@ -191,6 +202,12 @@ class TestSafer(unittest.TestCase):
         assert FILENAME.read_text() == 'hello'
 
     def test_symlink_file(self, safer_open):
+        # check if we are on Windows and have admin rights
+        if os.name == 'nt' and not is_windows_admin():
+            self.skipTest(
+                'This test requires admin privileges to create symlink files on Windows'
+            )
+
         with safer_open(FILENAME, 'w') as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
@@ -203,6 +220,13 @@ class TestSafer(unittest.TestCase):
 
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
+
+        # check if we are on Windows and have admin rights
+        if os.name == 'nt' and not is_windows_admin():
+            self.skipTest(
+                'This test requires admin privileges to create symlink directories on Windows'
+            )
+
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
