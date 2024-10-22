@@ -129,8 +129,15 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
         mode = os.stat(FILENAME).st_mode
-        assert mode in (0o100664, 0o100644), stat.filemode(mode)
-        new_mode = mode & 0o100770
+
+        # UNIX systems view and manipulate file permissions as bits
+        if os.name is 'posix':
+            assert mode in (0o100664, 0o100644), stat.filemode(mode)
+            new_mode = mode & 0o100770
+        # disparity in Windows file handling
+        elif os.name is 'nt':
+            # instead, just check if its a regular file without permission bit specifics
+            new_mode = mode
 
         os.chmod(FILENAME, new_mode)
         with safer_open(FILENAME, 'w') as fp:
