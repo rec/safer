@@ -258,4 +258,8 @@ class TestSafer(unittest.TestCase):
             perms.append(os.stat(filename).st_mode)
 
         assert perms == [perms[0]] * len(perms)
-        assert perms[0] in (0o100644, 0o100664)
+        # The octal value for read & write permissions across all groups and users in Windows is 0o100666
+        if os.name == 'nt':
+            assert perms[0] == 0o100666
+        else:
+            assert perms[0] in (0o100644, 0o100664)
