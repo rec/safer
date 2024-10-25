@@ -203,13 +203,12 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
 
+    # Skip if we are on Windows and do not have admin rights
+    @unittest.skipIf(
+        os.name == 'nt' and not is_windows_admin(),
+        'This test requires admin privileges to create symlink files on Windows',
+    )
     def test_symlink_file(self, safer_open):
-        # check if we are on Windows and have admin rights
-        if os.name == 'nt' and not is_windows_admin():
-            self.skipTest(
-                'This test requires admin privileges to create symlink files on Windows'
-            )
-
         with safer_open(FILENAME, 'w') as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
@@ -220,15 +219,13 @@ class TestSafer(unittest.TestCase):
             fp.write('overwritten')
         assert FILENAME.read_text() == 'overwritten'
 
+    # Skip if we are on Windows and do not have admin rights
+    @unittest.skipIf(
+        os.name == 'nt' and not is_windows_admin(),
+        'This test requires admin privileges to create symlink directories on Windows',
+    )
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
-
-        # check if we are on Windows and have admin rights
-        if os.name == 'nt' and not is_windows_admin():
-            self.skipTest(
-                'This test requires admin privileges to create symlink directories on Windows'
-            )
-
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
