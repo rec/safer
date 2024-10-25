@@ -147,8 +147,10 @@ class TestSafer(unittest.TestCase):
             new_mode = mode & 0o100770
         # disparity in Windows file handling
         elif os.name == 'nt':
-            # instead, just check if its a regular file without permission bit specifics
+            # Instead, just check if it's a regular file without permission bit specifics
             new_mode = mode
+        else:
+            assert False, f'Do not understand os.name = {os.name}'
 
         os.chmod(FILENAME, new_mode)
         with safer_open(FILENAME, 'w') as fp:
