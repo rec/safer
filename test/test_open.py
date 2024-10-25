@@ -19,7 +19,7 @@ def is_windows_admin():
     if os.name == 'nt':
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except Exception as e:
+        except Exception:
             return False
 
 
