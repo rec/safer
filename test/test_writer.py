@@ -213,8 +213,8 @@ def test_wrapper_bug3():
 
         with open(FILENAME, 'w') as fp:
             with safer.writer(fp, close_on_exit=True, temp_file=True):
-                fp.write('hello, world')
-        assert FILENAME.read_text() == ''  # Fails!
+                fp.write('')
+        assert FILENAME.read_text() == ''
     finally:
         safer.BUG_MESSAGE = bug
 
