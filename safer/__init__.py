@@ -163,7 +163,7 @@ __all__ = 'writer', 'open', 'closer', 'dump', 'printer'
 
 def writer(
     stream: t.Union[t.Callable, None, t.IO, Path, str] = None,
-    is_binary: t.Optional[bool] = None,
+    is_binary: t.Union[bool, None] = None,
     close_on_exit: bool = False,
     temp_file: bool = False,
     chunk_size: int = 0x100000,
@@ -233,76 +233,82 @@ def writer(
 
     write: t.Optional[t.Callable]
 
-    if callable(dry_run):
-        write, dry_run = dry_run, True
-
-    elif dry_run:
-        write = len
-
-    elif close_on_exit and hasattr(stream, 'write'):
-        if temp_file and BUG_MESSAGE:
-            raise NotImplementedError(BUG_MESSAGE)
-
-        def write(v):
-            with stream:
-                stream.write(v)
-
-    else:
-        write = getattr(stream, 'write', None)
-
-    send = getattr(stream, 'send', None)
-    mode = getattr(stream, 'mode', None)
+    if close_on_exit and stream in (sys.stdout, sys.stderr):
+        raise ValueError('You cannot close stdout or stderr')
 
     if dry_run:
         close_on_exit = False
 
-    if close_on_exit and stream in (sys.stdout, sys.stderr):
-        raise ValueError('You cannot close stdout or stderr')
+    try:
+        if callable(dry_run):
+            write, dry_run = dry_run, True
 
-    if write and mode:
-        if not set('w+a').intersection(mode):
-            raise ValueError('Stream mode "%s" is not a write mode' % mode)
+        elif dry_run:
+            write = len
 
-        binary_mode = 'b' in mode
-        if is_binary is not None and is_binary is not binary_mode:
-            raise ValueError('is_binary is inconsistent with the file stream')
+        elif close_on_exit and hasattr(stream, 'write'):
+            if temp_file and BUG_MESSAGE:
+                raise NotImplementedError(BUG_MESSAGE)
 
-        is_binary = binary_mode
+            def write(v):
+                with stream:
+                    stream.write(v)
 
-    elif dry_run:
-        pass
+        else:
+            write = getattr(stream, 'write', None)
 
-    elif send and hasattr(stream, 'recv'):  # It looks like a socket:
-        if not (is_binary is None or is_binary is True):
-            raise ValueError('is_binary=False is inconsistent with a socket')
+        send = getattr(stream, 'send', None)
+        mode = getattr(stream, 'mode', None)
 
-        write = send
-        is_binary = True
+        if write and mode:
+            if not set('w+a').intersection(mode):
+                raise ValueError('Stream mode "%s" is not a write mode' % mode)
 
-    elif callable(stream):
-        write = stream
+            binary_mode = 'b' in mode
+            if is_binary is not None and is_binary is not binary_mode:
+                raise ValueError('is_binary is inconsistent with the file stream')
 
-    else:
-        raise ValueError('Stream is not a file, a socket, or callable')
+            is_binary = binary_mode
 
-    closer: _StreamCloser
+        elif dry_run:
+            pass
 
-    if temp_file:
-        closer = _FileStreamCloser(
-            write,
-            close_on_exit,
-            is_binary,
-            temp_file,
-            chunk_size,
-            delete_failures,
-        )
-    else:
-        closer = _MemoryStreamCloser(write, close_on_exit, is_binary)
+        elif send and hasattr(stream, 'recv'):  # It looks like a socket:
+            if not (is_binary is None or is_binary is True):
+                raise ValueError('is_binary=False is inconsistent with a socket')
 
-    if send is write:
-        closer.fp.send = write
+            write = send
+            is_binary = True
 
-    return closer.fp
+        elif callable(stream):
+            write = stream
+
+        else:
+            raise ValueError('Stream is not a file, a socket, or callable')
+
+        closer: _StreamCloser
+
+        if temp_file:
+            closer = _FileStreamCloser(
+                write,
+                close_on_exit,
+                is_binary,
+                temp_file,
+                chunk_size,
+                delete_failures,
+            )
+        else:
+            closer = _MemoryStreamCloser(write, close_on_exit, is_binary)
+
+        if send is write:
+            closer.fp.send = write
+
+        return closer.fp
+
+    except Exception:
+        if close_on_exit:
+            getattr(stream, 'close', lambda: None)()
+        raise
 
 
 # There's an edge case in #23 I can't yet fix, so I fail
