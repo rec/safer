@@ -23,6 +23,13 @@ def is_windows_admin():
             return False
 
 
+IS_WINDOWS_USER = os.name == 'nt' and not is_windows_admin()
+skip_windows = unittest.skipIf(
+    IS_WINDOWS_USER,
+    'This test requires admin privileges to create symlink files on Windows',
+)
+
+
 @helpers.temps(safer.open)
 @tdir
 class TestSafer(unittest.TestCase):
@@ -203,11 +210,7 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
 
-    # Skip if we are on Windows and do not have admin rights
-    @unittest.skipIf(
-        os.name == 'nt' and not is_windows_admin(),
-        'This test requires admin privileges to create symlink files on Windows',
-    )
+    @skip_windows
     def test_symlink_file(self, safer_open):
         with safer_open(FILENAME, 'w') as fp:
             fp.write('hello')
@@ -219,11 +222,7 @@ class TestSafer(unittest.TestCase):
             fp.write('overwritten')
         assert FILENAME.read_text() == 'overwritten'
 
-    # Skip if we are on Windows and do not have admin rights
-    @unittest.skipIf(
-        os.name == 'nt' and not is_windows_admin(),
-        'This test requires admin privileges to create symlink directories on Windows',
-    )
+    @skip_windows
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
@@ -257,7 +256,7 @@ class TestSafer(unittest.TestCase):
             perms.append(os.stat(filename).st_mode)
 
         assert perms == [perms[0]] * len(perms)
-        # The octal value for read & write permissions across all groups and users in Windows is 0o100666
+        # The octal value for read and write permissions across all groups and users in Windows is 0o100666
         if os.name == 'nt':
             assert perms[0] == 0o100666
         else:
