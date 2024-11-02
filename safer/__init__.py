@@ -147,6 +147,8 @@ With `safer`
         # Either the whole file is written, or nothing
 
 """
+from __future__ import annotations
+
 import contextlib
 import functools
 import io
@@ -162,15 +164,15 @@ __all__ = 'writer', 'open', 'closer', 'dump', 'printer'
 
 
 def writer(
-    stream: t.Union[t.Callable, None, t.IO, Path, str] = None,
-    is_binary: t.Union[bool, None] = None,
+    stream: t.Callable | None | t.IO | Path | str = None,
+    is_binary: bool | None = None,
     close_on_exit: bool = False,
     temp_file: bool = False,
     chunk_size: int = 0x100000,
     delete_failures: bool = True,
-    dry_run: t.Union[bool, t.Callable] = False,
+    dry_run: bool | t.Callable = False,
     enabled: bool = True,
-) -> t.Union[t.Callable, t.IO]:
+) -> t.Callable | t.IO:
     """
     Write safely to file streams, sockets and callables.
 
@@ -231,7 +233,7 @@ def writer(
     if not enabled:
         return stream
 
-    write: t.Optional[t.Callable]
+    write: t.Callable | None
 
     if close_on_exit and stream in (sys.stdout, sys.stderr):
         raise ValueError('You cannot close stdout or stderr')
@@ -317,18 +319,18 @@ BUG_MESSAGE = 'Sorry, safer.writer fails if temp_file (#23)'
 
 
 def open(
-    name: t.Union[Path, str],
+    name: Path | str,
     mode: str = 'r',
     buffering: int = -1,
-    encoding: t.Optional[str] = None,
-    errors: t.Optional[str] = None,
-    newline: t.Optional[str] = None,
+    encoding: str | None = None,
+    errors: str | None = None,
+    newline: str | None = None,
     closefd: bool = True,
-    opener: t.Optional[t.Callable] = None,
+    opener: t.Callable | None = None,
     make_parents: bool = False,
     delete_failures: bool = True,
     temp_file: bool = False,
-    dry_run: t.Union[bool, t.Callable] = False,
+    dry_run: bool | t.Callable = False,
     enabled: bool = True,
 ) -> t.IO:
     """
@@ -453,8 +455,8 @@ def open(
 
 
 def closer(
-    stream: t.IO, is_binary: t.Optional[bool] = None, close_on_exit: bool = True, **kwds
-) -> t.Union[t.Callable, t.IO]:
+    stream: t.IO, is_binary: bool | None = None, close_on_exit: bool = True, **kwds
+) -> t.Callable | t.IO:
     """
     Like `safer.writer()` but with `close_on_exit=True` by default
 
@@ -466,7 +468,7 @@ def closer(
 
 def dump(
     obj,
-    stream: t.Union[t.Callable, None, t.IO, Path, str] = None,
+    stream: t.Callable | None | t.IO | Path | str = None,
     dump: t.Any = None,
     **kwargs,
 ) -> t.Any:
@@ -539,8 +541,8 @@ def _get_dumper(dump: t.Any) -> t.Callable:
 
 @contextlib.contextmanager
 def printer(
-    name: t.Union[Path, str], mode: str = 'w', *args, **kwargs
-) -> t.Generator[t.Callable, None, None]:
+    name: Path | str, mode: str = 'w', *args, **kwargs
+) -> t.Iterator[t.Callable]:
     """
     A context manager that yields a function that prints to the opened file,
     only writing to the original file at the exit of the context,
