@@ -13,7 +13,6 @@ from . import helpers
 FILENAME = Path('one')
 
 
-# Windows OS helper for checking admin privileges
 def is_windows_admin():
     """Check if the script is running in a terminal with admin privileges on Windows"""
     if os.name == 'nt':
@@ -24,7 +23,7 @@ def is_windows_admin():
 
 
 IS_WINDOWS_USER = os.name == 'nt' and not is_windows_admin()
-skip_windows = unittest.skipIf(
+skip_if_symlink_creation_forbidden = unittest.skipIf(
     IS_WINDOWS_USER,
     'This test requires admin privileges to create symlink files on Windows',
 )
@@ -148,13 +147,10 @@ class TestSafer(unittest.TestCase):
         assert FILENAME.read_text() == 'hello'
         mode = os.stat(FILENAME).st_mode
 
-        # UNIX systems view and manipulate file permissions as bits
         if os.name == 'posix':
             assert mode in (0o100664, 0o100644), stat.filemode(mode)
             new_mode = mode & 0o100770
-        # disparity in Windows file handling
         elif os.name == 'nt':
-            # Instead, just check if it's a regular file without permission bit specifics
             new_mode = mode
         else:
             assert False, f'Do not understand os.name = {os.name}'
@@ -210,7 +206,7 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
 
-    @skip_windows
+    @skip_if_symlink_creation_forbidden
     def test_symlink_file(self, safer_open):
         with safer_open(FILENAME, 'w') as fp:
             fp.write('hello')
@@ -222,7 +218,7 @@ class TestSafer(unittest.TestCase):
             fp.write('overwritten')
         assert FILENAME.read_text() == 'overwritten'
 
-    @skip_windows
+    @skip_if_symlink_creation_forbidden
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
@@ -256,7 +252,6 @@ class TestSafer(unittest.TestCase):
             perms.append(os.stat(filename).st_mode)
 
         assert perms == [perms[0]] * len(perms)
-        # The octal value for read and write permissions across all groups and users in Windows is 0o100666
         if os.name == 'nt':
             assert perms[0] == 0o100666
         else:
