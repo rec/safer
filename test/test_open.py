@@ -1,3 +1,4 @@
+import ctypes
 import os
 import stat
 import unittest
@@ -10,6 +11,22 @@ import safer
 from . import helpers
 
 FILENAME = Path('one')
+
+
+def is_windows_admin():
+    """Check if the script is running in a terminal with admin privileges on Windows"""
+    if os.name == 'nt':
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception:
+            return False
+
+
+IS_WINDOWS_USER = os.name == 'nt' and not is_windows_admin()
+skip_if_symlink_creation_forbidden = unittest.skipIf(
+    IS_WINDOWS_USER,
+    'This test requires admin privileges to create symlink files on Windows',
+)
 
 
 @helpers.temps(safer.open)
@@ -129,8 +146,14 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
         mode = os.stat(FILENAME).st_mode
-        assert mode in (0o100664, 0o100644), stat.filemode(mode)
-        new_mode = mode & 0o100770
+
+        if os.name == 'posix':
+            assert mode in (0o100664, 0o100644), stat.filemode(mode)
+            new_mode = mode & 0o100770
+        elif os.name == 'nt':
+            new_mode = mode
+        else:
+            assert False, f'Do not understand os.name = {os.name}'
 
         os.chmod(FILENAME, new_mode)
         with safer_open(FILENAME, 'w') as fp:
@@ -183,6 +206,7 @@ class TestSafer(unittest.TestCase):
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
 
+    @skip_if_symlink_creation_forbidden
     def test_symlink_file(self, safer_open):
         with safer_open(FILENAME, 'w') as fp:
             fp.write('hello')
@@ -194,6 +218,7 @@ class TestSafer(unittest.TestCase):
             fp.write('overwritten')
         assert FILENAME.read_text() == 'overwritten'
 
+    @skip_if_symlink_creation_forbidden
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
@@ -227,4 +252,7 @@ class TestSafer(unittest.TestCase):
             perms.append(os.stat(filename).st_mode)
 
         assert perms == [perms[0]] * len(perms)
-        assert perms[0] in (0o100644, 0o100664)
+        if os.name == 'nt':
+            assert perms[0] == 0o100666
+        else:
+            assert perms[0] in (0o100644, 0o100664)
