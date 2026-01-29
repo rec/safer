@@ -1,26 +1,47 @@
-[tool.poetry]
+[project]
 name = "safer"
 version = "5.1.0"
 description = "🧿 A safer writer for files and streams 🧿"
-authors = ["Tom Ritchford <tom@swirly.com>"]
-license = "MIT"
+authors = [{ name = "Tom Ritchford", email = "tom@swirly.com" }]
+requires-python = ">=3.8"
 readme = "README.md"
-repository = "https://github.com/rec/safer"
-homepage = "https://github.com/rec/safer"
-documentation = "https://rec.github.io/safer"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.8"
+[project.urls]
+Homepage = "https://github.com/rec/safer"
+Repository = "https://github.com/rec/safer"
+Documentation = "https://rec.github.io/safer"
 
-[tool.poetry.group.dev.dependencies]
-coverage = "*"
-pytest = "*"
-readme-renderer = "*"
-tdir = "*"
-toml = "*"
-pyyaml = "*"
-ruff = "*"
-mypy = "*"
+[dependency-groups]
+dev = [
+    "coverage",
+    "pytest",
+    "readme-renderer",
+    "tdir",
+    "toml",
+    "pyyaml",
+    "ruff",
+    "mypy",
+]
+
+[tool.uv]
+
+[tool.uv.build-backend]
+module-root = ""
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.10.0"]
+build-backend = "uv_build"
 
 [tool.coverage.run]
 branch = true
@@ -44,9 +65,6 @@ quote-style = "single"
 
 
 [tool.mypy]
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.doks]
 auto = true
