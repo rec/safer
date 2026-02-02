@@ -147,6 +147,7 @@ With `safer`
         # Either the whole file is written, or nothing
 
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -399,7 +400,7 @@ def open(
     parent = os.path.dirname(os.path.abspath(name))
     if not os.path.exists(parent):
         if not make_parents:
-            raise IOError('Directory does not exist')
+            raise OSError('Directory does not exist')
         os.makedirs(parent)
 
     def simple_open():
@@ -552,7 +553,7 @@ def printer(
       Same as for `safer.open()`
     """
     if 'r' in mode and '+' not in mode:
-        raise IOError('File not open for writing')
+        raise OSError('File not open for writing')
 
     if 'b' in mode:
         raise ValueError('Cannot print to a file open in binary mode')
@@ -598,7 +599,7 @@ class _Closer:
 
 
 # Wrap an existing IO class so that it calls safer at the end
-@functools.lru_cache()
+@functools.lru_cache
 def _wrap_class(stream_cls):
     @functools.wraps(stream_cls.__exit__)
     def exit(self, *args):
