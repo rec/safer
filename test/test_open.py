@@ -153,7 +153,7 @@ class TestSafer(unittest.TestCase):
         elif os.name == 'nt':
             new_mode = mode
         else:
-            assert False, f'Do not understand os.name = {os.name}'
+            raise ValueError(f'Do not understand os.name = {os.name}')
 
         os.chmod(FILENAME, new_mode)
         with safer_open(FILENAME, 'w') as fp:
