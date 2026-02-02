@@ -31,7 +31,8 @@ dev = [
     "toml",
     "pyyaml",
     "ruff",
-    "mypy",
+    "pyupgrade>=3.21.2",
+    "ty>=0.0.14",
 ]
 
 [tool.uv]
@@ -50,12 +51,7 @@ source = ["safer"]
 [tool.coverage.report]
 fail_under = "90"
 skip_covered = true
-exclude_lines = [
-    "pragma: no cover",
-    "if False:",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError"
-]
+exclude_lines = ["pragma: no cover", "if False:", "if __name__ == .__main__.:", "raise NotImplementedError"]
 
 [tool.ruff]
 line-length = 88
