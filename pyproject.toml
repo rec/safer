@@ -1,6 +1,6 @@
 [project]
 name = "safer"
-version = "5.2.0"
+version = "5.3.0"
 description = "🧿 A safer writer for files and streams 🧿"
 authors = [{ name = "Tom Ritchford", email = "tom@swirly.com" }]
 requires-python = ">=3.10"
