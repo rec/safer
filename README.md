@@ -33,9 +33,12 @@ See the Medium article [here](https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-sa
 `safer` helps prevent programmer error from corrupting files, socket
 connections, or generalized streams by writing a whole file or nothing.
 
-It does not prevent concurrent modification of files from other threads or
-processes: if you need atomic file writing, see
-https://pypi.org/project/atomicwrites/
+`safer` does not lock files or coordinate concurrent writers. A disk-buffered
+writer replaces the target when it closes successfully, so concurrent writers
+have last-successful-close-wins semantics. Append and update modes copy a
+snapshot of the target and can overwrite another writer's changes. `x` mode
+cannot be used with `temp_file=True`, because exclusive creation cannot be
+preserved across delayed replacement.
 
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.

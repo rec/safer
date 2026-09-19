@@ -193,6 +193,12 @@ class TestSafer(unittest.TestCase):
         assert os.path.exists(FILENAME), FILENAME
 
     def test_mode_x(self, safer_open):
+        if safer_open is not safer.open:
+            with self.assertRaises(ValueError) as e:
+                safer_open(FILENAME, 'x')
+            assert e.exception.args[0] == 'x mode cannot safely use a temporary file'
+            return
+
         with safer_open(FILENAME, 'x') as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'

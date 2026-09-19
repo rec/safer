@@ -34,9 +34,12 @@ See the Medium article [here](https://medium.com/@TomSwirly/\
 `safer` helps prevent programmer error from corrupting files, socket
 connections, or generalized streams by writing a whole file or nothing.
 
-It does not prevent concurrent modification of files from other threads or
-processes: if you need atomic file writing, see
-https://pypi.org/project/atomicwrites/
+`safer` does not lock files or coordinate concurrent writers. A disk-buffered
+writer replaces the target when it closes successfully, so concurrent writers
+have last-successful-close-wins semantics. Append and update modes copy a
+snapshot of the target and can overwrite another writer's changes. `x` mode
+cannot be used with `temp_file=True`, because exclusive creation cannot be
+preserved across delayed replacement.
 
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
@@ -359,9 +362,10 @@ def open(
 
     The remaining arguments are the same as for built-in `open()`.
 
-    `safer.open() is a drop-in replacement for built-in`open()`. It returns a
-    stream which only overwrites the original file when close() is called, and
-    only if there was no failure.
+    `safer.open()` replaces the target when close() is called successfully. It
+    does not coordinate concurrent writers: the last successful close wins.
+    Append and update modes copy the target before writing, so they can
+    overwrite concurrent changes.
 
     It works as follows:
 
@@ -440,8 +444,8 @@ def open(
         if errors:
             raise ValueError("binary mode doesn't take an errors argument")
 
-    if 'x' in mode and os.path.exists(name):
-        raise FileExistsError(f"File exists: '{name}'")
+    if 'x' in mode:
+        raise ValueError('x mode cannot safely use a temporary file')
 
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
