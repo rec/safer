@@ -18,6 +18,16 @@ API for named files.
         # filename was not written.
 
 
+### A note on AI use
+
+Version 6.0 has exactly the same API as before, and the great majority of the code is
+still the handwritten code from before, but I recently used a coding assistant to find a
+lot of possible errors and edge cases and fix them.
+
+I believe it should do exactly what it did before, but not fail in some unusual but
+certainly not impossible cases. Please let me know with an [issue
+report](https://github.com/rec/safer/issues/new) if any problems crop up.
+
 ### How to use
 
 Use [pip](https://pypi.org/project/pip) to install `safer` from the command
