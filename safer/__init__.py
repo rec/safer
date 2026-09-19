@@ -80,9 +80,8 @@ be portable across hosts with different locales.
 
 For very large files, `safer.open()` has a `temp_file` argument which
 writes the data to a temporary file on disk, which is moved over using
-`os.replace` if the operation completes successfully.  This functionality
-does not work on Windows.  (In fact, it's unclear if any of this works on
-Windows, but that certainly won't.  Windows developer solicted!)
+`os.replace` if the operation completes successfully. Windows is supported,
+although replacement can fail while another process holds the target open.
 
 ### Example: `safer.writer()`
 
