@@ -614,8 +614,12 @@ def printer(
 
 class _Closer:
     fp: _SafeStream
+    closed: bool = False
 
     def close(self, parent_close: t.Callable[[_SafeStream], object]) -> None:
+        if self.closed:
+            return
+        self.closed = True
         try:
             parent_close(self.fp)
         except Exception:  # pragma: no cover
@@ -778,6 +782,8 @@ class _MemoryStreamCloser(_StreamCloser):
         assert fp == self.fp
 
     def close(self, parent_close=None):
+        if self.closed:
+            return
         self.value = t.cast(io.StringIO | io.BytesIO, self.fp).getvalue()
         super().close(parent_close)
 

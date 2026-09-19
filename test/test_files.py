@@ -40,6 +40,13 @@ class TestSaferFiles(unittest.TestCase):
         after = set(os.listdir('.'))
         assert before == after
 
+    def test_close_is_idempotent(self):
+        fp = safer.open(FILENAME, 'w')
+        fp.write('hello')
+        fp.close()
+        fp.close()
+        assert FILENAME.read_text() == 'hello'
+
     def test_unique_temporary_files(self):
         first = safer.open(FILENAME, 'w', temp_file=True)
         second = safer.open(FILENAME, 'w', temp_file=True)
