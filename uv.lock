@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.10"
 
 [options]
-exclude-newer = "2026-09-12T11:40:17.195214Z"
+exclude-newer = "2026-09-12T13:06:45.748526Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -352,7 +352,7 @@ wheels = [
 
 [[package]]
 name = "safer"
-version = "6.0.0"
+version = "6.0.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
