@@ -182,6 +182,11 @@ class TestWriter(unittest.TestCase):
 
         assert results == ['onetwo!', 'etwo!', 'wo!', '!']
 
+    def test_zero_length_write_result(self, safer_writer):
+        with self.assertRaises(BlockingIOError):
+            with safer_writer(lambda value: 0) as fp:
+                fp.write('one')
+
 
 @tdir
 def test_wrapper_bug():

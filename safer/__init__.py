@@ -701,12 +701,18 @@ class _StreamCloser(_Closer):
             if closer:
                 closer(self.fp.safer_failed)
 
-    def _write_on_success(self, v):
-        while True:
-            written = self.write(v)
-            v = (written is not None) and v[written:]
-            if not v:
-                break
+    def _write_on_success(self, value):
+        if not value:
+            self.write(value)
+            return
+
+        while value:
+            written = self.write(value)
+            if written is None:
+                return
+            if written <= 0:
+                raise BlockingIOError('The destination made no write progress')
+            value = value[written:]
 
 
 class _MemoryStreamCloser(_StreamCloser):
