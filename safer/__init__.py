@@ -178,7 +178,7 @@ def writer(
     stream: t.Callable | None | t.IO | Path | str = None,
     is_binary: bool | None = None,
     close_on_exit: bool = False,
-    temp_file: bool = False,
+    temp_file: bool | str | Path = False,
     chunk_size: int = 0x100000,
     delete_failures: bool = True,
     dry_run: bool | t.Callable = False,
@@ -231,6 +231,9 @@ def writer(
 
       enabled: If `enabled` is falsey, the stream is returned unchanged
     """
+    if not isinstance(temp_file, (bool, str, Path)):
+        raise TypeError('temp_file must be a bool, string, or Path')
+
     if isinstance(stream, (str, Path)):
         if chunk_size != 0x100000:
             raise ValueError('chunk_size only applies to streams')
@@ -344,7 +347,7 @@ def open(
     opener: t.Callable | None = None,
     make_parents: bool = False,
     delete_failures: bool = True,
-    temp_file: bool = False,
+    temp_file: bool | str | Path = False,
     dry_run: bool | t.Callable = False,
     enabled: bool = True,
 ) -> t.IO:
@@ -399,6 +402,9 @@ def open(
     without failing. This uses as much disk space as the old and new files put
     together.
     """
+    if not isinstance(temp_file, (bool, str, Path)):
+        raise TypeError('temp_file must be a bool, string, or Path')
+
     is_copy = '+' in mode or 'a' in mode
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode

@@ -148,6 +148,11 @@ class TestWriter(unittest.TestCase):
             safer_writer(FILENAME, chunk_size=1)
         assert e.exception.args[0] == 'chunk_size only applies to streams'
 
+    def test_invalid_temp_file(self, safer_writer):
+        with self.assertRaises(TypeError) as e:
+            safer_writer([], temp_file=1)
+        assert e.exception.args[0] == 'temp_file must be a bool, string, or Path'
+
     def test_socket(self, safer_writer):
         sock = helpers.socket()
         with safer_writer(sock) as fp:

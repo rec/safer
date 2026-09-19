@@ -111,6 +111,11 @@ class TestSaferFiles(unittest.TestCase):
         arg = m.exception.args[0]
         assert arg == '`name` must be string, not int'
 
+    def test_invalid_temp_file(self):
+        with self.assertRaises(TypeError) as e:
+            safer.open(FILENAME, 'w', temp_file=1)
+        assert e.exception.args[0] == 'temp_file must be a bool, string, or Path'
+
     def _error(self, mode='w', **kwds):
         with self.assertRaises(ValueError) as e:
             safer.open(FILENAME, mode, temp_file=True, **kwds)
