@@ -271,6 +271,7 @@ def writer(
         return t.cast(t.TextIO | t.BinaryIO | Write, stream)
 
     write: Write | None
+    close_callback: t.Callable[[bool], object] | None = None
 
     if close_on_exit and stream in (sys.stdout, sys.stderr):
         raise ValueError('You cannot close stdout or stderr')
@@ -289,12 +290,11 @@ def writer(
             if temp_file and BUG_MESSAGE:
                 raise NotImplementedError(BUG_MESSAGE)
 
-            def close_write(v: str | bytes) -> object:
-                assert isinstance(stream, t.ContextManager), (stream, type(stream))
-                with stream:
-                    return t.cast(Write, stream.write)(v)
+            def close_stream(failed: bool) -> object:
+                return getattr(stream, 'close')()
 
-            write = close_write
+            write = t.cast(Write, stream.write)
+            close_callback = close_stream
 
         else:
             write = getattr(stream, 'write', None)
@@ -342,9 +342,12 @@ def writer(
                 temp_file,
                 chunk_size,
                 delete_failures,
+                close_callback,
             )
         else:
-            closer = _MemoryStreamCloser(write, close_on_exit, is_binary)
+            closer = _MemoryStreamCloser(
+                write, close_on_exit, is_binary, close_callback
+            )
 
         if send is write:
             t.cast(_SocketStream, closer.fp).send = write
@@ -748,17 +751,21 @@ class _FileRenameCloser(_FileCloser):
 
 
 class _StreamCloser(_Closer):
-    def __init__(self, write, close_on_exit):
+    def __init__(self, write, close_on_exit, close_callback=None):
         self.write = write
         self.close_on_exit = close_on_exit
+        self.close_callback = close_callback
 
     def close(self, parent_close):
         super().close(parent_close)
 
         if self.close_on_exit:
-            closer = getattr(self.write, 'close', None)
-            if closer:
-                closer(self.fp.safer_failed)
+            if self.close_callback:
+                self.close_callback(self.fp.safer_failed)
+            else:
+                closer = getattr(self.write, 'close', None)
+                if closer:
+                    closer(self.fp.safer_failed)
 
     def _write_on_success(self, value):
         if not value:
@@ -775,8 +782,8 @@ class _StreamCloser(_Closer):
 
 
 class _MemoryStreamCloser(_StreamCloser):
-    def __init__(self, write, close_on_exit, is_binary):
-        super().__init__(write, close_on_exit)
+    def __init__(self, write, close_on_exit, is_binary, close_callback=None):
+        super().__init__(write, close_on_exit, close_callback)
         io_class = io.BytesIO if is_binary else io.StringIO
         fp = self._wrap(io_class)()
         assert fp == self.fp
@@ -800,8 +807,9 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
         temp_file,
         chunk_size,
         delete_failures,
+        close_callback=None,
     ):
-        _StreamCloser.__init__(self, write, close_on_exit)
+        _StreamCloser.__init__(self, write, close_on_exit, close_callback)
         _FileCloser.__init__(self, temp_file, delete_failures)
 
         self.is_binary = is_binary

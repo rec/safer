@@ -229,6 +229,26 @@ def test_wrapper_bug():
 
 
 @tdir
+def test_close_writable_without_context_manager():
+    class Writer:
+        def __init__(self):
+            self.values = []
+            self.closed = False
+
+        def write(self, value):
+            self.values.append(value)
+
+        def close(self):
+            self.closed = True
+
+    writer = Writer()
+    with safer.writer(writer, close_on_exit=True) as fp:
+        fp.write('hello')
+    assert writer.values == ['hello']
+    assert writer.closed
+
+
+@tdir
 def test_stream_failure_cleans_temporary_file():
     def fail(value):
         raise OSError('expected')
