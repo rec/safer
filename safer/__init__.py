@@ -676,6 +676,9 @@ class _Closer:
     def _failure(self) -> None:
         pass
 
+    def _record(self, value: str | bytes) -> None:
+        pass
+
     def _wrap(self, stream_cls):
         @functools.wraps(stream_cls)
         def wrapped(*args, **kwargs):
@@ -701,7 +704,13 @@ def _wrap_class(stream_cls):
     def close(self):
         self.safer_closer.close(stream_cls.close)
 
-    members = {'__exit__': exit, 'close': close}
+    @functools.wraps(stream_cls.write)
+    def write(self, value):
+        result = stream_cls.write(self, value)
+        self.safer_closer._record(value)
+        return result
+
+    members = {'__exit__': exit, 'close': close, 'write': write}
     return type('Safer' + stream_cls.__name__, (stream_cls,), members)
 
 
@@ -766,6 +775,8 @@ class _FileRenameCloser(_FileCloser):
         self.encoding = encoding
         self.errors = errors
         self.newline = newline
+        self.dry_run_text: list[str] = []
+        self.dry_run_bytes: list[bytes] = []
 
         super().__init__(temp_file, delete_failures, parent)
 
@@ -776,15 +787,18 @@ class _FileRenameCloser(_FileCloser):
             os.replace(self.temp_file, self.target_file)
 
         elif callable(self.dry_run):
-            kwargs = {}
-            if not self.is_binary:
-                kwargs = dict(
-                    encoding=self.encoding,
-                    errors=self.errors,
-                    newline=self.newline,
-                )
-            with open(self.temp_file, 'rb' if self.is_binary else 'r', **kwargs) as fp:
-                self.dry_run(fp.read())
+            if self.is_binary:
+                value = b''.join(self.dry_run_bytes)
+            else:
+                value = ''.join(self.dry_run_text)
+            self.dry_run(value)
+
+    def _record(self, value: str | bytes) -> None:
+        if callable(self.dry_run):
+            if isinstance(value, bytes):
+                self.dry_run_bytes.append(value)
+            else:
+                self.dry_run_text.append(value)
 
 
 class _StreamCloser(_Closer):

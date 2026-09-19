@@ -66,6 +66,18 @@ class TestSaferFiles(unittest.TestCase):
             fp.write('é')
         assert results == ['é']
 
+    def test_dry_run_matches_memory_contents(self):
+        results = []
+        with safer.open(
+            FILENAME,
+            'w',
+            newline=None,
+            dry_run=results.append,
+            temp_file=True,
+        ) as fp:
+            fp.write('one\r\ntwo')
+        assert results == ['one\r\ntwo']
+
     def test_temp_file1(self):
         temp_file = FILENAME.with_suffix('.temp_file')
         with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
