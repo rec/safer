@@ -265,7 +265,8 @@ def writer(
             ),
         )
 
-    stream = stream or sys.stdout
+    if stream is None:
+        stream = sys.stdout
     if not enabled:
         return t.cast(t.TextIO | t.BinaryIO | Write, stream)
 
@@ -310,6 +311,9 @@ def writer(
                 raise ValueError('is_binary is inconsistent with the file stream')
 
             is_binary = binary_mode
+
+        elif write:
+            pass
 
         elif dry_run:
             pass

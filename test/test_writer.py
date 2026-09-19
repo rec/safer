@@ -128,6 +128,22 @@ class TestWriter(unittest.TestCase):
         with safer_writer() as fp:
             fp.write('to stdout!\n')
 
+    def test_falsey_stream(self, safer_writer):
+        class FalseyWriter:
+            def __init__(self):
+                self.values = []
+
+            def __bool__(self):
+                return False
+
+            def write(self, value):
+                self.values.append(value)
+
+        writer = FalseyWriter()
+        with safer_writer(writer) as fp:
+            fp.write('one')
+        assert writer.values == ['one']
+
     def test_str(self, safer_writer):
         for file in (FILENAME, str(FILENAME)):
             with safer_writer(file) as fp:
