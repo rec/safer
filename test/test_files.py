@@ -116,7 +116,16 @@ class TestSaferFiles(unittest.TestCase):
                 fp.write('hello')
 
         arg = m.exception.args[0]
-        assert arg == '`name` must be string, not int'
+        assert arg == '`name` must be path-like, not int'
+
+    def test_path_like_filename(self):
+        class Name:
+            def __fspath__(self):
+                return 'path-like.txt'
+
+        with safer.open(Name(), 'w') as fp:
+            fp.write('hello')
+        assert Path('path-like.txt').read_text() == 'hello'
 
     def test_invalid_temp_file(self):
         with self.assertRaises(TypeError) as e:

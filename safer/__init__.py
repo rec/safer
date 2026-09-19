@@ -2,8 +2,8 @@
 
 Avoid partial writes or corruption!
 
-`safer` wraps file streams, sockets, or a callable, and offers a drop-in
-replacement for regular old `open()`.
+`safer` wraps file streams, sockets, or a callable, and offers an open-like
+API for named files.
 
 ## Quick summary
 
@@ -58,8 +58,8 @@ unpredictable: so don't do it!
 * `safer.writer()` wraps an existing writer, socket or stream and defers its
   write until successful context exit
 
-* `safer.open()` is a drop-in replacement for built-in `open` that
-  writes a whole file or nothing
+* `safer.open()` is an open-like API for named files that delays replacement
+  until successful context exit
 
 * `safer.closer()` returns a stream like from `safer.write()` that also
   closes the underlying stream or callable when it closes.
@@ -109,8 +109,8 @@ With `safer`, no write is attempted when the body raises:
 
 ### Example: `safer.open()` and json
 
-`safer.open()` is a a drop-in replacement for built-in `open()` except that
-when used as a context, it leaves the original file unchanged on failure.
+`safer.open()` accepts named paths, not file descriptors. When used as a
+context, it leaves the original file unchanged on failure.
 
 It's easy to write broken JSON if something within it doesn't serialize.
 
@@ -370,7 +370,7 @@ BUG_MESSAGE = 'Sorry, safer.writer fails if temp_file (#23)'
 
 
 def open(
-    name: Path | str,
+    name: str | os.PathLike[str],
     mode: str = 'r',
     buffering: int = -1,
     encoding: str | None = None,
@@ -444,11 +444,18 @@ def open(
 
     kwargs = dict(encoding=encoding, errors=errors, newline=newline, opener=opener)
 
-    if isinstance(name, Path):
-        name = str(name)
+    if not closefd:
+        raise ValueError('Cannot use closefd=False with file name')
+
+    try:
+        name = os.fspath(name)
+    except TypeError:
+        raise TypeError(
+            f'`name` must be path-like, not {type(name).__name__}'
+        ) from None
 
     if not isinstance(name, str):
-        raise TypeError(f'`name` must be string, not {type(name).__name__}')
+        raise TypeError(f'`name` must be text, not {type(name).__name__}')
 
     name = os.path.realpath(name)
     parent = os.path.dirname(os.path.abspath(name))
@@ -479,9 +486,6 @@ def open(
         fp = _MemoryStreamCloser(write, True, is_binary).fp
         fp.mode = mode
         return t.cast(t.IO, fp)
-
-    if not closefd:
-        raise ValueError('Cannot use closefd=False with file name')
 
     if is_binary:
         if 't' in mode:

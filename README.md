@@ -2,8 +2,8 @@
 
 Avoid partial writes or corruption!
 
-`safer` wraps file streams, sockets, or a callable, and offers a drop-in
-replacement for regular old `open()`.
+`safer` wraps file streams, sockets, or a callable, and offers an open-like
+API for named files.
 
 ## Quick summary
 
@@ -53,8 +53,8 @@ actually overwriting the target file.
 * `safer.writer()` wraps an existing writer, socket or stream and defers its
   write until successful context exit
 
-* `safer.open()` is a drop-in replacement for built-in `open` that
-  writes a whole file or nothing
+* `safer.open()` is an open-like API for named files that delays replacement
+  until successful context exit
 
 * `safer.closer()` returns a stream like from `safer.write()` that also
   closes the underlying stream or callable when it closes.
@@ -105,8 +105,8 @@ With `safer`, no write is attempted when the body raises:
 
 ### Example: `safer.open()` and json
 
-`safer.open()` is a a drop-in replacement for built-in `open()` except that
-when used as a context, it leaves the original file unchanged on failure.
+`safer.open()` accepts named paths, not file descriptors. When used as a
+context, it leaves the original file unchanged on failure.
 
 It's easy to write broken JSON if something within it doesn't serialize.
 
