@@ -291,8 +291,6 @@ def writer(
             write = len
 
         elif close_on_exit and hasattr(stream, 'write'):
-            if temp_file and BUG_MESSAGE:
-                raise NotImplementedError(BUG_MESSAGE)
 
             def close_stream(failed: bool) -> object:
                 return t.cast(_Closable, stream).close()
@@ -362,11 +360,6 @@ def writer(
         if close_on_exit:
             getattr(stream, 'close', lambda: None)()
         raise
-
-
-# There's an edge case in #23 I can't yet fix, so I fail
-# deliberately
-BUG_MESSAGE = 'Sorry, safer.writer fails if temp_file (#23)'
 
 
 def open(

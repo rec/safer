@@ -267,27 +267,12 @@ def test_stream_failure_cleans_temporary_file():
 
 
 @tdir
-def test_wrapper_bug2():
-    with pytest.raises(NotImplementedError) as e:
-        with open(FILENAME, 'w') as fp:
-            safer.writer(fp, close_on_exit=True, temp_file=True)
-    assert e.value.args == (safer.BUG_MESSAGE,)
-
-
-@tdir
-def test_wrapper_bug3():
-    try:
-        bug, safer.BUG_MESSAGE = safer.BUG_MESSAGE, None
-        with safer.writer(FILENAME) as fp:
-            fp.write('hello, world')
-        assert FILENAME.read_text() == 'hello, world'  # OK!
-
-        with open(FILENAME, 'w') as fp:
-            with safer.writer(fp, close_on_exit=True, temp_file=True):
-                fp.write('')
-        assert FILENAME.read_text() == ''
-    finally:
-        safer.BUG_MESSAGE = bug
+def test_temp_file_closer():
+    fp = open(FILENAME, 'w')
+    with safer.writer(fp, close_on_exit=True, temp_file=True) as writer:
+        writer.write('hello, world')
+    assert fp.closed
+    assert FILENAME.read_text() == 'hello, world'
 
 
 @helpers.temps(safer.closer)
