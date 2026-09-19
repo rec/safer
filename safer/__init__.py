@@ -413,7 +413,7 @@ def open(
     if not os.path.exists(parent):
         if not make_parents:
             raise OSError('Directory does not exist')
-        os.makedirs(parent)
+        os.makedirs(parent, exist_ok=True)
 
     def simple_open():
         return __builtins__['open'](name, mode, buffering, **kwargs)
