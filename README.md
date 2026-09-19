@@ -69,6 +69,10 @@ actually overwriting the target file.
 By default, `safer` buffers the written data in memory in a `io.StringIO`
 or `io.BytesIO`.
 
+Text files use the platform default encoding unless you pass `encoding`, just
+like built-in `open()`. Specify an encoding such as `utf-8` when output must
+be portable across hosts with different locales.
+
 For very large files, `safer.open()` has a `temp_file` argument which
 writes the data to a temporary file on disk, which is moved over using
 `os.rename` if the operation completes successfully.  This functionality
