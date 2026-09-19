@@ -26,6 +26,9 @@ dev = [
     "ty>=0.0.14",
 ]
 
+[tool.uv]
+exclude-newer = false
+
 [tool.coverage.run]
 branch = true
 source = ["safer"]
