@@ -580,7 +580,14 @@ class _Closer:
             except Exception:
                 traceback.print_exc()
             raise
-        self._close(self.fp.safer_failed)
+        try:
+            self._close(self.fp.safer_failed)
+        except Exception:
+            try:
+                self._close(True)
+            except Exception:  # pragma: no cover
+                traceback.print_exc()
+            raise
 
     def _close(self, failed):
         if failed:

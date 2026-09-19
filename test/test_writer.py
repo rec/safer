@@ -1,3 +1,4 @@
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -193,6 +194,19 @@ def test_wrapper_bug():
     with safer.writer(FILENAME) as fp:
         fp.write('hello, world')
     assert FILENAME.read_text() == 'hello, world'
+
+
+@tdir
+def test_stream_failure_cleans_temporary_file():
+    def fail(value):
+        raise OSError('expected')
+
+    fp = safer.writer(fail, temp_file=True)
+    temp_file = fp.safer_closer.temp_file
+    with pytest.raises(OSError, match='expected'):
+        with fp:
+            fp.write('one')
+    assert not os.path.exists(temp_file)
 
     fp = open(FILENAME, 'w')
     with safer.writer(fp, close_on_exit=True):
