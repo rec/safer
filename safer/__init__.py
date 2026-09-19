@@ -190,6 +190,10 @@ class _SocketStream(t.Protocol):
     send: Write
 
 
+class _Closable(t.Protocol):
+    def close(self) -> object: ...
+
+
 def writer(
     stream: t.TextIO | t.BinaryIO | Write | Path | str | None = None,
     is_binary: bool | None = None,
@@ -291,7 +295,7 @@ def writer(
                 raise NotImplementedError(BUG_MESSAGE)
 
             def close_stream(failed: bool) -> object:
-                return getattr(stream, 'close')()
+                return t.cast(_Closable, stream).close()
 
             write = t.cast(Write, stream.write)
             close_callback = close_stream
