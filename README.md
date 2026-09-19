@@ -23,8 +23,8 @@ API for named files.
 Use [pip](https://pypi.org/project/pip) to install `safer` from the command
 line: `pip install safer`.
 
-Tested on Python 3.4 - 3.11.  An old Python 2.7 version
-is [here](https://github.com/rec/safer/tree/v2.0.5).
+Requires Python 3.10 or later. An old Python 2.7 version is
+[here](https://github.com/rec/safer/tree/v2.0.5).
 
 See the Medium article [here](https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5)
 
@@ -157,7 +157,7 @@ With `safer`
     with safer.printer(file) as print:
         for item in items:
             print(item)
-        # Either the whole file is written, or nothing
+        # The file is replaced only after every line is printed
 
 
 ### [API Documentation](https://rec.github.io/safer#safer--api-documentation)

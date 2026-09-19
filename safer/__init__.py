@@ -23,8 +23,8 @@ API for named files.
 Use [pip](https://pypi.org/project/pip) to install `safer` from the command
 line: `pip install safer`.
 
-Tested on Python 3.4 - 3.11.  An old Python 2.7 version
-is [here](https://github.com/rec/safer/tree/v2.0.5).
+Requires Python 3.10 or later. An old Python 2.7 version is
+[here](https://github.com/rec/safer/tree/v2.0.5).
 
 See the Medium article [here](https://medium.com/@TomSwirly/\
 %EF%B8%8F-safer-a-safer-file-writer-%EF%B8%8F-5fe267dbe3f5)
@@ -161,7 +161,7 @@ With `safer`
     with safer.printer(file) as print:
         for item in items:
             print(item)
-        # Either the whole file is written, or nothing
+        # The file is replaced only after every line is printed
 
 """
 
@@ -431,7 +431,7 @@ def open(
     before writing starts.
 
     Note that if the `temp_file` argument is set, `safer` uses an extra
-    temporary file which is renamed over the file only after the stream closes
+    temporary file which replaces the file only after the stream closes
     without failing. This uses as much disk space as the old and new files put
     together.
     """
