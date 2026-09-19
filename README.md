@@ -43,6 +43,10 @@ snapshot of the target and can overwrite another writer's changes. `x` mode
 cannot be used with `temp_file=True`, because exclusive creation cannot be
 preserved across delayed replacement.
 
+`os.replace()` provides atomic visibility where the platform supports it, but
+`safer` does not fsync the replacement file or its directory. A successful
+close is therefore not a power-loss durability guarantee.
+
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
