@@ -30,8 +30,11 @@ See the Medium article [here](https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-sa
 
 ### The details
 
-`safer` helps prevent programmer error from corrupting files, socket
-connections, or generalized streams by writing a whole file or nothing.
+`safer` helps prevent programmer error from partially overwriting named files.
+For sockets, callbacks, and other streams, it defers the first write until the
+context succeeds. A final stream write can still block, fail, or be partially
+accepted, so use an application-level framing and acknowledgement protocol
+when delivery must be all-or-nothing.
 
 `safer` does not lock files or coordinate concurrent writers. A disk-buffered
 writer replaces the target when it closes successfully, so concurrent writers
@@ -43,8 +46,8 @@ preserved across delayed replacement.
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
-* `safer.writer()` wraps an existing writer, socket or stream and writes a
-  whole response or nothing
+* `safer.writer()` wraps an existing writer, socket or stream and defers its
+  write until successful context exit
 
 * `safer.open()` is a drop-in replacement for built-in `open` that
   writes a whole file or nothing
@@ -86,7 +89,7 @@ The old, dangerous way goes like this.
      except Exception:
         write_error(sock)  # Oops, the header was already written
 
-With `safer` you write all or nothing:
+With `safer`, no write is attempted when the body raises:
 
     try:
         with safer.writer(sock) as s:
@@ -94,7 +97,7 @@ With `safer` you write all or nothing:
             write_body(s)  # Exception is thrown here
             write_footer(s)
      except Exception:
-        write_error(sock)  # Nothing has been written
+        write_error(sock)  # No write was attempted by safer
 
 ### Example: `safer.open()` and json
 
