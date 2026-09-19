@@ -27,7 +27,7 @@ dev = [
 ]
 
 [tool.uv]
-exclude-newer = false
+exclude-newer = "P1W"
 
 [tool.coverage.run]
 branch = true
