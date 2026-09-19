@@ -61,7 +61,7 @@ unpredictable: so don't do it!
 * `safer.open()` is an open-like API for named files that delays replacement
   until successful context exit
 
-* `safer.closer()` returns a stream like from `safer.write()` that also
+* `safer.closer()` returns a stream like from `safer.writer()` that also
   closes the underlying stream or callable when it closes.
 
 * `safer.dump()` is like a safer `json.dump()` which can be used for any
