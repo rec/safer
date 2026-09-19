@@ -162,6 +162,7 @@ from __future__ import annotations
 
 import contextlib
 import functools
+import importlib
 import io
 import os
 import shutil
@@ -173,17 +174,32 @@ from pathlib import Path
 
 __all__ = 'writer', 'open', 'closer', 'dump', 'printer'
 
+Write = t.Callable[[str | bytes], object]
+DryRun = bool | t.Callable[[str | bytes], object]
+
+
+class _SafeStream(t.Protocol):
+    safer_failed: bool
+    safer_closer: _Closer
+    mode: str
+
+    def close(self) -> None: ...
+
+
+class _SocketStream(t.Protocol):
+    send: Write
+
 
 def writer(
-    stream: t.Callable | None | t.IO | Path | str = None,
+    stream: t.TextIO | t.BinaryIO | Write | Path | str | None = None,
     is_binary: bool | None = None,
     close_on_exit: bool = False,
     temp_file: bool | str | Path = False,
     chunk_size: int = 0x100000,
     delete_failures: bool = True,
-    dry_run: bool | t.Callable = False,
+    dry_run: DryRun = False,
     enabled: bool = True,
-) -> t.Callable | t.IO:
+) -> t.TextIO | t.BinaryIO | Write:
     """
     Write safely to file streams, sockets and callables.
 
@@ -237,20 +253,23 @@ def writer(
     if isinstance(stream, (str, Path)):
         if chunk_size != 0x100000:
             raise ValueError('chunk_size only applies to streams')
-        return open(
-            stream,
-            'wb' if is_binary else 'w',
-            delete_failures=delete_failures,
-            temp_file=temp_file,
-            dry_run=dry_run,
-            enabled=enabled,
+        return t.cast(
+            t.TextIO | t.BinaryIO,
+            open(
+                stream,
+                'wb' if is_binary else 'w',
+                delete_failures=delete_failures,
+                temp_file=temp_file,
+                dry_run=dry_run,
+                enabled=enabled,
+            ),
         )
 
     stream = stream or sys.stdout
     if not enabled:
-        return stream
+        return t.cast(t.TextIO | t.BinaryIO | Write, stream)
 
-    write: t.Callable | None
+    write: Write | None
 
     if close_on_exit and stream in (sys.stdout, sys.stderr):
         raise ValueError('You cannot close stdout or stderr')
@@ -269,10 +288,12 @@ def writer(
             if temp_file and BUG_MESSAGE:
                 raise NotImplementedError(BUG_MESSAGE)
 
-            def write(v):
+            def close_write(v: str | bytes) -> object:
                 assert isinstance(stream, t.ContextManager), (stream, type(stream))
                 with stream:
-                    stream.write(v)
+                    return t.cast(Write, stream.write)(v)
+
+            write = close_write
 
         else:
             write = getattr(stream, 'write', None)
@@ -297,15 +318,16 @@ def writer(
             if not (is_binary is None or is_binary is True):
                 raise ValueError('is_binary=False is inconsistent with a socket')
 
-            write = send
+            write = t.cast(Write, send)
             is_binary = True
 
         elif callable(stream):
-            write = stream
+            write = t.cast(Write, stream)
 
         else:
             raise ValueError('Stream is not a file, a socket, or callable')
 
+        assert write is not None
         closer: _StreamCloser
 
         if temp_file:
@@ -321,9 +343,9 @@ def writer(
             closer = _MemoryStreamCloser(write, close_on_exit, is_binary)
 
         if send is write:
-            closer.fp.send = write
+            t.cast(_SocketStream, closer.fp).send = write
 
-        return closer.fp
+        return t.cast(t.TextIO | t.BinaryIO, closer.fp)
 
     except Exception:
         if close_on_exit:
@@ -348,7 +370,7 @@ def open(
     make_parents: bool = False,
     delete_failures: bool = True,
     temp_file: bool | str | Path = False,
-    dry_run: bool | t.Callable = False,
+    dry_run: DryRun = False,
     enabled: bool = True,
 ) -> t.IO:
     """
@@ -445,7 +467,7 @@ def open(
 
         fp = _MemoryStreamCloser(write, True, is_binary).fp
         fp.mode = mode
-        return fp
+        return t.cast(t.IO, fp)
 
     if not closefd:
         raise ValueError('Cannot use closefd=False with file name')
@@ -485,7 +507,12 @@ def closer(
     ARGUMENTS
       Same as for `safer.writer()`
     """
-    return writer(stream, is_binary, close_on_exit, **kwds)
+    return writer(
+        t.cast(t.TextIO | t.BinaryIO | Write, stream),
+        is_binary,
+        close_on_exit,
+        **kwds,
+    )
 
 
 def dump(
@@ -529,7 +556,8 @@ def dump(
 
     dump = _get_dumper(dump or Path(name).suffix[1:])
 
-    with t.cast(t.IO, writer(stream)) as fp:
+    writer_stream = t.cast(t.TextIO | t.BinaryIO | Write | Path | str | None, stream)
+    with t.cast(t.IO, writer(writer_stream)) as fp:
         if is_binary:
             write = fp.write
             fp.write = lambda s: write(s.encode('utf-8'))  # type: ignore
@@ -539,18 +567,15 @@ def dump(
 
 def _get_dumper(dump: t.Any) -> t.Callable:
     if isinstance(dump, str):
-        if not dump:
-            dump = 'json'
-        elif dump == 'yml':
-            dump = 'yaml'
+        module_name = 'json' if not dump else 'yaml' if dump == 'yml' else dump
 
         try:
-            dump = __import__(dump)
+            dump = importlib.import_module(module_name)
         except ImportError:
-            if '.' not in dump:
+            if '.' not in module_name:
                 raise
-            mod, name = dump.rsplit('.', maxsplit=1)
-            dump = getattr(__import__(mod), name)
+            mod, name = module_name.rsplit('.', maxsplit=1)
+            dump = getattr(importlib.import_module(mod), name)
 
     if callable(dump):
         return dump
@@ -584,7 +609,9 @@ def printer(
 
 
 class _Closer:
-    def close(self, parent_close):
+    fp: _SafeStream
+
+    def close(self, parent_close: t.Callable[[_SafeStream], object]) -> None:
         try:
             parent_close(self.fp)
         except Exception:  # pragma: no cover
@@ -602,26 +629,27 @@ class _Closer:
                 traceback.print_exc()
             raise
 
-    def _close(self, failed):
+    def _close(self, failed: bool) -> None:
         if failed:
             self._failure()
         else:
             self._success()
 
-    def _success(self):
+    def _success(self) -> None:
         raise NotImplementedError
 
-    def _failure(self):
+    def _failure(self) -> None:
         pass
 
     def _wrap(self, stream_cls):
         @functools.wraps(stream_cls)
         def wrapped(*args, **kwargs):
             wrapped_cls = _wrap_class(stream_cls)
-            self.fp = wrapped_cls(*args, **kwargs)
-            self.fp.safer_closer = self
-            self.fp.safer_failed = False
-            return self.fp
+            fp = t.cast(_SafeStream, wrapped_cls(*args, **kwargs))
+            self.fp = fp
+            fp.safer_closer = self
+            fp.safer_failed = False
+            return fp
 
         return wrapped
 
@@ -746,7 +774,7 @@ class _MemoryStreamCloser(_StreamCloser):
         assert fp == self.fp
 
     def close(self, parent_close=None):
-        self.value = self.fp.getvalue()
+        self.value = t.cast(io.StringIO | io.BytesIO, self.fp).getvalue()
         super().close(parent_close)
 
     def _success(self):
