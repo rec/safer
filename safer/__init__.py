@@ -670,9 +670,6 @@ class _FileRenameCloser(_FileCloser):
         self.target_file = target_file
         self.dry_run = dry_run
         self.is_binary = is_binary
-        if temp_file is True:
-            parent, file = os.path.split(target_file)
-            temp_file = os.path.join(parent, f'.{file}.tmp-safer')
 
         super().__init__(temp_file, delete_failures, parent)
 

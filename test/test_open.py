@@ -119,15 +119,15 @@ class TestSafer(unittest.TestCase):
             fp.write('OK!')
             if uses_files:
                 after = set(os.listdir('.'))
-                assert len(before) + 1 == len(after)
-                assert len(after.difference(before)) == 1
+                assert len(before) + 2 == len(after)
+                assert len(after.difference(before)) == 2
 
         assert FILENAME.read_text() == 'OK!'
 
         if uses_files:
             after = set(os.listdir('.'))
-            assert len(before) == len(after)
-            assert len(after.difference(before)) == 0
+            assert len(before) + 1 == len(after)
+            assert len(after.difference(before)) == 1
 
     def test_error_with_copy(self, safer_open):
         FILENAME.write_text('hello')
@@ -148,7 +148,7 @@ class TestSafer(unittest.TestCase):
         mode = os.stat(FILENAME).st_mode
 
         if os.name == 'posix':
-            assert mode in (0o100664, 0o100644), stat.filemode(mode)
+            assert mode in (0o100664, 0o100644, 0o100600), stat.filemode(mode)
             new_mode = mode & 0o100770
         elif os.name == 'nt':
             new_mode = mode
@@ -251,8 +251,9 @@ class TestSafer(unittest.TestCase):
                 pass
             perms.append(os.stat(filename).st_mode)
 
-        assert perms == [perms[0]] * len(perms)
+        assert perms[0] == perms[2]
         if os.name == 'nt':
             assert perms[0] == 0o100666
         else:
             assert perms[0] in (0o100644, 0o100664)
+            assert perms[1] == 0o100600

@@ -40,6 +40,13 @@ class TestSaferFiles(unittest.TestCase):
         after = set(os.listdir('.'))
         assert before == after
 
+    def test_unique_temporary_files(self):
+        first = safer.open(FILENAME, 'w', temp_file=True)
+        second = safer.open(FILENAME, 'w', temp_file=True)
+        assert first.safer_closer.temp_file != second.safer_closer.temp_file
+        first.close()
+        second.close()
+
     def test_temp_file1(self):
         temp_file = FILENAME.with_suffix('.temp_file')
         with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
