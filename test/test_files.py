@@ -54,6 +54,18 @@ class TestSaferFiles(unittest.TestCase):
         first.close()
         second.close()
 
+    def test_dry_run_uses_requested_encoding(self):
+        results = []
+        with safer.open(
+            FILENAME,
+            'w',
+            encoding='latin-1',
+            dry_run=results.append,
+            temp_file=True,
+        ) as fp:
+            fp.write('é')
+        assert results == ['é']
+
     def test_temp_file1(self):
         temp_file = FILENAME.with_suffix('.temp_file')
         with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:

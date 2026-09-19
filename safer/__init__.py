@@ -497,7 +497,15 @@ def open(
         buffering = io.DEFAULT_BUFFER_SIZE
 
     closer = _FileRenameCloser(
-        name, temp_file, delete_failures, parent, dry_run, is_binary
+        name,
+        temp_file,
+        delete_failures,
+        parent,
+        dry_run,
+        is_binary,
+        encoding,
+        errors,
+        newline,
     )
 
     if is_copy and os.path.exists(name):
@@ -733,10 +741,16 @@ class _FileRenameCloser(_FileCloser):
         parent,
         dry_run,
         is_binary,
+        encoding,
+        errors,
+        newline,
     ):
         self.target_file = target_file
         self.dry_run = dry_run
         self.is_binary = is_binary
+        self.encoding = encoding
+        self.errors = errors
+        self.newline = newline
 
         super().__init__(temp_file, delete_failures, parent)
 
@@ -747,7 +761,14 @@ class _FileRenameCloser(_FileCloser):
             os.replace(self.temp_file, self.target_file)
 
         elif callable(self.dry_run):
-            with open(self.temp_file, 'rb' if self.is_binary else 'r') as fp:
+            kwargs = {}
+            if not self.is_binary:
+                kwargs = dict(
+                    encoding=self.encoding,
+                    errors=self.errors,
+                    newline=self.newline,
+                )
+            with open(self.temp_file, 'rb' if self.is_binary else 'r', **kwargs) as fp:
                 self.dry_run(fp.read())
 
 
