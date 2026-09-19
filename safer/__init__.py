@@ -232,10 +232,13 @@ def writer(
       enabled: If `enabled` is falsey, the stream is returned unchanged
     """
     if isinstance(stream, (str, Path)):
+        if chunk_size != 0x100000:
+            raise ValueError('chunk_size only applies to streams')
         return open(
             stream,
             'wb' if is_binary else 'w',
             delete_failures=delete_failures,
+            temp_file=temp_file,
             dry_run=dry_run,
             enabled=enabled,
         )

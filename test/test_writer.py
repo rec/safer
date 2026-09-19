@@ -137,6 +137,17 @@ class TestWriter(unittest.TestCase):
             FILENAME.write_text('')
             assert FILENAME.read_text() == ''
 
+    def test_path_temporary_file(self, safer_writer):
+        with safer_writer(FILENAME, temp_file=True) as fp:
+            assert Path(fp.safer_closer.temp_file).exists()
+            fp.write('one')
+        assert FILENAME.read_text() == 'one'
+
+    def test_path_chunk_size(self, safer_writer):
+        with self.assertRaises(ValueError) as e:
+            safer_writer(FILENAME, chunk_size=1)
+        assert e.exception.args[0] == 'chunk_size only applies to streams'
+
     def test_socket(self, safer_writer):
         sock = helpers.socket()
         with safer_writer(sock) as fp:
