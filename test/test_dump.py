@@ -74,6 +74,11 @@ class TestDump(TestCase):
             actual = yaml.safe_load(fp)
         assert data == actual
 
+    def test_binary_encoding(self):
+        sock = helpers.socket()
+        safer.dump({'letter': 'é'}, sock, encoding='latin-1', ensure_ascii=False)
+        assert b''.join(sock.items) == b'{"letter": "\xe9"}'
+
 
 def _test(load=json.load, dumps=DUMPS, tests=TESTS):
     for dump in dumps:

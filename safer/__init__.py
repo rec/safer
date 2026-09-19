@@ -535,6 +535,7 @@ def dump(
     obj,
     stream: t.Callable | None | t.IO | Path | str = None,
     dump: t.Any = None,
+    encoding: str = 'utf-8',
     **kwargs,
 ) -> t.Any:
     """
@@ -575,10 +576,20 @@ def dump(
     writer_stream = t.cast(t.TextIO | t.BinaryIO | Write | Path | str | None, stream)
     with t.cast(t.IO, writer(writer_stream)) as fp:
         if is_binary:
-            write = fp.write
-            fp.write = lambda s: write(s.encode('utf-8'))  # type: ignore
+            fp = _EncodedWriter(fp, encoding)
 
-        return dump(obj, fp)
+        return dump(obj, fp, **kwargs)
+
+
+class _EncodedWriter:
+    def __init__(self, stream: t.IO, encoding: str):
+        self.stream = stream
+        self.encoding = encoding
+
+    def write(self, value: str) -> int:
+        if not isinstance(value, str):
+            raise TypeError('A binary serializer must write text')
+        return t.cast(t.BinaryIO, self.stream).write(value.encode(self.encoding))
 
 
 def _get_dumper(dump: t.Any) -> t.Callable:
