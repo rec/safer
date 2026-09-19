@@ -47,6 +47,10 @@ preserved across delayed replacement.
 `safer` does not fsync the replacement file or its directory. A successful
 close is therefore not a power-loss durability guarantee.
 
+When replacing an existing file, `safer` preserves its mode bits. It does not
+preserve ownership, ACLs, extended attributes, or other platform-specific
+metadata.
+
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
