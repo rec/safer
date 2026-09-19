@@ -2,6 +2,10 @@ version = 1
 revision = 3
 requires-python = ">=3.10"
 
+[options]
+exclude-newer = "2026-09-12T11:40:17.195214Z"
+exclude-newer-span = "P1W"
+
 [[package]]
 name = "colorama"
 version = "0.4.6"
@@ -348,7 +352,7 @@ wheels = [
 
 [[package]]
 name = "safer"
-version = "5.4.0"
+version = "6.0.0"
 source = { editable = "." }
 
 [package.dev-dependencies]
