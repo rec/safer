@@ -18,20 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 14. P2: Closing an outer safer stream can commit during an inner failure
-
-Source: `safer/__init__.py:302-306,670-674,816-818`.
-
-Wrapping a safer file stream in `closer()` calls the outer stream's `.close()`
-even when the inner wrapper failed. The callback ignores its `failed` argument,
-and the outer stream may still have `safer_failed=False`. If the caller catches
-the inner error, the outer stream may already have committed earlier contents.
-Existing nested tests use non-owning `writer()` and miss this case.
-
-Suggested resolution: specify ownership/failure propagation when wrapping a
-transactional stream. Regression: nested owned contexts do not publish a target
-on an inner failure contrary to their documented contract.
-
 ### 15. P2: Failure state can be reset by a successful context exit
 
 Source: `safer/__init__.py:702-704`.

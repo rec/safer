@@ -297,6 +297,8 @@ def writer(
     if close_on_exit and (hasattr(stream, 'write') or hasattr(stream, 'send')):
 
         def close_stream(failed: bool) -> object:
+            if failed and hasattr(stream, 'safer_failed'):
+                t.cast(_SafeStream, stream).safer_failed = True
             return t.cast(_Closable, stream).close()
 
         close_callback = close_stream

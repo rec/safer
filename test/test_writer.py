@@ -340,6 +340,19 @@ def test_owned_destination_closes_once(temp_file):
     assert destination.calls == 1
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_inner_owned_failure_aborts_outer_file(temp_file):
+    FILENAME.write_text('original')
+    with safer.open(FILENAME, 'w') as outer:
+        outer.write('header')
+        with pytest.raises(ValueError):
+            with safer.closer(outer, temp_file=temp_file) as inner:
+                inner.write('body')
+                raise ValueError
+    assert FILENAME.read_text() == 'original'
+
+
 @tdir
 def test_stream_failure_cleans_temporary_file():
     def fail(value):
