@@ -185,6 +185,19 @@ class TestWriter(unittest.TestCase):
                 raise ValueError
         assert sock.items == []
 
+    def test_socket_send_is_buffered(self, safer_writer):
+        sock = helpers.socket()
+        with safer_writer(sock) as fp:
+            assert fp.send(b'one') == 3
+            assert sock.items == []
+        assert sock.items == [b'one']
+
+        with self.assertRaises(ValueError):
+            with safer_writer(sock) as fp:
+                fp.send(b'two')
+                raise ValueError
+        assert sock.items == [b'one']
+
     def test_socket_binary_error(self, safer_writer):
         sock = helpers.socket()
         with self.assertRaises(ValueError) as m:

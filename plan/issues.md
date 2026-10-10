@@ -16,19 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 2. P1: Socket `.send()` bypasses the safer buffer
-
-Source: `safer/__init__.py:330-362`.
-
-The returned socket wrapper gets `send = write`, where `write` is the original
-socket's bound `send`. Calling the natural socket API `fp.send(b'payload')`
-sends immediately, even if the context subsequently fails. The current socket
-tests exclusively call `fp.write()` and miss this escape from the guarantee.
-
-Suggested resolution: route the supported `send` method through the buffer,
-with an explicit contract for socket flags and return counts. Regression:
-calling `.send()` followed by a context exception sends nothing.
-
 ### 3. P1: An explicit temporary path can alias the target or another file
 
 Source: `safer/__init__.py:506-521,720-759`.

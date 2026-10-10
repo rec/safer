@@ -238,6 +238,9 @@ def writer(
       close_on_exit: If True, the underlying stream is closed when the writer
         closes
 
+      Socket wrappers support `send(data)` as buffered `write(data)`; socket
+        flags are not supported. The returned count is bytes buffered, not sent.
+
       temp_file: If `temp_file` is truthy, write to a disk file and use
           os.replace() at the end, otherwise cache the writes in memory.
 
@@ -359,7 +362,9 @@ def writer(
             )
 
         if send is write:
-            t.cast(_SocketStream, closer.fp).send = write
+            t.cast(_SocketStream, closer.fp).send = t.cast(
+                Write, t.cast(t.IO, closer.fp).write
+            )
 
         return t.cast(t.TextIO | t.BinaryIO, closer.fp)
 
