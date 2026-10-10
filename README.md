@@ -147,6 +147,11 @@ property `fp.safer_failed` on the stream is automatically set to `True`.
 And when `fp.close()` is called, the cached data is stored in `filename` -
 *unless* `fp.safer_failed` is true.
 
+Use a context manager or explicitly close each wrapper. Abandoned wrappers
+abort on garbage collection; they never publish buffered output implicitly.
+Cleanup timing is not guaranteed, and forced process termination may leave
+scratch files behind.
+
 ### Example: `safer.printer()`
 
 `safer.printer()` is similar to `safer.open()` except it yields a function

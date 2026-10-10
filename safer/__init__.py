@@ -141,6 +141,11 @@ property `fp.safer_failed` on the stream is automatically set to `True`.
 And when `fp.close()` is called, the cached data is stored in `filename` -
 *unless* `fp.safer_failed` is true.
 
+Use a context manager or explicitly close each wrapper. Abandoned wrappers
+abort on garbage collection; they never publish buffered output implicitly.
+Cleanup timing is not guaranteed, and forced process termination may leave
+scratch files behind.
+
 ### Example: `safer.printer()`
 
 `safer.printer()` is similar to `safer.open()` except it yields a function
@@ -742,13 +747,17 @@ def _wrap_class(stream_cls):
     def close(self):
         self.safer_closer.close(stream_cls.close)
 
+    def finalize(self):
+        self.safer_failed = True
+        self.close()
+
     @functools.wraps(stream_cls.write)
     def write(self, value):
         result = stream_cls.write(self, value)
         self.safer_closer._record(value)
         return result
 
-    members = {'__exit__': exit, 'close': close, 'write': write}
+    members = {'__exit__': exit, '__del__': finalize, 'close': close, 'write': write}
     return type('Safer' + stream_cls.__name__, (stream_cls,), members)
 
 

@@ -1,3 +1,4 @@
+import gc
 import os
 import shutil
 import unittest
@@ -9,6 +10,18 @@ import tdir
 import safer
 
 FILENAME = Path('one')
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_abandoned_file_aborts_without_publishing(temp_file):
+    FILENAME.write_text('original')
+    fp = safer.open(FILENAME, 'w', temp_file=temp_file)
+    fp.write('replacement')
+    del fp
+    gc.collect()
+    assert FILENAME.read_text() == 'original'
+    assert list(Path('.').iterdir()) == [FILENAME]
 
 
 @pytest.mark.parametrize('temp_file', [False, True])

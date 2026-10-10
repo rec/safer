@@ -18,22 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 16. P2: Abandoned streams have ambiguous commit and cleanup semantics
-
-Source: `safer/__init__.py:685-717,838-852`; README close/context examples.
-
-Wrappers inherit IO finalization and participate in cycles through the closer.
-Abandoning one without explicit close leaves publication timing dependent on
-garbage collection; inherited finalization can call the overridden close and
-commit buffered data. Interpreter shutdown and forcibly terminated processes
-cannot provide orderly cleanup. The docs explain explicit close but do not
-state an abandonment policy.
-
-Suggested resolution: document mandatory context/close ownership and decide
-whether implicit destruction should abort rather than commit. Regression:
-exercise the chosen garbage-collection behavior separately from hard-kill
-limitations, which should remain documented rather than promised away.
-
 ### 17. P2: Cleanup can run twice and emit a secondary traceback
 
 Source: `safer/__init__.py:661-668,729-733`.
