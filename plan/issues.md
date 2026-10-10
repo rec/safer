@@ -20,20 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 20. P2: Close may block indefinitely or do quadratic replay work
-
-Source: `safer/__init__.py:221-223,824-835`; release workflow test job.
-
-A blocking socket or callback can hang context exit. There are no internal
-locks, so no lock-order deadlock was found, but this is a real loss-of-liveness
-boundary. Repeated short writes also slice the whole remaining value each time;
-one-byte acceptance of a large memory buffer can cause quadratic copying.
-
-Suggested resolution: document caller-owned timeout/cancellation policies and
-use efficient offsets/views where the destination accepts them. Avoid automatic
-network retry after partial delivery. Regression: bounded short-write replay;
-test jobs should have an explicit timeout if hang tests are introduced.
-
 ### 21. P2: Disk-buffered stream replay can alter text line endings
 
 Source: `safer/__init__.py:871-879`.

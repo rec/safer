@@ -227,6 +227,8 @@ def writer(
     Because the actual writing happens at the end, it's possible to block
     indefinitely when the context exits if the underlying socket, stream or
     callable does!
+    Configure socket timeouts or callback cancellation before wrapping a
+    destination. safer does not reconnect or retry failed delivery.
 
     Raw IO and socket destinations must report accepted bytes; a raw IO
     result of None means no progress. For callbacks and custom writers, None
@@ -909,17 +911,22 @@ class _StreamCloser(_Closer):
             self.write(value)
             return
 
-        while value:
-            written = self.write(value)
+        offset = 0
+        window = len(value)
+        while offset < len(value):
+            block = value if offset == 0 else value[offset : offset + window]
+            written = self.write(block)
             if written is None:
                 if self.allow_none:
-                    return
-                raise BlockingIOError('The destination made no write progress')
-            if type(written) is not int or written > len(value):
+                    written = len(block)
+                else:
+                    raise BlockingIOError('The destination made no write progress')
+            if type(written) is not int or written > len(block):
                 raise ValueError('The destination returned an invalid write count')
             if written <= 0:
                 raise BlockingIOError('The destination made no write progress')
-            value = value[written:]
+            offset += written
+            window = written
 
 
 class _MemoryStreamCloser(_StreamCloser):

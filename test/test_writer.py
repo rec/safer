@@ -219,15 +219,16 @@ class TestWriter(unittest.TestCase):
         results = []
 
         def callback(s):
-            results.append(s)
-            return min(len(s), 2)
+            accepted = min(len(s), 2)
+            results.append(s[:accepted])
+            return accepted
 
         with safer_writer(callback) as fp:
             fp.write('one')
             fp.write('two')
             fp.write('!')
 
-        assert results == ['onetwo!', 'etwo!', 'wo!', '!']
+        assert ''.join(results) == 'onetwo!'
 
     def test_zero_length_write_result(self, safer_writer):
         with self.assertRaises(BlockingIOError):
