@@ -261,8 +261,8 @@ def writer(
           file, otherwise select one in the same directory as the target
           file, or in the system tempfile for streams that aren't files.
 
-      chunk_size: Chunk size, in bytes for transfer data from the temporary
-          file to the underlying stream.
+      chunk_size: Transfer size from the temporary file to the destination,
+          measured in bytes for binary streams and characters for text streams.
 
       delete_failures: If false, any temporary files created are not deleted
         if there is an exception.
@@ -969,12 +969,18 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
 
         with contextlib.ExitStack() as cleanup:
             cleanup.callback(self._failure)
-            self.fp = self._make_stream(-1, mode)
+            kwargs = {} if is_binary else dict(encoding='utf-8', newline='')
+            self.fp = self._make_stream(-1, mode, **kwargs)
             cleanup.pop_all()
 
     def _success(self):
         mode = 'rb' if self.is_binary else 'r'
-        with open(self.temp_file, mode) as fp:
+        with open(
+            self.temp_file,
+            mode,
+            encoding=None if self.is_binary else 'utf-8',
+            newline=None if self.is_binary else '',
+        ) as fp:
             while True:
                 data = fp.read(self.chunk_size)
                 if not data:

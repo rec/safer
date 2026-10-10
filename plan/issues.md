@@ -20,20 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 21. P2: Disk-buffered stream replay can alter text line endings
-
-Source: `safer/__init__.py:871-879`.
-
-The scratch text file is reopened in ordinary read mode with universal newline
-translation. Literal `\r\n` or `\r` written into the buffer can become `\n`
-before reaching the destination. The memory-backed writer preserves those
-characters. Text chunk sizes also count characters, although documented as
-bytes.
-
-Suggested resolution: choose explicit encoding/newline rules for scratch
-round trips and correct chunk-size units. Regression: callbacks receive the
-same mixed-newline Unicode text from both buffering paths.
-
 ### 22. P2: Binary streams without a `.mode` attribute are inferred as text
 
 Source: `safer/__init__.py:311-325,570-586,839-842`.

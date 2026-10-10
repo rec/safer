@@ -245,6 +245,16 @@ def test_wrapper_bug():
 
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
+def test_stream_replay_preserves_unicode_and_mixed_newlines(temp_file):
+    values = []
+    text = 'é\r\n🧿\rone\ntwo'
+    with safer.writer(values.append, temp_file=temp_file, chunk_size=2) as fp:
+        fp.write(text)
+    assert ''.join(values) == text
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
 def test_nonblocking_stream_none_is_no_progress(temp_file):
     class Destination(io.RawIOBase):
         def write(self, value):
