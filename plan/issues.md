@@ -22,19 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 28. P2: `dry_run` can modify directories and does not fully preview errors
-
-Source: `safer/__init__.py:460-488,506-521`.
-
-`make_parents=True` creates real directories before dry-run is considered.
-Disk-backed dry-runs also write real scratch data. Memory-backed dry-runs skip
-the real opener/encoding validation, so a preview can succeed while execution
-fails. These behaviors need a precise definition of the user-facing promise.
-
-Suggested resolution: document which side effects and validations are part of
-dry-run, and make required preflight checks consistent. Regression: directory
-and codec behavior match that contract.
-
 ### 29. P2: `enabled=False` does not provide a uniform bypass
 
 Source: `safer/__init__.py:261-282,438-475`.

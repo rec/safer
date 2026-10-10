@@ -427,9 +427,11 @@ def open(
          file, otherwise select one in the same directory as the target
          file, or in the system tempfile for streams that aren't files.
 
-      dry_run: If `dry_run` is truthy, the file is not written at all
-         If `dry_run` is also callable, the results are passed to `dry_run()`
-         rather than being written.
+      dry_run: True or a callable prevents publication to the target file.
+         A callable receives the final buffered contents. make_parents still
+         creates directories, and disk buffering still writes scratch data.
+         IO options are validated, but a preview does not check target write
+         permissions, replacement success, or whether its text is encodable.
 
       enabled:
          If `enabled` is falsey, safer is entirely bypassed, and
@@ -905,7 +907,7 @@ class _FileRenameCloser(_FileCloser):
         super().__init__(temp_file, delete_failures, parent)
 
     def _success(self):
-        if not self.dry_run:
+        if not self.dry_run and not callable(self.dry_run):
             if os.path.exists(self.target_file):
                 shutil.copymode(self.target_file, self.temp_file)
             if self.exclusive:
@@ -925,7 +927,7 @@ class _FileRenameCloser(_FileCloser):
                 value = fp.read()
             self.dry_run(value)
 
-        if self.dry_run:
+        if self.dry_run or callable(self.dry_run):
             os.remove(self.temp_file)
 
 

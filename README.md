@@ -72,6 +72,12 @@ metadata.
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
+A dry-run prevents target publication, not all filesystem activity:
+`make_parents=True` creates directories and disk buffering writes scratch files.
+Modes, codecs, and IO options are checked before allocation. A preview does not
+prove target permissions, replacement success, or text encodability. A text
+callback receives logical text, before destination encoding/newline translation.
+
 A callable dry-run receives the final complete buffered value. Disk buffering
 keeps writes on disk until that value is read for the callback; receiving the
 whole value still requires memory proportional to the final output.

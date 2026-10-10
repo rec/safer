@@ -13,6 +13,29 @@ FILENAME = Path('one')
 
 
 @pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_dry_run_creates_requested_parents_but_not_target(temp_file):
+    class Preview:
+        def __init__(self):
+            self.values = []
+
+        def __bool__(self):
+            return False
+
+        def __call__(self, value):
+            self.values.append(value)
+
+    preview = Preview()
+    with safer.open(
+        'missing/file', 'w', make_parents=True, temp_file=temp_file, dry_run=preview
+    ) as fp:
+        fp.write('preview')
+    assert preview.values == ['preview']
+    assert Path('missing').is_dir()
+    assert list(Path('missing').iterdir()) == []
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
 @pytest.mark.parametrize(
     'options',
     [
