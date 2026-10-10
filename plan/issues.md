@@ -16,22 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 1. P1: Default file finalization can destroy the original on failure
-
-Source: `safer/__init__.py:467-488` (`simple_write`).
-
-The memory-backed path opens the real target in its requested mode at close,
-then writes into it. In `w` mode, opening truncates the original before encoding,
-writing, or flushing completes. A Unicode encoding error, disk-full error,
-quota failure, or interrupted final write can therefore leave an empty or
-partial file. The unqualified documentation that the original is unchanged on
-failure is stronger than this implementation.
-
-Suggested resolution: explicitly decide whether memory buffering must also
-publish through a sibling temporary file, or narrow its guarantee to failures
-inside the user context. A guarantee change needs an API/design decision.
-Regression: preserve an existing target when final encoding or writing fails.
-
 ### 2. P1: Socket `.send()` bypasses the safer buffer
 
 Source: `safer/__init__.py:330-362`.

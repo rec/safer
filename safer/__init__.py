@@ -467,8 +467,21 @@ def open(
     def simple_open():
         return __builtins__['open'](name, mode, buffering, **kwargs)
 
-    def simple_write(value):
-        with simple_open() as fp:
+    def simple_write(value: str | bytes) -> None:
+        with open(
+            name,
+            mode.replace('x', 'w'),
+            buffering,
+            temp_file=True,
+            delete_failures=delete_failures,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+            opener=opener,
+        ) as fp:
+            t.cast(
+                _FileRenameCloser, t.cast(_SafeStream, fp).safer_closer
+            ).exclusive = 'x' in mode
             fp.write(value)
 
     if is_read or not enabled:
@@ -760,6 +773,8 @@ class _FileCloser(_Closer):
 
 
 class _FileRenameCloser(_FileCloser):
+    exclusive: bool = False
+
     def __init__(
         self,
         target_file,
@@ -787,7 +802,11 @@ class _FileRenameCloser(_FileCloser):
         if not self.dry_run:
             if os.path.exists(self.target_file):
                 shutil.copymode(self.target_file, self.temp_file)
-            os.replace(self.temp_file, self.target_file)
+            if self.exclusive:
+                os.link(self.temp_file, self.target_file)
+                os.remove(self.temp_file)
+            else:
+                os.replace(self.temp_file, self.target_file)
 
         elif callable(self.dry_run):
             if self.is_binary:

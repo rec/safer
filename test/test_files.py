@@ -2,11 +2,39 @@ import os
 import unittest
 from pathlib import Path
 
+import pytest
 import tdir
 
 import safer
 
 FILENAME = Path('one')
+
+
+@tdir
+def test_memory_encoding_failure_preserves_original():
+    FILENAME.write_text('original')
+    before = set(Path('.').iterdir())
+    with pytest.raises(UnicodeEncodeError):
+        with safer.open(FILENAME, 'w', encoding='ascii') as fp:
+            fp.write('é')
+    assert FILENAME.read_text() == 'original'
+    assert set(Path('.').iterdir()) == before
+
+
+@tdir
+def test_memory_replacement_failure_preserves_original(monkeypatch):
+    FILENAME.write_text('original')
+    before = set(Path('.').iterdir())
+
+    def fail(source, target):
+        raise OSError('replacement failed')
+
+    monkeypatch.setattr(os, 'replace', fail)
+    with pytest.raises(OSError, match='replacement failed'):
+        with safer.open(FILENAME, 'w') as fp:
+            fp.write('replacement')
+    assert FILENAME.read_text() == 'original'
+    assert set(Path('.').iterdir()) == before
 
 
 @tdir

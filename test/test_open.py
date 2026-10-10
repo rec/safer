@@ -257,9 +257,10 @@ class TestSafer(unittest.TestCase):
                 pass
             perms.append(os.stat(filename).st_mode)
 
-        assert perms[0] == perms[2]
         if os.name == 'nt':
+            assert perms[0] == perms[2]
             assert perms[0] == 0o100666
         else:
-            assert perms[0] in (0o100644, 0o100664)
+            assert perms[2] in (0o100644, 0o100664)
+            assert perms[0] == 0o100600
             assert perms[1] == 0o100600
