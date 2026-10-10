@@ -18,18 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 12. P2: Socket `close_on_exit` never closes the socket
-
-Source: `safer/__init__.py:300-306,330-335,816-822`.
-
-An explicit close callback is installed only for objects with `.write()`.
-Sockets take the `.send()` branch; the fallback looks for `.close()` on the
-bound send method, which has no such method. `closer(socket)` therefore does
-not perform its advertised ownership operation.
-
-Suggested resolution: retain the socket's close operation explicitly.
-Regression: successful and failed socket contexts close an owned socket.
-
 ### 13. P2: Disk-backed destination closing is not idempotent
 
 Source: `safer/__init__.py:649-652,813-822,845-849`.

@@ -24,9 +24,13 @@ def temps(opener):
 class socket:
     def __init__(self):
         self.items = []
+        self.closed = False
 
     def send(self, item):
         self.items.append(item)
 
     def recv(self):
         pass
+
+    def close(self):
+        self.closed = True

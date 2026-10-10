@@ -294,20 +294,19 @@ def writer(
     if dry_run:
         close_on_exit = False
 
+    if close_on_exit and (hasattr(stream, 'write') or hasattr(stream, 'send')):
+
+        def close_stream(failed: bool) -> object:
+            return t.cast(_Closable, stream).close()
+
+        close_callback = close_stream
+
     try:
         if callable(dry_run):
             write, dry_run = dry_run, True
 
         elif dry_run:
             write = len
-
-        elif close_on_exit and hasattr(stream, 'write'):
-
-            def close_stream(failed: bool) -> object:
-                return t.cast(_Closable, stream).close()
-
-            write = t.cast(Write, stream.write)
-            close_callback = close_stream
 
         else:
             write = getattr(stream, 'write', None)

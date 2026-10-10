@@ -282,6 +282,24 @@ def test_delivery_failure_closes_owned_destination(temp_file):
     assert destination.closed
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_owned_socket_closes_on_success_and_failure(temp_file):
+    sock = helpers.socket()
+    with safer.closer(sock, temp_file=temp_file) as fp:
+        fp.write(b'payload')
+    assert sock.closed
+    assert sock.items == [b'payload']
+
+    sock = helpers.socket()
+    with pytest.raises(ValueError):
+        with safer.closer(sock, temp_file=temp_file) as fp:
+            fp.write(b'payload')
+            raise ValueError
+    assert sock.closed
+    assert sock.items == []
+
+
 @tdir
 def test_close_writable_without_context_manager():
     class Writer:
