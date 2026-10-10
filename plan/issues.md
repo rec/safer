@@ -24,24 +24,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Serialization and typing
 
-### 34. P2: `dump` does not support arbitrary serialization protocols
-
-Source: `safer/__init__.py:563-588,596-620`.
-
-The docs say 'any serialization protocol', but the adapter requires serializers
-to write text. A genuine binary serializer such as `pickle.dump` cannot use a
-binary destination through this path. Non-path stream names can also be integers
-(file descriptors), causing `Path(name)` to fail when no explicit dumper is
-supplied, instead of falling back to JSON. Import fallback catches all
-ImportError from module import,
-including failures inside a module, and can replace the useful original error.
-
-Suggested resolution: specify the supported text-dumper protocol, validate
-extension inference only for path-like names, and preserve internal import
-failures.
-Regression: default JSON works with descriptor-named streams;
-unsupported binary dumpers fail with a clear explanation.
-
 ### 35. P2: Published type information misses supported APIs and hides errors
 
 Source: `safer/py.typed`; `safer/__init__.py:184-202,204-213,372-386,524-547`.

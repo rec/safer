@@ -1,6 +1,8 @@
 import functools
+import importlib
 import io
 import json
+import pickle
 from pathlib import Path
 from unittest import TestCase
 
@@ -12,6 +14,38 @@ import yaml
 import safer
 
 from . import helpers
+
+
+@tdir
+def test_descriptor_named_stream_defaults_to_json():
+    with Path('descriptor').open('wb') as owned:
+        with open(owned.fileno(), 'wb', closefd=False) as destination:
+            safer.dump({'value': 1}, destination)
+    assert json.loads(Path('descriptor').read_bytes()) == {'value': 1}
+
+
+def test_binary_serializer_rejection_leaves_destination_unchanged():
+    destination = io.BytesIO(b'original')
+    with pytest.raises(TypeError, match='text serializers only'):
+        safer.dump({'value': 1}, destination, dump=pickle.dump)
+    assert destination.getvalue() == b'original'
+
+
+@pytest.mark.parametrize(
+    'error',
+    [
+        ImportError('internal failure'),
+        ModuleNotFoundError('missing dependency', name='dependency'),
+    ],
+)
+def test_serializer_import_keeps_internal_failure(monkeypatch, error):
+    def broken(name):
+        raise error
+
+    monkeypatch.setattr(importlib, 'import_module', broken)
+    with pytest.raises(type(error)) as raised:
+        safer.dump(None, io.StringIO(), dump='serializer.dump')
+    assert raised.value is error
 
 
 @tdir

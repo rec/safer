@@ -105,8 +105,8 @@ whole value still requires memory proportional to the final output.
 * `safer.closer()` returns a stream like from `safer.writer()` that also
   closes the underlying stream or callable when it closes.
 
-* `safer.dump()` is like a safer `json.dump()` which can be used for any
-  serialization protocol, including Yaml and Toml, and also allows you to
+* `safer.dump()` supports serializers that write text, including JSON, YAML
+  and TOML (not binary protocols such as pickle), and also allows you to
   write to file streams or any other callable.
 
 * `safer.printer()` is `safer.open()` except that it yields a

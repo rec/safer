@@ -639,7 +639,7 @@ def dump(
     **kwargs,
 ) -> t.Any:
     """
-    Safely serialize `obj` as a formatted stream to `fp`` (a
+    Safely serialize `obj` with a text serializer to `fp` (a
     `.write()`-supporting file-like object, or a filename),
     using `json.dump` by default
 
@@ -674,7 +674,8 @@ def dump(
 
     is_binary = _stream_is_binary(stream)
 
-    dump = _get_dumper(dump or Path(name).suffix[1:])
+    extension = Path(name).suffix[1:] if isinstance(name, (str, os.PathLike)) else ''
+    dump = _get_dumper(dump or extension)
 
     writer_stream = t.cast(
         t.TextIO | t.BinaryIO | Write | os.PathLike[str] | str | None, stream
@@ -746,7 +747,9 @@ class _EncodedWriter:
 
     def write(self, value: str) -> int:
         if not isinstance(value, str):
-            raise TypeError('A binary serializer must write text')
+            raise TypeError(
+                'safer.dump supports text serializers only: write() requires str'
+            )
         t.cast(t.BinaryIO, self.stream).write(self.encoder.encode(value))
         return len(value)
 
@@ -778,8 +781,8 @@ def _get_dumper(dump: t.Any) -> t.Callable:
 
         try:
             dump = importlib.import_module(module_name)
-        except ImportError:
-            if '.' not in module_name:
+        except ModuleNotFoundError as error:
+            if '.' not in module_name or error.name != module_name:
                 raise
             mod, name = module_name.rsplit('.', maxsplit=1)
             dump = getattr(importlib.import_module(mod), name)
