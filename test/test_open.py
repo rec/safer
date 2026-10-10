@@ -50,7 +50,7 @@ class TestSafer(unittest.TestCase):
 
     def test_open_dry(self, safer_open):
         results = []
-        with safer.open(FILENAME, 'w', dry_run=results.append) as fp:
+        with safer_open(FILENAME, 'w', dry_run=results.append) as fp:
             fp.write('hello')
         assert not FILENAME.exists()
         assert results == ['hello']
@@ -79,7 +79,7 @@ class TestSafer(unittest.TestCase):
     def test_make_parents(self, safer_open):
         FILENAME = Path('foo/test.txt')
         with self.assertRaises(IOError):
-            with safer.open(FILENAME, 'w'):
+            with safer_open(FILENAME, 'w'):
                 pass
 
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
@@ -184,7 +184,7 @@ class TestSafer(unittest.TestCase):
 
         with open(FILENAME, 'rb') as fp:
             assert fp.read() == b'hello there'
-        with safer.open(FILENAME, 'rb') as fp:
+        with safer_open(FILENAME, 'rb') as fp:
             assert fp.read() == b'hello there'
 
     def test_basic_write(self, safer_open):
@@ -227,8 +227,9 @@ class TestSafer(unittest.TestCase):
     @skip_if_symlink_creation_forbidden
     def test_exclusive_open_rejects_dangling_symlink(self, safer_open):
         os.symlink('missing', FILENAME)
-        with self.assertRaises(FileExistsError):
-            safer.open(FILENAME, 'x')
+        error = FileExistsError if safer_open is safer.open else ValueError
+        with self.assertRaises(error):
+            safer_open(FILENAME, 'x')
         assert not Path('missing').exists()
         assert FILENAME.is_symlink()
 
@@ -245,7 +246,7 @@ class TestSafer(unittest.TestCase):
             fp.write('overwritten')
         assert FILENAME.read_text() == 'overwritten'
 
-    def test_file_exists_error(self, safer_open):
+    def test_overwrite_existing_file(self, safer_open):
         with safer_open(FILENAME, 'wt') as fp:
             fp.write('hello')
         assert FILENAME.read_text() == 'hello'
@@ -254,21 +255,23 @@ class TestSafer(unittest.TestCase):
             fp.write('goodbye')
         assert FILENAME.read_text() == 'goodbye'
 
-    def test_tempfile_perms(self, safer_open):
-        temp_files = False, True, 'three'
-        perms = []
-        for temp_file in temp_files:
-            filename = str(temp_file)
-            if isinstance(temp_file, str):
-                temp_file += '.tmpfile'
-            with safer_open(filename, 'w', temp_file=temp_file):
-                pass
-            perms.append(os.stat(filename).st_mode)
 
-        if os.name == 'nt':
-            assert perms[0] == perms[2]
-            assert perms[0] == 0o100666
-        else:
-            assert perms[2] in (0o100644, 0o100664)
-            assert perms[0] == 0o100600
-            assert perms[1] == 0o100600
+@tdir
+def test_tempfile_permissions():
+    temp_files = False, True, 'three'
+    perms = []
+    for temp_file in temp_files:
+        filename = str(temp_file)
+        if isinstance(temp_file, str):
+            temp_file += '.tmpfile'
+        with safer.open(filename, 'w', temp_file=temp_file):
+            pass
+        perms.append(os.stat(filename).st_mode)
+
+    if os.name == 'nt':
+        assert perms[0] == perms[2]
+        assert perms[0] == 0o100666
+    else:
+        assert perms[2] in (0o100644, 0o100664)
+        assert perms[0] == 0o100600
+        assert perms[1] == 0o100600

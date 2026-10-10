@@ -26,22 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 37. P3: The test matrix obscures which backend was actually exercised
-
-Source: `test/helpers.py:4-22`; `test/test_writer.py`, `test/test_open.py`.
-
-`temps()` manually invokes tearDown/setUp and runs two backends inside one test.
-If the first invocation fails, the second never runs; reports do not identify
-the backend. Several decorated tests ignore their supplied opener, so the
-same memory path runs twice instead of testing both. For example,
-`test_open_dry` directly uses `safer.open`, and `test_dry_run` ignores
-`safer_writer`. There are duplicate callable tests and a test named
-`test_file_exists_error` that only verifies ordinary overwrite success.
-
-Suggested resolution: use clearly labeled parameterized cases when modifying
-these tests, remove genuine duplication, and correct misleading test names.
-Do not remove intentional coverage of distinct buffering behavior.
-
 ### 38. P2: CI covers three operating systems but only Python 3.10
 
 Source: `.python-version`; `.github/workflows/release-tests.yml:17-26`;

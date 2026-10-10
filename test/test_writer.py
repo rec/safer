@@ -22,6 +22,7 @@ class TestWriter(unittest.TestCase):
         with safer_writer(results.append) as fp:
             fp.write('abc')
             fp.write('d')
+            assert results == []
         assert results == ['abcd']
 
     def test_callable_dry_run(self, safer_writer):
@@ -51,7 +52,7 @@ class TestWriter(unittest.TestCase):
 
     def test_nested_writers_dry_run(self, safer_writer):
         assert not FILENAME.exists()
-        with safer.open(FILENAME, 'w', dry_run=True) as fp1:
+        with safer_writer(FILENAME, dry_run=True) as fp1:
             assert not FILENAME.exists()
             fp1.write('one')
             with safer_writer(fp1, dry_run=True) as fp2:
@@ -64,7 +65,7 @@ class TestWriter(unittest.TestCase):
 
     def test_dry_run(self, safer_writer):
         assert not FILENAME.exists()
-        with safer.open(FILENAME, 'w', dry_run=True) as fp1:
+        with safer_writer(FILENAME, dry_run=True) as fp1:
             assert not FILENAME.exists()
             fp1.write('one')
             assert not FILENAME.exists()
@@ -83,7 +84,7 @@ class TestWriter(unittest.TestCase):
             with safer_writer(file) as fp:
                 fp.write('boo')
             with self.assertRaises(ValueError) as m:
-                safer.writer(file, close_on_exit=True)
+                safer_writer(file, close_on_exit=True)
             assert m.exception.args[0] == 'You cannot close stdout or stderr'
 
     def test_file_error(self, safer_writer):
@@ -205,15 +206,6 @@ class TestWriter(unittest.TestCase):
             safer_writer(sock, is_binary=False)
         a = m.exception.args[0]
         assert a == 'is_binary=False is inconsistent with a socket'
-
-    def test_callable2(self, safer_writer):
-        results = []
-        with safer_writer(results.append) as fp:
-            fp.write('one')
-            fp.write('two')
-            assert results == []
-
-        assert results == ['onetwo']
 
     def test_partial_writes(self, safer_writer):
         results = []

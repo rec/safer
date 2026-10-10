@@ -2,20 +2,25 @@ import functools
 
 
 def temps(opener):
-    def wrapper(fn):
+    """Generate independent unittest cases, each with its own fixture lifecycle."""
+
+    def wrapper(fn, selected):
         @functools.wraps(fn)
         def wrapped(self):
-            fn(self, opener)
-            self.tearDown()
-            self.setUp()
-            fn(self, functools.partial(opener, temp_file=True))
+            fn(self, selected)
 
         return wrapped
 
     def temps_class(cls):
-        for k, v in vars(cls).items():
+        for k, v in list(vars(cls).items()):
             if k.startswith('test_') and callable(v):
-                setattr(cls, k, wrapper(v))
+                delattr(cls, k)
+                setattr(cls, k + '_memory', wrapper(v, opener))
+                setattr(
+                    cls,
+                    k + '_disk',
+                    wrapper(v, functools.partial(opener, temp_file=True)),
+                )
         return cls
 
     return temps_class
