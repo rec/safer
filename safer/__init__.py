@@ -563,6 +563,9 @@ def open(
         newline,
     )
 
+    if callable(dry_run) and not is_binary:
+        kwargs['newline'] = ''
+
     with contextlib.ExitStack() as cleanup:
         cleanup.callback(closer._failure)
         if is_copy and os.path.exists(name):
@@ -870,10 +873,14 @@ class _FileRenameCloser(_FileCloser):
                 os.replace(self.temp_file, self.target_file)
 
         elif callable(self.dry_run):
-            if self.is_binary:
-                value = b''.join(self.dry_run_bytes)
-            else:
-                value = ''.join(self.dry_run_text)
+            with open(
+                self.temp_file,
+                'rb' if self.is_binary else 'r',
+                encoding=None if self.is_binary else self.encoding,
+                errors=None if self.is_binary else self.errors,
+                newline=None if self.is_binary else '',
+            ) as fp:
+                value = fp.read()
             self.dry_run(value)
 
         if self.dry_run:

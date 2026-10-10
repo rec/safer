@@ -14,6 +14,40 @@ FILENAME = Path('one')
 
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
+def test_dry_run_reports_final_contents_after_edits(temp_file):
+    values = []
+    with safer.open(FILENAME, 'w', temp_file=temp_file, dry_run=values.append) as fp:
+        fp.write('abc')
+        fp.seek(0)
+        fp.write('Z')
+        fp.truncate(2)
+    assert values == ['Zb']
+    assert not FILENAME.exists()
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_binary_dry_run_reports_byteslike_edits(temp_file):
+    values = []
+    with safer.open(FILENAME, 'wb', temp_file=temp_file, dry_run=values.append) as fp:
+        fp.write(memoryview(b'abc'))
+        fp.seek(1)
+        fp.write(bytearray(b'Z'))
+    assert values == [b'aZc']
+
+
+@tdir
+def test_update_dry_run_includes_original_contents():
+    FILENAME.write_text('abc')
+    values = []
+    with safer.open(FILENAME, 'r+', temp_file=True, dry_run=values.append) as fp:
+        fp.write('Z')
+    assert values == ['Zbc']
+    assert FILENAME.read_text() == 'abc'
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
 def test_abandoned_file_aborts_without_publishing(temp_file):
     FILENAME.write_text('original')
     fp = safer.open(FILENAME, 'w', temp_file=temp_file)

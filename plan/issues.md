@@ -22,21 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 25. P2: Callable file dry-runs return write history, not final contents
-
-Source: `safer/__init__.py:710-714,792-804`.
-
-Disk-backed dry-runs concatenate values passed to `write()`. Seeking backward,
-overwriting, truncating, or modifying `.buffer` is not reflected. For example,
-writing `abc`, seeking to zero, and writing `Z` reports `abcZ` rather than `Zbc`.
-Append/update copies are not represented either. The memory path reports its
-actual buffer contents. Accepted binary bytearray/memoryview values also do
-not satisfy the recorder's `isinstance(value, bytes)` classification.
-
-Suggested resolution: derive callback data from the final buffer using an
-explicit text/newline contract. Regression: seek, truncate, append/update, and
-supported bytes-like writes produce a defined callback result.
-
 ### 26. P2: Disk-backed callable dry-runs duplicate output in memory
 
 Source: `safer/__init__.py:781-782,792-804`.
