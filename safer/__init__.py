@@ -856,6 +856,8 @@ class _StreamCloser(_Closer):
         self.close_callback = close_callback
 
     def close(self, parent_close):
+        if self.closed:
+            return
         try:
             super().close(parent_close)
         finally:

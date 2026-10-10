@@ -18,18 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 13. P2: Disk-backed destination closing is not idempotent
-
-Source: `safer/__init__.py:649-652,813-822,845-849`.
-
-The base closer returns immediately when already closed, but the subclass
-continues to call the destination close callback after that return. The memory
-subclass has its own early guard; the disk-backed subclass does not. Repeated
-close can invoke a custom destination close callback repeatedly.
-
-Suggested resolution: guard the entire ownership/finalization operation.
-Regression: memory and disk-backed owned destinations receive one close call.
-
 ### 14. P2: Closing an outer safer stream can commit during an inner failure
 
 Source: `safer/__init__.py:302-306,670-674,816-818`.

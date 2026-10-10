@@ -320,6 +320,26 @@ def test_close_writable_without_context_manager():
     assert writer.closed
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_owned_destination_closes_once(temp_file):
+    class Destination:
+        calls = 0
+
+        def write(self, value):
+            return len(value)
+
+        def close(self):
+            self.calls += 1
+
+    destination = Destination()
+    fp = safer.closer(destination, temp_file=temp_file)
+    fp.write('payload')
+    fp.close()
+    fp.close()
+    assert destination.calls == 1
+
+
 @tdir
 def test_stream_failure_cleans_temporary_file():
     def fail(value):
