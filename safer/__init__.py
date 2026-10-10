@@ -336,7 +336,7 @@ def writer(
         mode = getattr(stream, 'mode', None)
 
         if write and mode:
-            if not set('w+a').intersection(mode):
+            if not set('w+ax').intersection(mode):
                 raise ValueError(f'Stream mode "{mode}" is not a write mode')
 
         elif write:

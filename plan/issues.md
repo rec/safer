@@ -20,17 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 23. P2: Valid exclusive-mode destination streams are rejected
-
-Source: `safer/__init__.py:314-316`.
-
-A file opened with built-in `open(path, 'x')` is writable, but its mode contains
-none of `w+a`. Passing that file to `writer` raises the read-mode error.
-
-Suggested resolution: recognize exclusive-write streams or check their
-writability through the appropriate IO interface. Regression: an already-open
-`x`/`xb` stream can be wrapped successfully.
-
 ### 24. P2: Partial delivery has no explicit post-failure state
 
 Source: `safer/__init__.py:649-668,824-835,875-882`.

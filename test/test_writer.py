@@ -243,6 +243,16 @@ def test_wrapper_bug():
     assert FILENAME.read_text() == 'hello, world'
 
 
+@pytest.mark.parametrize('mode, value', [('x', 'payload'), ('xb', b'payload')])
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_exclusive_destination_can_be_wrapped(mode, value, temp_file):
+    with open(FILENAME, mode) as destination:
+        with safer.writer(destination, temp_file=temp_file) as fp:
+            fp.write(value)
+    assert FILENAME.read_bytes() == b'payload'
+
+
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
 def test_stream_replay_preserves_unicode_and_mixed_newlines(temp_file):
