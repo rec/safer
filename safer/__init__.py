@@ -270,6 +270,11 @@ def writer(
     if not isinstance(temp_file, (bool, str, Path)):
         raise TypeError('temp_file must be a bool, string, or Path')
 
+    if type(chunk_size) is not int:
+        raise TypeError('chunk_size must be a positive integer')
+    if chunk_size <= 0:
+        raise ValueError('chunk_size must be a positive integer')
+
     if isinstance(stream, (str, Path)):
         if chunk_size != 0x100000:
             raise ValueError('chunk_size only applies to streams')

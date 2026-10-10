@@ -20,18 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 18. P1: `chunk_size=0` silently discards disk-buffered output
-
-Source: `safer/__init__.py:346-354,869-882`.
-
-No positive-integer validation occurs. `read(0)` returns empty data, the loop
-stops, and close succeeds without delivering any buffered output. Negative
-sizes read the whole file, defeating bounded transfer memory; non-integers fail
-late during finalization.
-
-Suggested resolution: validate transfer chunk sizes before allocating buffers.
-Regression: zero, negative, and non-integer sizes fail without side effects.
-
 ### 19. P2: `None` write results conflate callbacks and nonblocking streams
 
 Source: `safer/__init__.py:824-835`.

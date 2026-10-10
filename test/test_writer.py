@@ -241,6 +241,18 @@ def test_wrapper_bug():
     assert FILENAME.read_text() == 'hello, world'
 
 
+@pytest.mark.parametrize(
+    'size, error',
+    [(0, ValueError), (-1, ValueError), (1.5, TypeError), (True, TypeError)],
+)
+@tdir
+def test_invalid_chunk_size_fails_before_allocating(size, error):
+    values = []
+    with pytest.raises(error, match='positive integer'):
+        safer.writer(values.append, temp_file='scratch', chunk_size=size)
+    assert list(Path('.').iterdir()) == []
+
+
 @tdir
 def test_successful_stream_replay_removes_scratch():
     values = []
