@@ -11,6 +11,17 @@ import safer
 FILENAME = Path('one')
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_explicit_failure_flag_aborts_normal_exit(temp_file):
+    FILENAME.write_text('original')
+    with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
+        fp.write('replacement')
+        fp.safer_failed = True
+    assert FILENAME.read_text() == 'original'
+    assert list(Path('.').iterdir()) == [FILENAME]
+
+
 @tdir
 def test_failed_stream_construction_removes_scratch():
     with pytest.raises(LookupError):

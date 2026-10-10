@@ -18,16 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 15. P2: Failure state can be reset by a successful context exit
-
-Source: `safer/__init__.py:702-704`.
-
-`__exit__` assigns `safer_failed = bool(args[0])`. A caller that explicitly sets
-the documented flag to true has it reset on normal exit, so the output commits.
-
-Suggested resolution: make failure sticky through the lifetime of a wrapper.
-Regression: setting `safer_failed=True` inside a successful context aborts it.
-
 ### 16. P2: Abandoned streams have ambiguous commit and cleanup semantics
 
 Source: `safer/__init__.py:685-717,838-852`; README close/context examples.

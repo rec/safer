@@ -735,7 +735,7 @@ class _Closer:
 def _wrap_class(stream_cls):
     @functools.wraps(stream_cls.__exit__)
     def exit(self, *args):
-        self.safer_failed = bool(args[0])
+        self.safer_failed = self.safer_failed or bool(args[0])
         return stream_cls.__exit__(self, *args)
 
     @functools.wraps(stream_cls.close)
