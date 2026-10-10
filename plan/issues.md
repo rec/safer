@@ -16,18 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 4. P2: Exclusive creation through a symlink has different semantics
-
-Source: `safer/__init__.py:460,467-488`.
-
-Every target is resolved with `realpath()` before opening. A dangling symlink
-passed with mode `x` can therefore result in creation of its referent, although
-built-in exclusive creation would reject the existing symlink. The tests cover
-writing through valid symlinks but not exclusive creation through them.
-
-Suggested resolution: define and enforce `x` semantics at the supplied path.
-Regression: existing symlinks, including dangling ones, reject exclusive creation.
-
 ### 5. P2: Disk-backed `r+` creates a missing target
 
 Source: `safer/__init__.py:441-442,518-521,721-750`.

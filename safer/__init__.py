@@ -168,6 +168,7 @@ With `safer`
 from __future__ import annotations
 
 import contextlib
+import errno
 import functools
 import importlib
 import io
@@ -462,6 +463,8 @@ def open(
     if not isinstance(name, str):
         raise TypeError(f'`name` must be text, not {type(name).__name__}')
 
+    if 'x' in mode and not temp_file and os.path.lexists(name):
+        raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), name)
     name = os.path.realpath(name)
     if isinstance(temp_file, (str, Path)) and os.path.realpath(temp_file) == name:
         raise ValueError('temp_file must differ from the target path')

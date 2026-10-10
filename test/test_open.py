@@ -225,6 +225,14 @@ class TestSafer(unittest.TestCase):
         assert FILENAME.read_text() == 'overwritten'
 
     @skip_if_symlink_creation_forbidden
+    def test_exclusive_open_rejects_dangling_symlink(self, safer_open):
+        os.symlink('missing', FILENAME)
+        with self.assertRaises(FileExistsError):
+            safer.open(FILENAME, 'x')
+        assert not Path('missing').exists()
+        assert FILENAME.is_symlink()
+
+    @skip_if_symlink_creation_forbidden
     def test_symlink_directory(self, safer_open):
         FILENAME = Path('sub/test.txt')
         with safer_open(FILENAME, 'w', make_parents=True) as fp:
