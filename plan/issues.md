@@ -20,21 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 24. P2: Partial delivery has no explicit post-failure state
-
-Source: `safer/__init__.py:649-668,824-835,875-882`.
-
-Delivery can fail after several accepted writes. The wrapper is already closed,
-and default failure cleanup removes its scratch data. The exception propagates,
-but callers have no library-level indication of how much was delivered or
-whether recovery data remains. Retrying the entire operation can duplicate
-output. This is especially relevant to intermittent networks and broken pipes.
-
-Suggested resolution: document the finalization failure/retry contract and the
-existing `delete_failures=False` recovery option. Any progress-reporting API is
-a separate design choice. Regression: simulate success of a prefix followed by
-failure and assert the documented cleanup and destination state.
-
 ## Dry-runs, validation, and API traps
 
 ### 25. P2: Callable file dry-runs return write history, not final contents

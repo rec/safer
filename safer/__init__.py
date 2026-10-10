@@ -229,6 +229,10 @@ def writer(
     callable does!
     Configure socket timeouts or callback cancellation before wrapping a
     destination. safer does not reconnect or retry failed delivery.
+    A finalization error may follow delivery of a prefix. The closed wrapper
+    cannot resume; retrying all output can duplicate that prefix. With disk
+    buffering, delete_failures=False retains the complete scratch output for
+    caller-owned recovery, and reports its path on stderr.
 
     Raw IO and socket destinations must report accepted bytes; a raw IO
     result of None means no progress. For callbacks and custom writers, None

@@ -243,6 +243,34 @@ def test_wrapper_bug():
     assert FILENAME.read_text() == 'hello, world'
 
 
+@pytest.mark.parametrize('delete_failures', [False, True])
+@tdir
+def test_partial_delivery_failure_has_defined_recovery_data(delete_failures):
+    accepted = []
+
+    def destination(value):
+        if accepted:
+            raise OSError('disconnected')
+        accepted.append(value)
+        return len(value)
+
+    fp = safer.writer(
+        destination,
+        temp_file='scratch',
+        chunk_size=2,
+        delete_failures=delete_failures,
+    )
+    with pytest.raises(OSError, match='disconnected'):
+        with fp:
+            fp.write('abcdef')
+    assert accepted == ['ab']
+    assert fp.closed
+    assert fp.safer_failed
+    assert Path('scratch').exists() is not delete_failures
+    if not delete_failures:
+        assert Path('scratch').read_text() == 'abcdef'
+
+
 @pytest.mark.parametrize('mode, value', [('x', 'payload'), ('xb', b'payload')])
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir

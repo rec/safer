@@ -46,6 +46,14 @@ context succeeds. A final stream write can still block, fail, or be partially
 accepted, so use an application-level framing and acknowledgement protocol
 when delivery must be all-or-nothing.
 
+If final stream delivery fails, the destination may already contain a prefix
+and the wrapper cannot resume it. Do not retry the whole operation unless the
+destination protocol makes that safe. Disk-buffered writers delete scratch
+data on failure by default; use `delete_failures=False` to keep it for manual
+recovery. The retained file holds the full buffered output, not just its unsent
+suffix, and its path is reported on stderr. No delivery acknowledgement or
+accepted-byte total is inferred from an exception.
+
 `safer` does not lock files or coordinate concurrent writers. A disk-buffered
 writer replaces the target when it closes successfully, so concurrent writers
 have last-successful-close-wins semantics. Append and update modes copy a
