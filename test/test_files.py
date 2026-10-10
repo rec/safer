@@ -11,6 +11,14 @@ FILENAME = Path('one')
 
 
 @tdir
+def test_update_requires_existing_target():
+    for mode in ('r+', 'r+b'):
+        with pytest.raises(FileNotFoundError):
+            safer.open(FILENAME, mode, temp_file=True)
+        assert list(Path('.').iterdir()) == []
+
+
+@tdir
 def test_temporary_path_must_be_unoccupied():
     FILENAME.write_text('original')
     scratch = Path('scratch')

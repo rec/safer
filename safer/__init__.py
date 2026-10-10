@@ -526,6 +526,9 @@ def open(
     if buffering == -1:
         buffering = io.DEFAULT_BUFFER_SIZE
 
+    if 'r' in mode and not os.path.exists(name):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), name)
+
     closer = _FileRenameCloser(
         name,
         temp_file,

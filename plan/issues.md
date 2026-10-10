@@ -16,18 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 5. P2: Disk-backed `r+` creates a missing target
-
-Source: `safer/__init__.py:441-442,518-521,721-750`.
-
-`mkstemp()` creates a scratch file first. If the original is missing, the copy
-is skipped and `r+` successfully opens that scratch file. Closing publishes a
-new target instead of raising `FileNotFoundError` as ordinary `r+` would.
-`test_all_modes` creates the target in an earlier iteration, hiding this case.
-
-Suggested resolution: check the required original-file existence before scratch
-allocation. Regression: both `r+` and `r+b` on a missing target fail without files.
-
 ### 6. P2: `w+` needlessly copies the old file before truncating the copy
 
 Source: `safer/__init__.py:441,518-521,748-750`.
