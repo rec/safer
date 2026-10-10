@@ -18,19 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 11. P1: `close_on_exit` is skipped when delivery fails
-
-Source: `safer/__init__.py:813-822`.
-
-The destination close callback runs after `super().close()`. If replay or
-delivery raises, that callback is never reached. A socket disconnect, broken
-pipe, timeout, or disk-write failure can consequently leave an owned destination
-open despite the requested close policy.
-
-Suggested resolution: guarantee destination cleanup in a `finally` path and
-preserve the delivery error if closing also fails. Regression: a failing
-destination write still closes the destination exactly once.
-
 ### 12. P2: Socket `close_on_exit` never closes the socket
 
 Source: `safer/__init__.py:300-306,330-335,816-822`.

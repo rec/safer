@@ -857,15 +857,24 @@ class _StreamCloser(_Closer):
         self.close_callback = close_callback
 
     def close(self, parent_close):
-        super().close(parent_close)
-
-        if self.close_on_exit:
-            if self.close_callback:
-                self.close_callback(self.fp.safer_failed)
-            else:
-                closer = getattr(self.write, 'close', None)
-                if closer:
-                    closer(self.fp.safer_failed)
+        try:
+            super().close(parent_close)
+        finally:
+            delivery_error = sys.exc_info()[0]
+            if delivery_error is not None:
+                self.fp.safer_failed = True
+            if self.close_on_exit:
+                try:
+                    if self.close_callback:
+                        self.close_callback(self.fp.safer_failed)
+                    else:
+                        closer = getattr(self.write, 'close', None)
+                        if closer:
+                            closer(self.fp.safer_failed)
+                except BaseException:
+                    if delivery_error is None:
+                        raise
+                    traceback.print_exc()
 
     def _write_on_success(self, value):
         if not value:

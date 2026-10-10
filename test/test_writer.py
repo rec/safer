@@ -262,6 +262,26 @@ def test_interrupted_replay_removes_scratch(error):
     assert not Path('scratch').exists()
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_delivery_failure_closes_owned_destination(temp_file):
+    class Destination:
+        closed = False
+
+        def write(self, value):
+            raise OSError('delivery failed')
+
+        def close(self):
+            self.closed = True
+            raise OSError('close failed too')
+
+    destination = Destination()
+    with pytest.raises(OSError, match='delivery failed'):
+        with safer.closer(destination, temp_file=temp_file) as fp:
+            fp.write('payload')
+    assert destination.closed
+
+
 @tdir
 def test_close_writable_without_context_manager():
     class Writer:
