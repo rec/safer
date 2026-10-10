@@ -675,8 +675,10 @@ def dump(
     )
     with t.cast(t.IO, writer(writer_stream)) as fp:
         if is_binary:
-            fp = _EncodedWriter(fp, encoding)
-
+            encoded = _EncodedWriter(fp, encoding)
+            result = dump(obj, encoded, **kwargs)
+            encoded.finish()
+            return result
         return dump(obj, fp, **kwargs)
 
 
@@ -729,12 +731,16 @@ def _validate_open_options(
 class _EncodedWriter:
     def __init__(self, stream: t.IO, encoding: str):
         self.stream = stream
-        self.encoding = encoding
+        self.encoder = codecs.getincrementalencoder(encoding)()
 
     def write(self, value: str) -> int:
         if not isinstance(value, str):
             raise TypeError('A binary serializer must write text')
-        return t.cast(t.BinaryIO, self.stream).write(value.encode(self.encoding))
+        t.cast(t.BinaryIO, self.stream).write(self.encoder.encode(value))
+        return len(value)
+
+    def finish(self) -> None:
+        self.stream.write(self.encoder.encode('', final=True))
 
 
 def _stream_is_binary(stream: object, requested: bool | None = None) -> bool:

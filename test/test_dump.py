@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from unittest import TestCase
 
+import pytest
 import tdir
 import toml
 import yaml
@@ -11,6 +12,19 @@ import yaml
 import safer
 
 from . import helpers
+
+
+@pytest.mark.parametrize('encoding', ['utf-16', 'utf-8-sig', 'iso2022_jp'])
+def test_fragmented_serializer_uses_one_encoder(encoding):
+    destination = io.BytesIO()
+
+    def fragments(obj, fp):
+        assert fp.write('日') == 1
+        assert fp.write('本') == 1
+        return 'result'
+
+    assert safer.dump(None, destination, dump=fragments, encoding=encoding) == 'result'
+    assert destination.getvalue() == '日本'.encode(encoding)
 
 
 def dumper(dump):

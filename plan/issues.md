@@ -24,19 +24,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Serialization and typing
 
-### 32. P2: Binary serialization encoding is not stateful across writes
-
-Source: `safer/__init__.py:591-599`.
-
-Each serializer write independently calls `str.encode()`. Encodings such as
-UTF-16 or UTF-8-SIG can emit a BOM on every fragment; stateful codecs can reset
-their state repeatedly. The adapter also returns bytes written rather than
-text characters accepted, contrary to a text writer's contract.
-
-Suggested resolution: encode the complete text once or use one incremental
-encoder per serialization, returning the appropriate character count.
-Regression: fragmented non-ASCII output decodes correctly with a single BOM.
-
 ### 33. P2: `dump(encoding=...)` only affects some destination kinds
 
 Source: `safer/__init__.py:541-586`.
