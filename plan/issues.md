@@ -22,19 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 29. P2: `enabled=False` does not provide a uniform bypass
-
-Source: `safer/__init__.py:261-282,438-475`.
-
-The bypass still validates `temp_file`; paths are resolved, closefd restrictions
-are enforced, and parent directories may be created. For a callable,
-`writer(..., enabled=False)` returns the callable itself rather than the
-context-manager stream expected by normal usage. Parameters can become ignored
-or rejected depending on input shape, despite the 'entirely bypassed' wording.
-
-Suggested resolution: document or unify supported bypass behavior. Regression:
-each supported input kind has a defined enabled/disabled return contract.
-
 ### 30. P2: Custom openers and path-like inputs have inconsistent support
 
 Source: `safer/__init__.py:264-277,372-386,445-468,748-750`.

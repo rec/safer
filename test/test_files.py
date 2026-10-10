@@ -12,6 +12,32 @@ import safer
 FILENAME = Path('one')
 
 
+@tdir
+def test_disabled_open_uses_native_io_and_ignores_safer_options():
+    with safer.open(
+        FILENAME, 'w+', enabled=False, temp_file=object(), dry_run=True
+    ) as fp:
+        fp.write('native')
+        fp.seek(0)
+        assert fp.read() == 'native'
+    with pytest.raises(FileNotFoundError):
+        safer.open('missing/file', 'w', enabled=False, make_parents=True)
+    assert not Path('missing').exists()
+
+
+@tdir
+def test_disabled_writer_preserves_destination_contract():
+    values = []
+    callback = values.append
+    assert (
+        safer.writer(callback, enabled=False, temp_file=object(), chunk_size=0)
+        is callback
+    )
+    with safer.writer(FILENAME, enabled=False, dry_run=True) as fp:
+        fp.write('native')
+    assert FILENAME.read_text() == 'native'
+
+
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
 def test_dry_run_creates_requested_parents_but_not_target(temp_file):

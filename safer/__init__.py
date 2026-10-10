@@ -172,6 +172,7 @@ With `safer`
 
 from __future__ import annotations
 
+import builtins
 import codecs
 import contextlib
 import errno
@@ -277,8 +278,19 @@ def writer(
         If `dry_run` is also callable, the results of the stream are passed to
         `dry_run()` rather than being written to the stream.
 
-      enabled: If `enabled` is falsey, the stream is returned unchanged
+      enabled: If false, return the original destination unchanged (None means
+        stdout), or use native open for paths. Safer-only options are ignored.
+        A callable or socket remains a callable or socket, not an IO context.
     """
+    if not enabled:
+        if isinstance(stream, (str, Path)):
+            return t.cast(
+                t.TextIO | t.BinaryIO, builtins.open(stream, 'wb' if is_binary else 'w')
+            )
+        return t.cast(
+            t.TextIO | t.BinaryIO | Write, sys.stdout if stream is None else stream
+        )
+
     if not isinstance(temp_file, (bool, str, Path)):
         raise TypeError('temp_file must be a bool, string, or Path')
 
@@ -304,9 +316,6 @@ def writer(
 
     if stream is None:
         stream = sys.stdout
-    if not enabled:
-        return t.cast(t.TextIO | t.BinaryIO | Write, stream)
-
     write: Write | None
     close_callback: t.Callable[[bool], object] | None = None
 
@@ -435,7 +444,8 @@ def open(
 
       enabled:
          If `enabled` is falsey, safer is entirely bypassed, and
-         built-in `open()` is used instead.
+         native `open()` is used with the original name and IO arguments.
+         Safer-only options, including make_parents, are ignored.
 
     The remaining arguments are the same as for built-in `open()`.
 
@@ -466,6 +476,11 @@ def open(
     without failing. This uses as much disk space as the old and new files put
     together.
     """
+    if not enabled:
+        return builtins.open(
+            name, mode, buffering, encoding, errors, newline, closefd, opener
+        )
+
     if not isinstance(temp_file, (bool, str, Path)):
         raise TypeError('temp_file must be a bool, string, or Path')
 
@@ -525,7 +540,7 @@ def open(
             ).exclusive = 'x' in mode
             fp.write(value)
 
-    if is_read or not enabled:
+    if is_read:
         return simple_open()
 
     if not temp_file:
