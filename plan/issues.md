@@ -26,20 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 39. P3: Packaging and development configuration contain stale alternatives
-
-Source: `pyproject.toml:47-64`; `poetry.lock`; `.travis.yml`; `tox.ini`.
-
-PEP 621 metadata and uv describe version 6.0.4, but `[tool.poetry]` still says
-5.4.0 and its lock contains no packages. The old Travis file requests Python
-3.6/3.9, missing requirements files, and unittest discovery that omits standalone
-pytest functions. `tox.ini` only contains old flake8 settings, with no tox test
-environment. These files give contributors conflicting setup instructions.
-
-Suggested resolution: decide which compatibility/tooling paths are maintained
-and remove or update obsolete ones explicitly. Do not treat their existence as
-proof that those workflows are currently running.
-
 ### 40. P3: Documentation has duplicated, contradictory, and unmaintained text
 
 Source: `README.md`; `safer/__init__.py:1-169`; `test/help.txt`;
