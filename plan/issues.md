@@ -22,22 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 31. P2: Permission, identity, and link behavior differ by buffering mode
-
-Source: `safer/__init__.py:460,470-472,518-519,788-790`.
-
-Memory mode writes the existing inode and respects its write permissions.
-Disk mode replaces the directory entry: it can replace a read-only target if
-the directory permits replacement, and it does not update other hard links to
-the original inode. Generated new files have private `mkstemp` permissions,
-while memory/explicit-scratch files use ordinary creation permissions. The
-tests assert these mode differences but the public API does not explain all
-of their consequences. Append/update `copy2` may preserve more metadata than
-the blanket 'does not preserve' documentation suggests.
-
-Suggested resolution: document these distinctions and test hard-link and
-read-only behavior explicitly. Do not imply identical metadata semantics.
-
 ## Serialization and typing
 
 ### 32. P2: Binary serialization encoding is not stateful across writes

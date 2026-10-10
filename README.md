@@ -54,7 +54,7 @@ recovery. The retained file holds the full buffered output, not just its unsent
 suffix, and its path is reported on stderr. No delivery acknowledgement or
 accepted-byte total is inferred from an exception.
 
-`safer` does not lock files or coordinate concurrent writers. A disk-buffered
+`safer` does not lock files or coordinate concurrent writers. Every file
 writer replaces the target when it closes successfully, so concurrent writers
 have last-successful-close-wins semantics. Append and update modes copy a
 snapshot of the target and can overwrite another writer's changes. `x` mode
@@ -65,9 +65,23 @@ preserved across delayed replacement.
 `safer` does not fsync the replacement file or its directory. A successful
 close is therefore not a power-loss durability guarantee.
 
-When replacing an existing file, `safer` preserves its mode bits. It does not
-preserve ownership, ACLs, extended attributes, or other platform-specific
-metadata.
+Every transactional file write replaces the target's directory entry, including
+memory buffering. Other hard links keep the old contents, and a read-only file
+can be replaced when the platform and directory permissions permit it. Open
+handles can prevent replacement on Windows. Symlinks are resolved to their
+targets before writing; `x` rejects an already existing symlink.
+
+Existing target mode bits are copied at publication. Ownership, ACLs, timestamps,
+and extended attributes are not guaranteed to survive; append/update snapshots
+use `copy2`, which may retain some metadata on platforms that support it.
+Generated scratch files, including memory-mode publication, give new targets
+private permissions (normally 0600). Explicit scratch paths use ordinary
+creation permissions filtered by the process umask.
+
+Use trusted directories: scratch paths are reserved then reopened, and path
+resolution/publication is not a secure sandbox against hostile directory peers.
+Prefer generated sibling scratch files; an explicit path on another filesystem
+can fail at replacement with a cross-device error.
 
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.

@@ -12,6 +12,29 @@ import safer
 FILENAME = Path('one')
 
 
+@pytest.mark.parametrize('temp_file', [False, True, 'scratch'])
+@tdir
+def test_publication_replaces_only_one_hard_link(temp_file):
+    FILENAME.write_text('original')
+    os.link(FILENAME, 'other')
+    with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
+        fp.write('replacement')
+    assert FILENAME.read_text() == 'replacement'
+    assert Path('other').read_text() == 'original'
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Windows read-only replacement differs')
+@pytest.mark.parametrize('temp_file', [False, True, 'scratch'])
+@tdir
+def test_publication_can_replace_read_only_target(temp_file):
+    FILENAME.write_text('original')
+    FILENAME.chmod(0o400)
+    with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
+        fp.write('replacement')
+    assert FILENAME.read_text() == 'replacement'
+    assert FILENAME.stat().st_mode & 0o777 == 0o400
+
+
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
 def test_transactional_opener_rejected_without_side_effects(temp_file):
