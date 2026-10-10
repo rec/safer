@@ -13,6 +13,37 @@ FILENAME = Path('one')
 
 
 @pytest.mark.parametrize('temp_file', [False, True])
+@pytest.mark.parametrize(
+    'options',
+    [
+        {'mode': 'ww'},
+        {'mode': 'q'},
+        {'mode': 'w++'},
+        {'encoding': 'not-a-codec'},
+        {'errors': 'not-an-error-handler'},
+        {'newline': 'invalid'},
+        {'buffering': 0},
+        {'buffering': 1.5},
+        {'mode': 'wb', 'encoding': ''},
+        {'mode': 'wb', 'errors': ''},
+        {'mode': 'wb', 'newline': ''},
+    ],
+)
+@tdir
+def test_invalid_options_fail_before_directory_creation(temp_file, options):
+    arguments = {'mode': 'w', **options}
+    with pytest.raises((ValueError, TypeError, LookupError)):
+        safer.open(
+            'missing/file',
+            temp_file=temp_file,
+            make_parents=True,
+            dry_run=True,
+            **arguments,
+        )
+    assert list(Path('.').iterdir()) == []
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
 @tdir
 def test_dry_run_reports_final_contents_after_edits(temp_file):
     values = []

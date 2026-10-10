@@ -172,6 +172,7 @@ With `safer`
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import errno
 import functools
@@ -466,6 +467,12 @@ def open(
     if not isinstance(temp_file, (bool, str, Path)):
         raise TypeError('temp_file must be a bool, string, or Path')
 
+    _validate_open_options(mode, buffering, encoding, errors, newline, opener)
+    if not temp_file and '+' in mode:
+        raise ValueError('+ mode requires a temp_file argument')
+    if temp_file and 'x' in mode:
+        raise ValueError('x mode cannot safely use a temporary file')
+
     is_copy = ('r' in mode and '+' in mode) or 'a' in mode
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode
@@ -636,6 +643,52 @@ def dump(
             fp = _EncodedWriter(fp, encoding)
 
         return dump(obj, fp, **kwargs)
+
+
+def _validate_open_options(
+    mode: str,
+    buffering: int,
+    encoding: str | None,
+    errors: str | None,
+    newline: str | None,
+    opener: t.Callable | None,
+) -> None:
+    if not isinstance(mode, str):
+        raise TypeError('mode must be a string')
+    if 'b' in mode and 't' in mode:
+        raise ValueError("can't have text and binary mode at once")
+    if (
+        not mode
+        or any(c not in 'rwaxbt+' for c in mode)
+        or len(set(mode)) != len(mode)
+        or sum(mode.count(c) for c in 'rwax') != 1
+    ):
+        raise ValueError(f'invalid mode: {mode!r}')
+    if not isinstance(buffering, int):
+        raise TypeError('buffering must be an integer')
+    if opener is not None and not callable(opener):
+        raise TypeError('opener must be callable')
+    if 'b' in mode:
+        for name, value in (
+            ('encoding', encoding),
+            ('errors', errors),
+            ('newline', newline),
+        ):
+            if value is not None:
+                raise ValueError(
+                    f"binary mode doesn't take an {name} argument"
+                    if name != 'newline'
+                    else "binary mode doesn't take a newline argument"
+                )
+    else:
+        if buffering == 0:
+            raise ValueError("can't have unbuffered text I/O")
+        with io.TextIOWrapper(
+            io.BytesIO(), encoding=encoding, errors=errors, newline=newline
+        ):
+            pass
+        if errors is not None:
+            codecs.lookup_error(errors)
 
 
 class _EncodedWriter:

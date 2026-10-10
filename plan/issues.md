@@ -22,22 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 27. P2: Mode and IO option errors are validated inconsistently and late
-
-Source: `safer/__init__.py:438-504,735-759`.
-
-Modes are classified using character membership rather than a complete mode
-grammar. Memory-backed dry-runs can accept invalid modes/options without ever
-calling built-in open. Other memory errors appear only at close. Disk mode
-validates binary encoding/errors/newline by truthiness, accepting invalid
-falsey values, and its manual buffering path does not enforce all built-in
-rules, such as rejection of unbuffered text IO.
-
-Suggested resolution: validate supported modes/options before allocations or
-directory creation, consistently across dry-run and buffering choices.
-Regression: a small table of invalid modes, codecs, newline and buffering
-values fails at construction with no filesystem changes.
-
 ### 28. P2: `dry_run` can modify directories and does not fully preview errors
 
 Source: `safer/__init__.py:460-488,506-521`.
