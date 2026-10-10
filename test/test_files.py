@@ -1,4 +1,5 @@
 import os
+import shutil
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,28 @@ import tdir
 import safer
 
 FILENAME = Path('one')
+
+
+@tdir
+def test_failed_stream_construction_removes_scratch():
+    with pytest.raises(LookupError):
+        safer.open(FILENAME, 'w', encoding='no-such-codec', temp_file=True)
+    assert list(Path('.').iterdir()) == []
+
+
+@tdir
+def test_failed_snapshot_copy_removes_scratch(monkeypatch):
+    FILENAME.write_text('original')
+
+    def fail(source, target):
+        Path(target).write_text('partial')
+        raise OSError('disk full')
+
+    monkeypatch.setattr(shutil, 'copy2', fail)
+    with pytest.raises(OSError, match='disk full'):
+        safer.open(FILENAME, 'a', temp_file=True)
+    assert FILENAME.read_text() == 'original'
+    assert list(Path('.').iterdir()) == [FILENAME]
 
 
 @tdir

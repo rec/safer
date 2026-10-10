@@ -18,21 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 9. P1: Construction failures lack a complete cleanup boundary
-
-Source: `safer/__init__.py:506-521,721-759,866-873`.
-
-After allocating scratch storage, `copy2()`, `FileIO`, buffering, or
-`TextIOWrapper` construction can fail. These steps have no enclosing cleanup
-that owns the scratch file and partially built handles. Invalid encoding or
-newline settings, an invalid buffering value, disk exhaustion during copying,
-and opener errors can leave files behind. During wrapper construction, garbage
-collection of a partially wrapped stream can also call an incompletely
-initialized safer close method; deterministic cleanup is needed.
-
-Suggested resolution: acquire and transfer ownership explicitly during setup.
-Regression: inject failure at each construction stage and check handles/files.
-
 ### 10. P1: Interrupted finalization bypasses cleanup
 
 Source: `safer/__init__.py:366-369,649-668`.

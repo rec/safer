@@ -541,10 +541,13 @@ def open(
         newline,
     )
 
-    if is_copy and os.path.exists(name):
-        shutil.copy2(name, closer.temp_file)
-
-    return closer._make_stream(buffering, mode, **kwargs)
+    with contextlib.ExitStack() as cleanup:
+        cleanup.callback(closer._failure)
+        if is_copy and os.path.exists(name):
+            shutil.copy2(name, closer.temp_file)
+        fp = closer._make_stream(buffering, mode, **kwargs)
+        cleanup.pop_all()
+        return fp
 
 
 def closer(
@@ -712,10 +715,15 @@ class _Closer:
         @functools.wraps(stream_cls)
         def wrapped(*args, **kwargs):
             wrapped_cls = _wrap_class(stream_cls)
-            fp = t.cast(_SafeStream, wrapped_cls(*args, **kwargs))
+            fp = t.cast(_SafeStream, wrapped_cls.__new__(wrapped_cls))
             self.fp = fp
             fp.safer_closer = self
-            fp.safer_failed = False
+            fp.safer_failed = True
+            with contextlib.ExitStack() as cleanup:
+                cleanup.callback(setattr, self, 'closed', True)
+                stream_cls.__init__(fp, *args, **kwargs)
+                fp.safer_failed = False
+                cleanup.pop_all()
             return fp
 
         return wrapped
@@ -775,16 +783,17 @@ class _FileCloser(_Closer):
 
         new_mode = mode.replace('x', 'w').replace('t', '')
         opener = kwargs.pop('opener', None)
-        fp = makers.pop(0)(self.temp_file, new_mode, opener=opener)
-
-        if buffering > 1:
-            fp = makers.pop(0)(fp, buffering)
-
-        if makers:
-            line_buffering = buffering == 1
-            fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
-
-        return fp
+        with contextlib.ExitStack() as cleanup:
+            fp = makers.pop(0)(self.temp_file, new_mode, opener=opener)
+            cleanup.callback(fp.close)
+            if buffering > 1:
+                fp = makers.pop(0)(fp, buffering)
+                cleanup.callback(fp.close)
+            if makers:
+                line_buffering = buffering == 1
+                fp = makers[0](fp, line_buffering=line_buffering, **kwargs)
+            cleanup.pop_all()
+            return fp
 
 
 class _FileRenameCloser(_FileCloser):
@@ -907,7 +916,10 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
         self.chunk_size = chunk_size
         mode = 'wb' if is_binary else 'w'
 
-        self.fp = self._make_stream(-1, mode)
+        with contextlib.ExitStack() as cleanup:
+            cleanup.callback(self._failure)
+            self.fp = self._make_stream(-1, mode)
+            cleanup.pop_all()
 
     def _success(self):
         mode = 'rb' if self.is_binary else 'r'
