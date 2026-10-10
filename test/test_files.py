@@ -1,6 +1,8 @@
 import gc
+import io
 import os
 import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -10,6 +12,54 @@ import tdir
 import safer
 
 FILENAME = Path('one')
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@pytest.mark.parametrize('operation', ['copymode', 'replace'])
+@tdir
+def test_publication_error_preserves_target_and_cleans_scratch(
+    monkeypatch, temp_file, operation
+):
+    FILENAME.write_text('original')
+
+    def fail(*args):
+        raise OSError('publication denied')
+
+    monkeypatch.setattr(shutil if operation == 'copymode' else os, operation, fail)
+    with pytest.raises(OSError, match='publication denied'):
+        with safer.open(FILENAME, 'w', temp_file=temp_file) as fp:
+            fp.write('replacement')
+    assert FILENAME.read_text() == 'original'
+    assert list(Path('.').iterdir()) == [FILENAME]
+
+
+@tdir
+def test_resource_exhaustion_during_text_wrapper_construction_cleans_scratch(
+    monkeypatch,
+):
+    class Exhausted(io.TextIOWrapper):
+        def __init__(self, *args, **kwargs):
+            raise MemoryError('no memory')
+
+    monkeypatch.setattr(io, 'TextIOWrapper', Exhausted)
+    monkeypatch.setattr(tempfile, 'tempdir', str(Path.cwd()))
+    values = []
+    with pytest.raises(MemoryError, match='no memory'):
+        safer.writer(values.append, temp_file=True)
+    assert values == []
+    assert list(Path('.').iterdir()) == []
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_dry_run_callback_resource_failure_cleans_scratch(temp_file):
+    def exhausted(value):
+        raise MemoryError('no memory')
+
+    with pytest.raises(MemoryError, match='no memory'):
+        with safer.open(FILENAME, 'w', temp_file=temp_file, dry_run=exhausted) as fp:
+            fp.write('preview')
+    assert list(Path('.').iterdir()) == []
 
 
 @pytest.mark.parametrize('temp_file', [False, True, 'scratch'])

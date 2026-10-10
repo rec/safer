@@ -26,23 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 36. P2: Failure-path test coverage is thin for the central guarantee
-
-Source: all five `test/test_*.py` files; `pyproject.toml:32-40`.
-
-Tests cover many body exceptions and successful transfers, but no tests cover
-replace/copymode/copy2 failure, construction resource exhaustion, interrupts
-during close, malformed modes across backends, socket send bypass, real
-nonblocking result contracts, or successful scratch cleanup. There is no test
-of `enabled=False`. Socket mocks always accept all data and lack `.close()`.
-Coverage is configured with a 90% threshold but CI never runs coverage/report,
-and some difficult exception paths are excluded with `pragma: no cover`.
-
-Suggested resolution: add lean behavioral regressions for the issues above,
-using local controlled IO/failure injection rather than external services.
-Keep timeout/disconnect tests bounded and inspect resource ownership as well
-as raised exception types.
-
 ### 37. P3: The test matrix obscures which backend was actually exercised
 
 Source: `test/helpers.py:4-22`; `test/test_writer.py`, `test/test_open.py`.
