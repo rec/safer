@@ -48,17 +48,6 @@ quote-style = "single"
 [tool.doks]
 auto = true
 
-[tool.poetry]
-name = "safer"
-version = "5.4.0"
-description = "🧿 A safer writer for files and streams 🧿"
-authors = ["Tom Ritchford <tom@swirly.com>"]
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.10"
-
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
