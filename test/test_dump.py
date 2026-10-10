@@ -1,4 +1,5 @@
 import functools
+import io
 import json
 from pathlib import Path
 from unittest import TestCase
@@ -22,6 +23,11 @@ DUMPS = safer.dump, dumper('json'), dumper('json.dump')
 
 @tdir
 class TestDump(TestCase):
+    def test_in_memory_binary_destination(self):
+        destination = io.BytesIO()
+        safer.dump({'letter': 'é'}, destination, ensure_ascii=False)
+        assert json.loads(destination.getvalue()) == {'letter': 'é'}
+
     def test_dump(self):
         _test()
 

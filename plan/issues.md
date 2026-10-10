@@ -20,21 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 22. P2: Binary streams without a `.mode` attribute are inferred as text
-
-Source: `safer/__init__.py:311-325,570-586,839-842`.
-
-`io.BytesIO` and some raw/custom binary streams lack a useful mode attribute.
-`writer()` defaults them to `StringIO`, and `dump()` uses similar but separate
-detection. Bytes written to the wrapper can fail immediately, or a text dump
-can reach a binary destination as `str` and fail at close. `writer` offers an
-override, while `dump` does not expose an equivalent binary override.
-Selecting a dry-run sink before inspecting a socket also skips the socket
-branch that selects binary buffering, so dry-run can change the accepted type.
-
-Suggested resolution: establish a shared, documented stream-kind policy.
-Regression: supported in-memory binary streams work with writer and dump.
-
 ### 23. P2: Valid exclusive-mode destination streams are rejected
 
 Source: `safer/__init__.py:314-316`.

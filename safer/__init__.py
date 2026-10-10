@@ -311,6 +311,8 @@ def writer(
     if dry_run:
         close_on_exit = False
 
+    is_binary = _stream_is_binary(stream, is_binary)
+
     if close_on_exit and (hasattr(stream, 'write') or hasattr(stream, 'send')):
 
         def close_stream(failed: bool) -> object:
@@ -337,12 +339,6 @@ def writer(
             if not set('w+a').intersection(mode):
                 raise ValueError(f'Stream mode "{mode}" is not a write mode')
 
-            binary_mode = 'b' in mode
-            if is_binary is not None and is_binary is not binary_mode:
-                raise ValueError('is_binary is inconsistent with the file stream')
-
-            is_binary = binary_mode
-
         elif write:
             pass
 
@@ -350,11 +346,7 @@ def writer(
             pass
 
         elif send and hasattr(stream, 'recv'):  # It looks like a socket:
-            if not (is_binary is None or is_binary is True):
-                raise ValueError('is_binary=False is inconsistent with a socket')
-
             write = t.cast(Write, send)
-            is_binary = True
 
         elif callable(stream):
             write = t.cast(Write, stream)
@@ -388,7 +380,7 @@ def writer(
                 allow_none=allow_none,
             )
 
-        if send is write:
+        if send is not None and hasattr(stream, 'recv'):
             t.cast(_SocketStream, closer.fp).send = t.cast(
                 Write, t.cast(t.IO, closer.fp).write
             )
@@ -624,14 +616,10 @@ def dump(
     """
     if not isinstance(stream, str):
         name = getattr(stream, 'name', '')
-        mode = getattr(stream, 'mode', '')
-        if name and mode:
-            is_binary = 'b' in mode
-        else:
-            is_binary = hasattr(stream, 'recv') and hasattr(stream, 'send')
     else:
         name = stream
-        is_binary = False
+
+    is_binary = _stream_is_binary(stream)
 
     dump = _get_dumper(dump or Path(name).suffix[1:])
 
@@ -652,6 +640,24 @@ class _EncodedWriter:
         if not isinstance(value, str):
             raise TypeError('A binary serializer must write text')
         return t.cast(t.BinaryIO, self.stream).write(value.encode(self.encoding))
+
+
+def _stream_is_binary(stream: object, requested: bool | None = None) -> bool:
+    socket = hasattr(stream, 'send') and hasattr(stream, 'recv')
+    mode = getattr(stream, 'mode', None)
+    if isinstance(mode, str):
+        detected = 'b' in mode
+    elif isinstance(stream, (io.BufferedIOBase, io.RawIOBase)) or socket:
+        detected = True
+    elif isinstance(stream, io.TextIOBase):
+        detected = False
+    else:
+        return bool(requested)
+    if requested is not None and requested != detected:
+        if socket:
+            raise ValueError('is_binary=False is inconsistent with a socket')
+        raise ValueError('is_binary is inconsistent with the file stream')
+    return detected
 
 
 def _get_dumper(dump: t.Any) -> t.Callable:

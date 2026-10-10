@@ -262,7 +262,21 @@ def test_nonblocking_stream_none_is_no_progress(temp_file):
 
     with pytest.raises(BlockingIOError):
         with safer.writer(Destination(), temp_file=temp_file) as fp:
-            fp.write('payload')
+            fp.write(b'payload')
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_binary_in_memory_destination_is_inferred(temp_file):
+    destination = io.BytesIO()
+    with safer.writer(destination, temp_file=temp_file) as fp:
+        fp.write(b'payload')
+    assert destination.getvalue() == b'payload'
+
+    sock = helpers.socket()
+    with safer.writer(sock, dry_run=True, temp_file=temp_file) as fp:
+        assert fp.send(b'payload') == 7
+    assert sock.items == []
 
 
 @tdir
