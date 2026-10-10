@@ -240,3 +240,17 @@ those responsibilities. This does not require a wholesale module split.
 Memory buffers have no automatic size cap or spill-to-disk policy: choose disk
 buffering for large output. Captured memory payloads are released after close,
 including failed delivery; caller-held callback values remain caller-owned.
+
+### Boundary with reccy
+
+safer owns stream-oriented transactional writing: buffered IO, append/update,
+callbacks, sockets, and dry-runs. reccy's `runtime.files.atomic_output` owns
+path-oriented publication for external encoders, and its settings helpers
+build on that path API. It can optionally fsync file contents; safer does not.
+Neither API guarantees directory-fsync durability or coordinated writers.
+
+The shared use of sibling scratch files and replacement does not make these
+APIs interchangeable. Keep them independent: safer must not depend on reccy,
+and reccy's path API should not be replaced with a stream wrapper. A shared
+publication primitive would require an explicit design decision about paths,
+permissions, synchronization, and ownership, not just deduplication.

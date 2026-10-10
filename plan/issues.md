@@ -26,24 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 42. P3: Atomic publication overlaps reccy but the APIs are not interchangeable
-
-Sources in the sibling checkout: `reccy/runtime/files.py:11-30` and
-`reccy/configuration/settings.py:27-39`; here: `_FileRenameCloser`.
-
-reccy's `atomic_output()` creates a sibling scratch path, publishes it with
-replacement, supports file-content fsync, and cleans it in `finally`.
-`write_text_atomically()` builds on it. This duplicates safer's atomic file
-publication mechanism, but reccy's API supplies a path for external encoders,
-whereas safer supplies streams, append/update, callbacks and dry-runs. Neither
-helper fsyncs the parent directory.
-
-Suggested resolution: record the ownership boundary and consider whether a
-small shared file-publication primitive belongs in safer in future. Do not add
-a reccy dependency or replace either API solely to remove superficial overlap.
-That consolidation is an architectural decision, not a fix authorized by this
-audit request.
-
 ## Explicit limitations and areas without a newly identified defect
 
 Concurrent writers are deliberately uncoordinated. Disk append/update use a
