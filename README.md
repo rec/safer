@@ -40,6 +40,12 @@ See the Medium article [here](https://medium.com/@TomSwirly/%EF%B8%8F-safer-a-sa
 
 ### The details
 
+The package includes typing declarations for text/binary contexts, custom
+writers, sockets, and `safer_failed`. Unknown custom binary writers require
+`is_binary=True`, just as at runtime. Reads and disabled operations return
+native objects without safer fields. The typing protocols are declarations,
+not extra runtime classes. Caller examples live in `test/typing_examples.py`.
+
 `safer` helps prevent programmer error from partially overwriting named files.
 For sockets, callbacks, and other streams, it defers the first write until the
 context succeeds. A final stream write can still block, fail, or be partially

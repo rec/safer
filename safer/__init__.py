@@ -209,6 +209,11 @@ class _Closable(t.Protocol):
     def close(self) -> object: ...
 
 
+class _DumperModule(t.Protocol):
+    safe_dump: t.Callable[..., object]
+    dump: t.Callable[..., object]
+
+
 def writer(
     stream: t.TextIO | t.BinaryIO | Write | os.PathLike[str] | str | None = None,
     is_binary: bool | None = None,
@@ -632,12 +637,12 @@ def closer(
 
 
 def dump(
-    obj,
+    obj: object,
     stream: t.Callable | None | t.IO | os.PathLike[str] | str = None,
-    dump: t.Any = None,
+    dump: object = None,
     encoding: str = 'utf-8',
-    **kwargs,
-) -> t.Any:
+    **kwargs: object,
+) -> object:
     """
     Safely serialize `obj` with a text serializer to `fp` (a
     `.write()`-supporting file-like object, or a filename),
@@ -741,7 +746,7 @@ def _validate_open_options(
 
 
 class _EncodedWriter:
-    def __init__(self, stream: t.IO, encoding: str):
+    def __init__(self, stream: t.IO, encoding: str) -> None:
         self.stream = stream
         self.encoder = codecs.getincrementalencoder(encoding)()
 
@@ -775,7 +780,7 @@ def _stream_is_binary(stream: object, requested: bool | None = None) -> bool:
     return detected
 
 
-def _get_dumper(dump: t.Any) -> t.Callable:
+def _get_dumper(dump: object) -> t.Callable[..., object]:
     if isinstance(dump, str):
         module_name = 'json' if not dump else 'yaml' if dump == 'yml' else dump
 
@@ -790,10 +795,11 @@ def _get_dumper(dump: t.Any) -> t.Callable:
     if callable(dump):
         return dump
 
+    module = t.cast(_DumperModule, dump)
     try:
-        return dump.safe_dump
+        return module.safe_dump
     except AttributeError:
-        return dump.dump
+        return module.dump
 
 
 @contextlib.contextmanager
@@ -901,7 +907,7 @@ class _FileCloser(_Closer):
         self.temp_file = temp_file
         self.delete_failures = delete_failures
 
-    def _failure(self):
+    def _failure(self) -> None:
         if self.delete_failures:
             Path(self.temp_file).unlink(missing_ok=True)
         else:
@@ -959,7 +965,7 @@ class _FileRenameCloser(_FileCloser):
 
         super().__init__(temp_file, delete_failures, parent)
 
-    def _success(self):
+    def _success(self) -> None:
         if not self.dry_run and not callable(self.dry_run):
             if os.path.exists(self.target_file):
                 shutil.copymode(self.target_file, self.temp_file)
@@ -1013,7 +1019,7 @@ class _StreamCloser(_Closer):
                         raise
                     traceback.print_exc()
 
-    def _write_on_success(self, value):
+    def _write_on_success(self, value: str | bytes) -> None:
         if not value:
             self.write(value)
             return
@@ -1051,7 +1057,7 @@ class _MemoryStreamCloser(_StreamCloser):
         self.value = t.cast(io.StringIO | io.BytesIO, self.fp).getvalue()
         super().close(parent_close)
 
-    def _success(self):
+    def _success(self) -> None:
         self._write_on_success(self.value)
 
 
@@ -1080,7 +1086,7 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
             self.fp = self._make_stream(-1, mode, **kwargs)
             cleanup.pop_all()
 
-    def _success(self):
+    def _success(self) -> None:
         mode = 'rb' if self.is_binary else 'r'
         with open(
             self.temp_file,
@@ -1095,5 +1101,5 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
                 self._write_on_success(data)
         os.remove(self.temp_file)
 
-    def _failure(self):
+    def _failure(self) -> None:
         _FileCloser._failure(self)

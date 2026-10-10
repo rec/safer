@@ -24,21 +24,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Serialization and typing
 
-### 35. P2: Published type information misses supported APIs and hides errors
-
-Source: `safer/py.typed`; `safer/__init__.py:184-202,204-213,372-386,524-547`.
-
-The package declares itself typed, but writer's input type excludes sockets and
-ordinary custom write objects, return unions include callables that cannot be
-used as contexts, and `open` has no mode-dependent text/binary overloads.
-Safer-specific stream fields are absent from public return types. `dump` still
-uses Any, public kwargs and many closer methods remain untyped, and casts
-conceal dynamically installed methods and mismatched protocols.
-
-Suggested resolution: define public input/return protocols and targeted
-overloads with caller-focused typing checks. Type-checker success alone does
-not establish a useful consumer API when these paths remain unknown or cast.
-
 ## Testing, documentation, and project structure
 
 ### 36. P2: Failure-path test coverage is thin for the central guarantee
