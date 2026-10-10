@@ -18,18 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 7. P1: Successful disk-buffered stream writes leave their scratch file
-
-Source: `safer/__init__.py:855-885`.
-
-`_FileStreamCloser._success()` replays the file but never removes it. Only
-failure deletes it. Repeated successful `writer(..., temp_file=True)` calls
-accumulate complete output files in the temporary directory, exposing data to
-later inspection and eventually consuming disk space.
-
-Suggested resolution: clean scratch files after successful transfer. Regression:
-the directory inventory returns to its initial state after a successful close.
-
 ### 8. P1: Successful disk-backed dry-runs also leave scratch files
 
 Source: `safer/__init__.py:786-804`.

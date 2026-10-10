@@ -914,6 +914,7 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
                 if not data:
                     break
                 self._write_on_success(data)
+        os.remove(self.temp_file)
 
     def _failure(self):
         _FileCloser._failure(self)

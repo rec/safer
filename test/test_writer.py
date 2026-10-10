@@ -242,6 +242,15 @@ def test_wrapper_bug():
 
 
 @tdir
+def test_successful_stream_replay_removes_scratch():
+    values = []
+    with safer.writer(values.append, temp_file='scratch') as fp:
+        fp.write('payload')
+    assert values == ['payload']
+    assert not Path('scratch').exists()
+
+
+@tdir
 def test_close_writable_without_context_manager():
     class Writer:
         def __init__(self):
