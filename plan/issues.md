@@ -16,20 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 3. P1: An explicit temporary path can alias the target or another file
-
-Source: `safer/__init__.py:506-521,720-759`.
-
-An explicit `temp_file` is opened directly, usually with truncation. Setting it
-to the target path, a symlink to the target, or a hard link to the target destroys
-the original before successful exit. Failure cleanup can then unlink the target.
-An existing unrelated file at the temporary path is also overwritten without
-exclusive creation. The current validation checks only the argument's type.
-
-Suggested resolution: reject target aliases and define exclusive ownership of
-explicit scratch paths. Regression: same-path, symlink, hard-link, and occupied
-scratch paths leave all original files unchanged.
-
 ### 4. P2: Exclusive creation through a symlink has different semantics
 
 Source: `safer/__init__.py:460,467-488`.

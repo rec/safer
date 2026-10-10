@@ -463,6 +463,8 @@ def open(
         raise TypeError(f'`name` must be text, not {type(name).__name__}')
 
     name = os.path.realpath(name)
+    if isinstance(temp_file, (str, Path)) and os.path.realpath(temp_file) == name:
+        raise ValueError('temp_file must differ from the target path')
     parent = os.path.dirname(os.path.abspath(name))
     if not os.path.exists(parent):
         if not make_parents:
@@ -739,7 +741,9 @@ class _FileCloser(_Closer):
     def __init__(self, temp_file, delete_failures, parent=None):
         if temp_file is True:
             fd, temp_file = tempfile.mkstemp(dir=parent)
-            os.close(fd)
+        else:
+            fd = os.open(temp_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+        os.close(fd)
 
         self.temp_file = temp_file
         self.delete_failures = delete_failures

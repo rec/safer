@@ -11,6 +11,24 @@ FILENAME = Path('one')
 
 
 @tdir
+def test_temporary_path_must_be_unoccupied():
+    FILENAME.write_text('original')
+    scratch = Path('scratch')
+    scratch.write_text('unrelated')
+    with pytest.raises(FileExistsError):
+        safer.open(FILENAME, 'w', temp_file=scratch)
+    assert scratch.read_text() == 'unrelated'
+    with pytest.raises(ValueError, match='differ'):
+        safer.open(FILENAME, 'w', temp_file=FILENAME)
+    alias = Path('alias')
+    os.link(FILENAME, alias)
+    with pytest.raises(FileExistsError):
+        safer.open(FILENAME, 'w', temp_file=alias)
+    assert FILENAME.read_text() == 'original'
+    assert alias.read_text() == 'original'
+
+
+@tdir
 def test_memory_encoding_failure_preserves_original():
     FILENAME.write_text('original')
     before = set(Path('.').iterdir())
