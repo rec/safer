@@ -10,18 +10,38 @@ permissions:
 
 jobs:
   test:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version-file: .python-version
+          python-version: ${{ matrix.python }}
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: uv sync --all-groups --locked
-      - run: uv run pytest
+      - name: Check formatting, lint, and caller types
+        run: |
+          uv run --no-sync ruff format --check safer test
+          uv run --no-sync ruff check --select B,E,F,I safer test
+          uv run --no-sync ty check safer test/typing_examples.py
+      - name: Build source distribution and wheel
+        run: uv build --out-dir "$RUNNER_TEMP/safer-dist"
+      - name: Install wheel instead of editable checkout
+        run: uv pip install --python .venv --no-deps --reinstall "$RUNNER_TEMP"/safer-dist/*.whl
+      - name: Test installed wheel and enforce coverage
+        run: |
+          cp -R test "$RUNNER_TEMP/safer-tests"
+          cd "$RUNNER_TEMP"
+          uv run --project "$GITHUB_WORKSPACE" --no-sync coverage run --rcfile "$GITHUB_WORKSPACE/pyproject.toml" -m pytest safer-tests
+          uv run --project "$GITHUB_WORKSPACE" --no-sync coverage report --rcfile "$GITHUB_WORKSPACE/pyproject.toml"

@@ -26,21 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 38. P2: CI covers three operating systems but only Python 3.10
-
-Source: `.python-version`; `.github/workflows/release-tests.yml:17-26`;
-`pyproject.toml:7-10`.
-
-CI takes its single interpreter from `.python-version`, while package metadata
-advertises Python 3.10 through 3.14. IO subclassing and destruction behavior are
-precisely the areas where version differences matter. The workflow also tests
-an editable checkout rather than an installed wheel/sdist. Formatting, types,
-and the configured coverage threshold are not enforced by CI.
-
-Suggested resolution: decide supported interpreter and artifact validation
-coverage for release jobs. The release-only trigger is intentional and should
-remain release-only unless that policy is explicitly changed.
-
 ### 39. P3: Packaging and development configuration contain stale alternatives
 
 Source: `pyproject.toml:47-64`; `poetry.lock`; `.travis.yml`; `tox.ini`.
