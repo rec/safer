@@ -18,17 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 8. P1: Successful disk-backed dry-runs also leave scratch files
-
-Source: `safer/__init__.py:786-804`.
-
-With `dry_run=True`, `_FileRenameCloser._success()` does nothing. With a callable
-dry-run, it invokes the callback but still does not remove the scratch file.
-Neither success path replaces the target, so no operation consumes that file.
-
-Suggested resolution: clean successful dry-run scratch files independently of
-`delete_failures`. Regression: boolean and callable dry-runs leave no scratch.
-
 ### 9. P1: Construction failures lack a complete cleanup boundary
 
 Source: `safer/__init__.py:506-521,721-759,866-873`.

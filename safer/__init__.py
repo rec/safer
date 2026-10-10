@@ -830,6 +830,9 @@ class _FileRenameCloser(_FileCloser):
                 value = ''.join(self.dry_run_text)
             self.dry_run(value)
 
+        if self.dry_run:
+            os.remove(self.temp_file)
+
     def _record(self, value: str | bytes) -> None:
         if callable(self.dry_run):
             if isinstance(value, bytes):

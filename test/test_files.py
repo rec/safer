@@ -11,6 +11,23 @@ FILENAME = Path('one')
 
 
 @tdir
+def test_successful_file_dry_run_removes_scratch():
+    values = []
+    for dry_run in (True, values.append):
+        with safer.open(
+            FILENAME,
+            'w',
+            temp_file='scratch',
+            dry_run=dry_run,
+            delete_failures=False,
+        ) as fp:
+            fp.write('payload')
+        assert not Path('scratch').exists()
+        assert not FILENAME.exists()
+    assert values == ['payload']
+
+
+@tdir
 def test_truncating_update_starts_empty():
     FILENAME.write_text('original')
     with safer.open(FILENAME, 'w+', temp_file=True) as fp:
