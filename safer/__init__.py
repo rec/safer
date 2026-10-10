@@ -744,9 +744,6 @@ class _Closer:
     def _failure(self) -> None:
         pass
 
-    def _record(self, value: str | bytes) -> None:
-        pass
-
     def _wrap(self, stream_cls):
         @functools.wraps(stream_cls)
         def wrapped(*args, **kwargs):
@@ -781,13 +778,7 @@ def _wrap_class(stream_cls):
         self.safer_failed = True
         self.close()
 
-    @functools.wraps(stream_cls.write)
-    def write(self, value):
-        result = stream_cls.write(self, value)
-        self.safer_closer._record(value)
-        return result
-
-    members = {'__exit__': exit, '__del__': finalize, 'close': close, 'write': write}
+    members = {'__exit__': exit, '__del__': finalize, 'close': close}
     return type('Safer' + stream_cls.__name__, (stream_cls,), members)
 
 
@@ -857,8 +848,6 @@ class _FileRenameCloser(_FileCloser):
         self.encoding = encoding
         self.errors = errors
         self.newline = newline
-        self.dry_run_text: list[str] = []
-        self.dry_run_bytes: list[bytes] = []
 
         super().__init__(temp_file, delete_failures, parent)
 
@@ -885,13 +874,6 @@ class _FileRenameCloser(_FileCloser):
 
         if self.dry_run:
             os.remove(self.temp_file)
-
-    def _record(self, value: str | bytes) -> None:
-        if callable(self.dry_run):
-            if isinstance(value, bytes):
-                self.dry_run_bytes.append(value)
-            else:
-                self.dry_run_text.append(value)
 
 
 class _StreamCloser(_Closer):

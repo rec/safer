@@ -22,18 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 26. P2: Disk-backed callable dry-runs duplicate output in memory
-
-Source: `safer/__init__.py:781-782,792-804`.
-
-Every write is retained in a Python list in addition to being written to disk,
-then a full joined value is allocated. Thus `temp_file=True` does not avoid
-unbounded memory use for callable dry-runs, despite the large-file use case.
-
-Suggested resolution: document the whole-value callback's necessary memory
-cost and avoid keeping a second complete write history. A streaming callback
-would change the API and needs a separate decision.
-
 ### 27. P2: Mode and IO option errors are validated inconsistently and late
 
 Source: `safer/__init__.py:438-504,735-759`.

@@ -72,6 +72,10 @@ metadata.
 It also has a useful `dry_run` setting to let you test your code without
 actually overwriting the target file.
 
+A callable dry-run receives the final complete buffered value. Disk buffering
+keeps writes on disk until that value is read for the callback; receiving the
+whole value still requires memory proportional to the final output.
+
 * `safer.writer()` wraps an existing writer, socket or stream and defers its
   write until successful context exit
 
