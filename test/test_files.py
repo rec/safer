@@ -11,6 +11,15 @@ FILENAME = Path('one')
 
 
 @tdir
+def test_truncating_update_starts_empty():
+    FILENAME.write_text('original')
+    with safer.open(FILENAME, 'w+', temp_file=True) as fp:
+        assert fp.read() == ''
+        fp.write('replacement')
+    assert FILENAME.read_text() == 'replacement'
+
+
+@tdir
 def test_update_requires_existing_target():
     for mode in ('r+', 'r+b'):
         with pytest.raises(FileNotFoundError):

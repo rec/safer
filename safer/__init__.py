@@ -444,7 +444,7 @@ def open(
     if not isinstance(temp_file, (bool, str, Path)):
         raise TypeError('temp_file must be a bool, string, or Path')
 
-    is_copy = '+' in mode or 'a' in mode
+    is_copy = ('r' in mode and '+' in mode) or 'a' in mode
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode
 

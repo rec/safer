@@ -16,17 +16,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Data integrity and publication
 
-### 6. P2: `w+` needlessly copies the old file before truncating the copy
-
-Source: `safer/__init__.py:441,518-521,748-750`.
-
-All `+` modes trigger `copy2()`, including `w+`, whose subsequent open truncates
-the scratch file. This can require reading a huge original, consume extra disk
-space, or fail on an unreadable original that a normal `w+` open could replace.
-
-Suggested resolution: copy only for modes that retain existing contents.
-Regression: `w+` works without reading the old contents.
-
 ## Resource ownership, failures, and shutdown
 
 ### 7. P1: Successful disk-buffered stream writes leave their scratch file
