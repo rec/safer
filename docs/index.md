@@ -1,6 +1,11 @@
 # 🧿: `safer`: A safer writer for files and streams 🧿
 
+See the [README](https://github.com/rec/safer#readme) for maintained examples,
+publication guarantees, recovery behavior, and filesystem limitations.
+
 ::: safer
+    options:
+      members: [writer, open, closer, dump, printer]
 
 ## About this project
 

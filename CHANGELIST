@@ -1,3 +1,14 @@
+## Unreleased
+
+* Atomic publication for memory-buffered files; safer exclusive scratch paths.
+* Buffered socket sends and defined short-write/nonblocking contracts.
+* Cleanup on errors, interrupts, abandoned wrappers, and owned-stream closure.
+* Final-content dry-run callbacks, early IO validation, and native bypass.
+* Consistent path-like support; transactional custom openers rejected.
+* Stateful serializer encoding, explicit text-only protocol, and caller types.
+* Independent backend tests and release-only Python/OS/wheel validation.
+* One maintained documentation source and removal of obsolete tooling.
+
 ## v4.4.1 - 21/01/11
 
 * Stop supporting early Python versions

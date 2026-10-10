@@ -20,13 +20,13 @@ API for named files.
 
 ### A note on AI use
 
-Version 6.0 has exactly the same API as before, and the great majority of the code is
-still the handwritten code from before, but I recently used a coding assistant to find a
-lot of possible errors and edge cases and fix them.
-
-I believe it should do exactly what it did before, but not fail in some unusual but
-certainly not impossible cases. Please let me know with an [issue
-report](https://github.com/rec/safer/issues/new) if any problems crop up.
+The 6.x reliability work used a coding assistant to review failure paths.
+The familiar APIs remain, but behavior is not identical to older versions:
+file publication is atomic in memory mode too, invalid options fail earlier,
+abandoned wrappers abort, socket sends buffer, and transactional custom openers
+are rejected. `dump` accepts text serializers and has an output `encoding`
+option. Please report problems through the
+[issue tracker](https://github.com/rec/safer/issues/new).
 
 ### How to use
 
@@ -214,3 +214,22 @@ With `safer`
 
 
 ### [API Documentation](https://rec.github.io/safer#safer--api-documentation)
+
+### Development and documentation
+
+Use `uv sync --all-groups --locked` for the development environment. Run tests
+with `uv run coverage run -m pytest` followed by `uv run coverage report`.
+The release-only workflow checks Python 3.10 through 3.14 on Linux, macOS, and
+Windows, including an installed wheel built from the source distribution.
+
+The README is the maintained source of shared examples and guarantees. Public
+function docstrings supply the API reference; there is no generated help
+snapshot to update. From the checkout, build the site without changing project
+dependencies:
+
+```sh
+uv tool run --from mkdocs --with mkdocs-material --with 'mkdocstrings[python]' mkdocs build
+```
+
+This installs the optional documentation tools in an isolated tool environment.
+The recipe follows the [mkdocstrings setup](https://mkdocstrings.github.io/).

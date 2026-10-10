@@ -26,26 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 40. P3: Documentation has duplicated, contradictory, and unmaintained text
-
-Source: `README.md`; `safer/__init__.py:1-169`; `test/help.txt`;
-`test/get_help.py`; `CHANGELIST`; `mkdocs.yml`.
-
-The README and module docstring duplicate long explanations. The docstring
-retains an 'unpredictable' concurrent-open warning alongside the newer explicit
-last-close-wins explanation. Both texts suggest delayed replacement for all
-file opens, although default memory mode writes the original directly. README
-claims exactly the same API for version 6.0 despite new arguments and deliberate
-rejections. The 444-line help snapshot predates those changes, includes terminal
-backspace formatting, and has no test asserting freshness. CHANGELIST ends at
-4.4.1. MkDocs configuration names documentation tools that are not declared in
-the development dependency group, leaving no self-contained documentation
-build recipe in the tracked project.
-
-Suggested resolution: choose a maintained source for shared prose, refresh or
-retire the unused snapshot, document intentional API changes, and state how
-documentation is built. Check guarantees against the actual buffering mode.
-
 ### 41. P3: The single implementation module concentrates lifecycle complexity
 
 Source: `safer/__init__.py` (885 lines); `test/get_help.py` (22 lines).
