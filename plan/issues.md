@@ -18,20 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 10. P1: Interrupted finalization bypasses cleanup
-
-Source: `safer/__init__.py:366-369,649-668`.
-
-The cleanup handlers catch `Exception`, excluding `KeyboardInterrupt` and
-`SystemExit`. A context-body interrupt normally reaches `__exit__` and marks
-failure, but an interrupt during flushing, replay, callback execution, or
-replacement skips cleanup. `closed` is already true, so retrying close does
-not repair it.
-
-Suggested resolution: use ownership-based `finally` cleanup that also runs for
-control-flow exceptions, then propagate the original exception. Regression:
-interrupt finalization rather than only the body of the context.
-
 ### 11. P1: `close_on_exit` is skipped when delivery fails
 
 Source: `safer/__init__.py:813-822`.

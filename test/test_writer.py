@@ -250,6 +250,18 @@ def test_successful_stream_replay_removes_scratch():
     assert not Path('scratch').exists()
 
 
+@pytest.mark.parametrize('error', [KeyboardInterrupt, SystemExit])
+@tdir
+def test_interrupted_replay_removes_scratch(error):
+    def interrupt(value):
+        raise error
+
+    with pytest.raises(error):
+        with safer.writer(interrupt, temp_file='scratch') as fp:
+            fp.write('payload')
+    assert not Path('scratch').exists()
+
+
 @tdir
 def test_close_writable_without_context_manager():
     class Writer:

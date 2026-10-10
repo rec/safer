@@ -369,7 +369,7 @@ def writer(
 
         return t.cast(t.TextIO | t.BinaryIO, closer.fp)
 
-    except Exception:
+    except BaseException:
         if close_on_exit:
             getattr(stream, 'close', lambda: None)()
         raise
@@ -681,18 +681,18 @@ class _Closer:
         self.closed = True
         try:
             parent_close(self.fp)
-        except Exception:  # pragma: no cover
+        except BaseException:
             try:
                 self._close(True)
-            except Exception:
+            except BaseException:
                 traceback.print_exc()
             raise
         try:
             self._close(self.fp.safer_failed)
-        except Exception:
+        except BaseException:
             try:
                 self._close(True)
-            except Exception:  # pragma: no cover
+            except BaseException:
                 traceback.print_exc()
             raise
 
