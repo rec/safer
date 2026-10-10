@@ -222,6 +222,23 @@ with `uv run coverage run -m pytest` followed by `uv run coverage report`.
 The release-only workflow checks Python 3.10 through 3.14 on Linux, macOS, and
 Windows, including an installed wheel built from the source distribution.
 
+Before creating a release tag:
+
+* Verify each workflow `uses:` reference against the action's documented usage
+  or published releases. Prefer a verified commit SHA for a reproducible action
+  revision.
+* Keep settings that affect dependency resolution in `pyproject.toml`, with a
+  matching `uv.lock`, so local environments and CI use the same policy. Validate
+  configuration values with the uv version used by the workflow.
+* Run the commands in [the release workflow](.github/workflows/release-tests.yml)
+  in a fresh environment, starting with `uv sync --all-groups --locked`. A passing
+  test suite alone does not verify locked installation. Check the supported
+  Python versions and the installed wheel as CI does, and use the workflow's
+  tool versions when they differ from the local environment.
+* Confirm that the tagged commit contains the intended workflow, configuration,
+  and lockfile. Rerunning a failed tag uses that tag's original workflow; fixes
+  committed later require a new release tag.
+
 The README is the maintained source of shared examples and guarantees. Public
 function docstrings supply the API reference; there is no generated help
 snapshot to update. From the checkout, build the site without changing project
