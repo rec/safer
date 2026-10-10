@@ -28,6 +28,7 @@ class socket:
 
     def send(self, item):
         self.items.append(item)
+        return len(item)
 
     def recv(self):
         pass

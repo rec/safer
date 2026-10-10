@@ -20,19 +20,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Stream behavior and liveness
 
-### 19. P2: `None` write results conflate callbacks and nonblocking streams
-
-Source: `safer/__init__.py:824-835`.
-
-`None` means the entire value was accepted. That suits callbacks such as
-`list.append`, but a nonblocking raw IO writer can return `None` when it accepts
-no bytes. Treating both alike can report success while dropping output. A
-positive count greater than the remaining data is also silently accepted.
-
-Suggested resolution: define separate result contracts for stream methods and
-callbacks, and check count bounds. Regression: a nonblocking no-progress
-result is an explicit delivery failure, while append callbacks still work.
-
 ### 20. P2: Close may block indefinitely or do quadratic replay work
 
 Source: `safer/__init__.py:221-223,824-835`; release workflow test job.

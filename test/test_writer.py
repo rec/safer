@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import unittest
@@ -239,6 +240,25 @@ def test_wrapper_bug():
     with safer.writer(FILENAME) as fp:
         fp.write('hello, world')
     assert FILENAME.read_text() == 'hello, world'
+
+
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_nonblocking_stream_none_is_no_progress(temp_file):
+    class Destination(io.RawIOBase):
+        def write(self, value):
+            return None
+
+    with pytest.raises(BlockingIOError):
+        with safer.writer(Destination(), temp_file=temp_file) as fp:
+            fp.write('payload')
+
+
+@tdir
+def test_callback_write_count_must_not_exceed_input():
+    with pytest.raises(ValueError, match='invalid write count'):
+        with safer.writer(lambda value: len(value) + 1) as fp:
+            fp.write('payload')
 
 
 @pytest.mark.parametrize(

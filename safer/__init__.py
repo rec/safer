@@ -228,6 +228,11 @@ def writer(
     indefinitely when the context exits if the underlying socket, stream or
     callable does!
 
+    Raw IO and socket destinations must report accepted bytes; a raw IO
+    result of None means no progress. For callbacks and custom writers, None
+    means the whole supplied value was accepted. Integer results must be
+    between one and the supplied value's length for nonempty writes.
+
     Args:
       stream: A file stream, a socket, or a callable that will receive data.
 
@@ -356,6 +361,9 @@ def writer(
             raise ValueError('Stream is not a file, a socket, or callable')
 
         assert write is not None
+        allow_none = bool(dry_run) or (
+            send is not write and not isinstance(stream, io.RawIOBase)
+        )
         closer: _StreamCloser
 
         if temp_file:
@@ -367,10 +375,15 @@ def writer(
                 chunk_size,
                 delete_failures,
                 close_callback,
+                allow_none=allow_none,
             )
         else:
             closer = _MemoryStreamCloser(
-                write, close_on_exit, is_binary, close_callback
+                write,
+                close_on_exit,
+                is_binary,
+                close_callback,
+                allow_none=allow_none,
             )
 
         if send is write:
@@ -517,7 +530,7 @@ def open(
         else:
             write = len if dry_run else simple_write
 
-        fp = _MemoryStreamCloser(write, True, is_binary).fp
+        fp = _MemoryStreamCloser(write, True, is_binary, allow_none=True).fp
         fp.mode = mode
         return t.cast(t.IO, fp)
 
@@ -863,10 +876,11 @@ class _FileRenameCloser(_FileCloser):
 
 
 class _StreamCloser(_Closer):
-    def __init__(self, write, close_on_exit, close_callback=None):
+    def __init__(self, write, close_on_exit, close_callback=None, allow_none=False):
         self.write = write
         self.close_on_exit = close_on_exit
         self.close_callback = close_callback
+        self.allow_none = allow_none
 
     def close(self, parent_close):
         if self.closed:
@@ -898,15 +912,21 @@ class _StreamCloser(_Closer):
         while value:
             written = self.write(value)
             if written is None:
-                return
+                if self.allow_none:
+                    return
+                raise BlockingIOError('The destination made no write progress')
+            if type(written) is not int or written > len(value):
+                raise ValueError('The destination returned an invalid write count')
             if written <= 0:
                 raise BlockingIOError('The destination made no write progress')
             value = value[written:]
 
 
 class _MemoryStreamCloser(_StreamCloser):
-    def __init__(self, write, close_on_exit, is_binary, close_callback=None):
-        super().__init__(write, close_on_exit, close_callback)
+    def __init__(
+        self, write, close_on_exit, is_binary, close_callback=None, allow_none=False
+    ):
+        super().__init__(write, close_on_exit, close_callback, allow_none)
         io_class = io.BytesIO if is_binary else io.StringIO
         fp = self._wrap(io_class)()
         assert fp == self.fp
@@ -931,8 +951,9 @@ class _FileStreamCloser(_StreamCloser, _FileCloser):
         chunk_size,
         delete_failures,
         close_callback=None,
+        allow_none=False,
     ):
-        _StreamCloser.__init__(self, write, close_on_exit, close_callback)
+        _StreamCloser.__init__(self, write, close_on_exit, close_callback, allow_none)
         _FileCloser.__init__(self, temp_file, delete_failures)
 
         self.is_binary = is_binary
