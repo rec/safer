@@ -26,25 +26,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Testing, documentation, and project structure
 
-### 41. P3: The single implementation module concentrates lifecycle complexity
-
-Source: `safer/__init__.py` (885 lines); `test/get_help.py` (22 lines).
-
-Roughly 170 implementation-module lines are duplicated user documentation;
-the rest mixes public API, mode validation, serialization, dynamic IO classes,
-and multiple-inheritance closers. `_FileStreamCloser(_StreamCloser, _FileCloser)`
-requires non-obvious method-resolution reasoning for cleanup. This is a
-maintenance risk, but no file is enormous enough to justify a wholesale split
-on size alone. `_FileRenameCloser` stores encoding/errors/newline attributes
-that are no longer read after its callback implementation changed.
-
-Suggested resolution: simplify ownership boundaries as lifecycle defects are
-fixed; consider extracting a coherent internal module only with explicit
-refactoring scope. `test/get_help.py` is a small isolated legacy utility that
-can be retired or consolidated if the snapshot is retired. `test/helpers.py`
-is reused, and empty `test/__init__.py` and `safer/py.typed` are functional
-markers, not candidates for inlining merely because they are small.
-
 ### 42. P3: Atomic publication overlaps reccy but the APIs are not interchangeable
 
 Sources in the sibling checkout: `reccy/runtime/files.py:11-30` and

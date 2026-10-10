@@ -233,3 +233,10 @@ uv tool run --from mkdocs --with mkdocs-material --with 'mkdocstrings[python]' m
 
 This installs the optional documentation tools in an isolated tool environment.
 The recipe follows the [mkdocstrings setup](https://mkdocstrings.github.io/).
+
+The implementation stays in one modest-sized module. Closers separate scratch
+ownership from destination delivery; the disk-stream closer explicitly combines
+those responsibilities. This does not require a wholesale module split.
+Memory buffers have no automatic size cap or spill-to-disk policy: choose disk
+buffering for large output. Captured memory payloads are released after close,
+including failed delivery; caller-held callback values remain caller-owned.

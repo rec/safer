@@ -14,6 +14,31 @@ from . import helpers
 FILENAME = Path('one')
 
 
+def test_memory_capture_failure_aborts_and_closes_owned_destination(monkeypatch):
+    class Exhausted(io.StringIO):
+        def getvalue(self):
+            raise MemoryError('no memory')
+
+    class Destination:
+        closed = False
+
+        def write(self, value):
+            pytest.fail('failed capture must not publish')
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(io, 'StringIO', Exhausted)
+    destination = Destination()
+    fp = safer.writer(destination, close_on_exit=True)
+    fp.write('pending')
+    with pytest.raises(MemoryError, match='no memory'):
+        fp.close()
+    assert fp.closed
+    assert destination.closed
+    fp.close()
+
+
 @helpers.temps(safer.writer)
 @tdir
 class TestWriter(unittest.TestCase):

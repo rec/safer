@@ -438,7 +438,6 @@ def open(
         is_binary,
         encoding,
         errors,
-        newline,
     )
 
     if callable(dry_run) and not is_binary:
@@ -731,6 +730,8 @@ def _wrap_class(stream_cls):
 
 
 class _FileCloser(_Closer):
+    """Own scratch allocation and cleanup; subclasses decide publication."""
+
     def __init__(self, temp_file, delete_failures, parent=None):
         if temp_file is True:
             fd, temp_file = tempfile.mkstemp(dir=parent)
@@ -788,14 +789,12 @@ class _FileRenameCloser(_FileCloser):
         is_binary,
         encoding,
         errors,
-        newline,
     ):
         self.target_file = target_file
         self.dry_run = dry_run
         self.is_binary = is_binary
         self.encoding = encoding
         self.errors = errors
-        self.newline = newline
 
         super().__init__(temp_file, delete_failures, parent)
 
@@ -825,6 +824,8 @@ class _FileRenameCloser(_FileCloser):
 
 
 class _StreamCloser(_Closer):
+    """Own destination delivery and optional closure, not scratch storage."""
+
     def __init__(self, write, close_on_exit, close_callback=None, allow_none=False):
         self.write = write
         self.close_on_exit = close_on_exit
@@ -877,6 +878,8 @@ class _StreamCloser(_Closer):
 
 
 class _MemoryStreamCloser(_StreamCloser):
+    value: str | bytes | None = None
+
     def __init__(
         self, write, close_on_exit, is_binary, close_callback=None, allow_none=False
     ):
@@ -888,14 +891,33 @@ class _MemoryStreamCloser(_StreamCloser):
     def close(self, parent_close=None):
         if self.closed:
             return
-        self.value = t.cast(io.StringIO | io.BytesIO, self.fp).getvalue()
-        super().close(parent_close)
+        try:
+            if not self.fp.safer_failed:
+                self.value = t.cast(io.StringIO | io.BytesIO, self.fp).getvalue()
+        except BaseException:
+            self.fp.safer_failed = True
+            try:
+                super().close(parent_close)
+            except BaseException:
+                traceback.print_exc()
+            raise
+        try:
+            super().close(parent_close)
+        finally:
+            self.value = None
 
     def _success(self) -> None:
+        assert self.value is not None
         self._write_on_success(self.value)
 
 
 class _FileStreamCloser(_StreamCloser, _FileCloser):
+    """Deliver and close via _StreamCloser; explicitly clean via _FileCloser.
+
+    Both bases are initialized directly. Successful replay removes scratch;
+    failed replay delegates only scratch cleanup to _FileCloser._failure.
+    """
+
     def __init__(
         self,
         write,
