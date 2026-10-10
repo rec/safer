@@ -24,20 +24,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Serialization and typing
 
-### 33. P2: `dump(encoding=...)` only affects some destination kinds
-
-Source: `safer/__init__.py:541-586`.
-
-The new encoding argument is applied only by the binary adapter. A filename
-still goes through `writer(path)`, which offers no encoding setting and opens
-text with the locale default. Thus identical requests can use different
-encodings for file paths and binary streams. Encoding is absent from the dump
-docstring, and serializers needing their own `encoding` keyword cannot receive
-it through `kwargs` because safer consumes it first.
-
-Suggested resolution: define what this parameter controls for every destination
-and serializer. Regression: file-path and binary output follow that contract.
-
 ### 34. P2: `dump` does not support arbitrary serialization protocols
 
 Source: `safer/__init__.py:563-588,596-620`.

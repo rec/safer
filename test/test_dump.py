@@ -14,6 +14,23 @@ import safer
 from . import helpers
 
 
+@tdir
+def test_dump_path_and_binary_destination_use_requested_encoding():
+    value = {'letter': 'é'}
+    destination = io.BytesIO()
+    safer.dump(value, destination, encoding='latin-1', ensure_ascii=False)
+    safer.dump(value, Path('encoded.json'), encoding='latin-1', ensure_ascii=False)
+    assert Path('encoded.json').read_bytes() == destination.getvalue()
+
+
+def test_existing_text_stream_keeps_its_own_encoding():
+    raw = io.BytesIO()
+    destination = io.TextIOWrapper(raw, encoding='latin-1')
+    safer.dump('é', destination, encoding='ascii', ensure_ascii=False)
+    destination.flush()
+    assert raw.getvalue() == b'"\xe9"'
+
+
 @pytest.mark.parametrize('encoding', ['utf-16', 'utf-8-sig', 'iso2022_jp'])
 def test_fragmented_serializer_uses_one_encoder(encoding):
     destination = io.BytesIO()

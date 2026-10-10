@@ -659,6 +659,12 @@ def dump(
 
       kwargs:
         Additional arguments to `dump`.
+
+      encoding:
+        Output encoding for file paths and binary destinations (UTF-8 by
+        default). Existing text streams retain their own encoding. This is a
+        safer option, not a keyword forwarded to the serializer; bind a
+        serializer-specific encoding with functools.partial if needed.
     """
     name = (
         os.fspath(stream)
@@ -673,7 +679,12 @@ def dump(
     writer_stream = t.cast(
         t.TextIO | t.BinaryIO | Write | os.PathLike[str] | str | None, stream
     )
-    with t.cast(t.IO, writer(writer_stream)) as fp:
+    destination = (
+        open(t.cast(str | os.PathLike[str], stream), 'w', encoding=encoding)
+        if isinstance(stream, (str, os.PathLike))
+        else writer(writer_stream)
+    )
+    with t.cast(t.IO, destination) as fp:
         if is_binary:
             encoded = _EncodedWriter(fp, encoding)
             result = dump(obj, encoded, **kwargs)
