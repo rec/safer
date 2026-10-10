@@ -12,6 +12,50 @@ import safer
 FILENAME = Path('one')
 
 
+@pytest.mark.parametrize('temp_file', [False, True])
+@tdir
+def test_transactional_opener_rejected_without_side_effects(temp_file):
+    def redirect(name, flags):
+        pytest.fail('transactional opener must not run')
+
+    with pytest.raises(ValueError, match='opener is only supported'):
+        safer.open(
+            'missing/file', 'w', opener=redirect, make_parents=True, temp_file=temp_file
+        )
+    assert list(Path('.').iterdir()) == []
+
+
+@tdir
+def test_native_read_and_disabled_write_accept_opener():
+    calls = []
+
+    def native(name, flags):
+        calls.append(name)
+        return os.open(name, flags)
+
+    with safer.open(FILENAME, 'w', enabled=False, opener=native) as fp:
+        fp.write('native')
+    with safer.open(FILENAME, opener=native) as fp:
+        assert fp.read() == 'native'
+    assert len(calls) == 2
+
+
+@tdir
+def test_public_helpers_accept_custom_text_pathlike():
+    class Name:
+        def __fspath__(self):
+            return 'custom.json'
+
+    with safer.writer(Name()) as fp:
+        fp.write('writer')
+    assert Path('custom.json').read_text() == 'writer'
+    with safer.printer(Name()) as print_value:
+        print_value('printer')
+    assert Path('custom.json').read_text() == 'printer\n'
+    safer.dump({'value': 1}, Name())
+    assert Path('custom.json').read_text() == '{"value": 1}'
+
+
 @tdir
 def test_disabled_open_uses_native_io_and_ignores_safer_options():
     with safer.open(

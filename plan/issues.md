@@ -22,22 +22,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Dry-runs, validation, and API traps
 
-### 30. P2: Custom openers and path-like inputs have inconsistent support
-
-Source: `safer/__init__.py:264-277,372-386,445-468,748-750`.
-
-`open()` accepts arbitrary text PathLike objects; `writer`, `printer` annotations,
-and `dump` do not consistently expose that support. A custom `opener` receives
-the resolved target in memory mode but the scratch path in disk mode. If it
-redirects that path, later replacement/cleanup still operates on the original
-scratch name. `__builtins__['open']` also assumes the implementation-specific
-dictionary form of `__builtins__`.
-
-Suggested resolution: define supported opener semantics before promising all
-remaining arguments match built-in open, standardize path support, and use
-`builtins.open` explicitly. Regression: supported custom opener and PathLike
-behavior is consistent across applicable paths.
-
 ### 31. P2: Permission, identity, and link behavior differ by buffering mode
 
 Source: `safer/__init__.py:460,470-472,518-519,788-790`.

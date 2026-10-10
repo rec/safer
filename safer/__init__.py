@@ -210,7 +210,7 @@ class _Closable(t.Protocol):
 
 
 def writer(
-    stream: t.TextIO | t.BinaryIO | Write | Path | str | None = None,
+    stream: t.TextIO | t.BinaryIO | Write | os.PathLike[str] | str | None = None,
     is_binary: bool | None = None,
     close_on_exit: bool = False,
     temp_file: bool | str | Path = False,
@@ -283,9 +283,12 @@ def writer(
         A callable or socket remains a callable or socket, not an IO context.
     """
     if not enabled:
-        if isinstance(stream, (str, Path)):
+        if isinstance(stream, (str, os.PathLike)):
             return t.cast(
-                t.TextIO | t.BinaryIO, builtins.open(stream, 'wb' if is_binary else 'w')
+                t.TextIO | t.BinaryIO,
+                builtins.open(
+                    t.cast(str | os.PathLike[str], stream), 'wb' if is_binary else 'w'
+                ),
             )
         return t.cast(
             t.TextIO | t.BinaryIO | Write, sys.stdout if stream is None else stream
@@ -299,13 +302,13 @@ def writer(
     if chunk_size <= 0:
         raise ValueError('chunk_size must be a positive integer')
 
-    if isinstance(stream, (str, Path)):
+    if isinstance(stream, (str, os.PathLike)):
         if chunk_size != 0x100000:
             raise ValueError('chunk_size only applies to streams')
         return t.cast(
             t.TextIO | t.BinaryIO,
             open(
-                stream,
+                t.cast(str | os.PathLike[str], stream),
                 'wb' if is_binary else 'w',
                 delete_failures=delete_failures,
                 temp_file=temp_file,
@@ -447,7 +450,9 @@ def open(
          native `open()` is used with the original name and IO arguments.
          Safer-only options, including make_parents, are ignored.
 
-    The remaining arguments are the same as for built-in `open()`.
+    The remaining arguments follow built-in `open()`, except custom openers
+    are supported only for reads and enabled=False. Transactional writes
+    cannot allow an opener to redirect the scratch path.
 
     `safer.open()` replaces the target when close() is called successfully. It
     does not coordinate concurrent writers: the last successful close wins.
@@ -493,6 +498,8 @@ def open(
     is_copy = ('r' in mode and '+' in mode) or 'a' in mode
     is_read = 'r' in mode and not is_copy
     is_binary = 'b' in mode
+    if opener is not None and not is_read:
+        raise ValueError('opener is only supported for reads or enabled=False')
 
     kwargs = dict(encoding=encoding, errors=errors, newline=newline, opener=opener)
 
@@ -521,7 +528,15 @@ def open(
         os.makedirs(parent, exist_ok=True)
 
     def simple_open():
-        return __builtins__['open'](name, mode, buffering, **kwargs)
+        return builtins.open(
+            name,
+            mode,
+            buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+            opener=opener,
+        )
 
     def simple_write(value: str | bytes) -> None:
         with open(
@@ -618,7 +633,7 @@ def closer(
 
 def dump(
     obj,
-    stream: t.Callable | None | t.IO | Path | str = None,
+    stream: t.Callable | None | t.IO | os.PathLike[str] | str = None,
     dump: t.Any = None,
     encoding: str = 'utf-8',
     **kwargs,
@@ -645,16 +660,19 @@ def dump(
       kwargs:
         Additional arguments to `dump`.
     """
-    if not isinstance(stream, str):
-        name = getattr(stream, 'name', '')
-    else:
-        name = stream
+    name = (
+        os.fspath(stream)
+        if isinstance(stream, (str, os.PathLike))
+        else getattr(stream, 'name', '')
+    )
 
     is_binary = _stream_is_binary(stream)
 
     dump = _get_dumper(dump or Path(name).suffix[1:])
 
-    writer_stream = t.cast(t.TextIO | t.BinaryIO | Write | Path | str | None, stream)
+    writer_stream = t.cast(
+        t.TextIO | t.BinaryIO | Write | os.PathLike[str] | str | None, stream
+    )
     with t.cast(t.IO, writer(writer_stream)) as fp:
         if is_binary:
             fp = _EncodedWriter(fp, encoding)
@@ -760,7 +778,7 @@ def _get_dumper(dump: t.Any) -> t.Callable:
 
 @contextlib.contextmanager
 def printer(
-    name: Path | str, mode: str = 'w', *args, **kwargs
+    name: os.PathLike[str] | str, mode: str = 'w', *args, **kwargs
 ) -> t.Iterator[t.Callable]:
     """
     A context manager that yields a function that prints to the opened file,
