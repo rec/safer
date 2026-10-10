@@ -262,6 +262,26 @@ def test_interrupted_replay_removes_scratch(error):
     assert not Path('scratch').exists()
 
 
+@tdir
+def test_cleanup_failure_preserves_delivery_error(monkeypatch, capsys):
+    calls = []
+
+    def fail_delivery(value):
+        raise OSError('delivery failed')
+
+    def fail_cleanup(path, **kwargs):
+        calls.append(path)
+        raise PermissionError('cleanup denied')
+
+    fp = safer.writer(fail_delivery, temp_file='scratch')
+    monkeypatch.setattr(Path, 'unlink', fail_cleanup)
+    with pytest.raises(OSError, match='delivery failed'):
+        with fp:
+            fp.write('payload')
+    assert calls == [Path('scratch')]
+    assert capsys.readouterr().err == 'safer cleanup failed: cleanup denied\n'
+
+
 @pytest.mark.parametrize('temp_file', [False, True])
 @tdir
 def test_delivery_failure_closes_owned_destination(temp_file):

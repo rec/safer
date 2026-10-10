@@ -18,19 +18,6 @@ maintenance or documentation work. Source line numbers refer to the baseline.
 
 ## Resource ownership, failures, and shutdown
 
-### 17. P2: Cleanup can run twice and emit a secondary traceback
-
-Source: `safer/__init__.py:661-668,729-733`.
-
-If `_close(True)` itself fails, the enclosing handler calls `_close(True)` again.
-For a failed remove this repeats the same operation and prints a traceback to
-global stderr. The primary error is retained, but diagnostics are duplicated
-and deletion is not idempotent when the file was already removed elsewhere.
-
-Suggested resolution: distinguish commit failure from cleanup failure and run
-cleanup once with contextual diagnostics. Regression: cleanup errors do not
-trigger repeated deletion or obscure the first exception.
-
 ## Stream behavior and liveness
 
 ### 18. P1: `chunk_size=0` silently discards disk-buffered output

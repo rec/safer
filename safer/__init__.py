@@ -688,25 +688,22 @@ class _Closer:
         try:
             parent_close(self.fp)
         except BaseException:
-            try:
-                self._close(True)
-            except BaseException:
-                traceback.print_exc()
+            self._cleanup_after_error()
             raise
+        if self.fp.safer_failed:
+            self._failure()
+            return
         try:
-            self._close(self.fp.safer_failed)
+            self._success()
         except BaseException:
-            try:
-                self._close(True)
-            except BaseException:
-                traceback.print_exc()
+            self._cleanup_after_error()
             raise
 
-    def _close(self, failed: bool) -> None:
-        if failed:
+    def _cleanup_after_error(self) -> None:
+        try:
             self._failure()
-        else:
-            self._success()
+        except BaseException as error:
+            print(f'safer cleanup failed: {error}', file=sys.stderr)
 
     def _success(self) -> None:
         raise NotImplementedError
@@ -774,7 +771,7 @@ class _FileCloser(_Closer):
 
     def _failure(self):
         if self.delete_failures:
-            os.remove(self.temp_file)
+            Path(self.temp_file).unlink(missing_ok=True)
         else:
             print('Temp_file saved:', self.temp_file, file=sys.stderr)
 
