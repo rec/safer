@@ -41,7 +41,7 @@ jobs:
         run: uv pip install --python .venv --no-deps --reinstall "$RUNNER_TEMP"/safer-dist/*.whl
       - name: Test installed wheel and enforce coverage
         run: |
-          cp -R test "$RUNNER_TEMP/safer-tests"
+          cp -R test "$RUNNER_TEMP/safer_tests"
           cd "$RUNNER_TEMP"
-          uv run --project "$GITHUB_WORKSPACE" --no-sync coverage run --rcfile "$GITHUB_WORKSPACE/pyproject.toml" -m pytest safer-tests
+          uv run --project "$GITHUB_WORKSPACE" --no-sync coverage run --rcfile "$GITHUB_WORKSPACE/pyproject.toml" -m pytest safer_tests
           uv run --project "$GITHUB_WORKSPACE" --no-sync coverage report --rcfile "$GITHUB_WORKSPACE/pyproject.toml"
